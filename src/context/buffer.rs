@@ -83,12 +83,16 @@ pub struct ScopedBufMap2dMut<'a, T: 'a + BufferElement> {
 }
 
 impl<'a, T: BufferElement> ScopedBufMap2dMut<'a, T> {
-    fn width(&self) -> usize {
+    pub fn width(&self) -> usize {
         self.width
     }
 
-    fn height(&self) -> usize {
+    pub fn height(&self) -> usize {
         self.height
+    }
+
+    pub fn len(&self) -> usize {
+        self.data.len()
     }
 }
 
