@@ -35,6 +35,26 @@ pub struct EntryPoint {
     exception_program: Option<ProgramHandle>,
 }
 
+/// An OptiX context provides an interface for controlling the setup and
+/// subsequent launch of the ray tracing engine. 
+/// 
+/// Contexts are created with the
+/// `new` method. A context object encapsulates all OptiX resources
+/// — textures, geometry, user-defined programs, etc. The destruction of a
+/// context, via the rtContextDestroy function, will clean up all of these
+/// resources and invalidate any existing handles to them. The functions
+/// rtContextLaunch1D, rtContextLaunch2D and rtContextLaunch3D (collectively
+/// known as rtContextLaunch) serve as entry points to ray engine computation.
+/// The launch function takes an entry point parameter, discussed in “Entry
+/// points”, as well as one, two or three grid dimension parameters. The
+/// dimensions establish a logical computation grid. Upon a call to
+/// rtContextLaunch, any necessary preprocessing is performed and then the ray
+/// generation program associated with the provided entry point index is
+/// invoked once per computational grid cell. The launch precomputation
+/// includes state validation and, if necessary, acceleration structure
+/// generation and kernel compilation. Output from the launch is passed back
+/// via OptiX buffers, typically but not necessarily of the same dimensionality
+/// as the computation grid.
 pub struct Context {
     rt_ctx: RTcontext,
     ray_types: HashMap<RayType, String>,
@@ -57,7 +77,8 @@ pub struct Context {
     gd_geometry_bounding_box: GinAllocatorChild<ProgramHandle, GeometryMarker>,
     gd_geometry_intersection: GinAllocatorChild<ProgramHandle, GeometryMarker>,
 
-    ga_geometry_instance_obj: GinAllocator<RTgeometryinstance, GeometryInstanceMarker>,
+    ga_geometry_instance_obj:
+        GinAllocator<RTgeometryinstance, GeometryInstanceMarker>,
     gd_geometry_instance_variables:
         GinAllocatorChild<HashMap<String, Variable>, GeometryInstanceMarker>,
     gd_geometry_instance_geometry:
@@ -73,6 +94,62 @@ pub struct Context {
     gd_material_closest_hit:
         GinAllocatorChild<HashMap<RayType, ProgramHandle>, MaterialMarker>,
 }
+
+/// The `Launcher` is used to launch the raytracing engine. In order to obtain a
+/// `Launcher` you must consume the `Context` with the `get_launcher` method, 
+/// which returns a `Launcher` and a `Silo`.
+pub struct Launcher {
+    rt_ctx: RTcontext,
+}
+
+impl Launcher {
+    pub fn launch_2d(
+        &self,
+        entry_point: EntryPointHandle,
+        width: usize,
+        height: usize,
+    ) -> Result<()> {
+        let result = unsafe {
+            rtContextLaunch2D(
+                self.rt_ctx,
+                entry_point.index,
+                width as RTsize,
+                height as RTsize,
+            )
+        };
+        if result != RtResult::SUCCESS {
+            return Err(self.optix_error("rtContextLaunch2D", result));
+        }
+        Ok(())
+    }
+
+    pub fn optix_error(&self, msg: &str, result: RtResult) -> Error {
+        Error::Optix((
+            result,
+            format!("{}: {}", msg, get_error_string(self.rt_ctx, result)),
+        ))
+    }
+}
+
+pub struct Silo {
+    ctx: Context,
+}
+
+/// The `Silo` is storage for the `Context` while the `Launcher` is active. In 
+/// this way it is impossible to modify the scene graph while a launch is in 
+/// progress.
+impl Silo {
+    /// Consume self and the given `Launcher` to get back the original `Context`
+    /// and be able to make scene edits again
+    pub fn to_context(self, _launcher: Launcher) -> Context {
+        self.ctx
+    }
+}
+
+/// We impl Send here as because you can only get a Launcher by consuming a
+/// a Context, and we can't get a Context again until we consume the launcher,
+/// we know it's impossible to mutate the Context while the Launcher is alive
+unsafe impl Send for Launcher {}
 
 impl Context {
     pub fn new() -> Context {
@@ -223,24 +300,13 @@ impl Context {
         Ok(EntryPointHandle { index })
     }
 
-    pub fn launch_2d(
-        &self,
-        entry_point: EntryPointHandle,
-        width: usize,
-        height: usize,
-    ) -> Result<()> {
-        let result = unsafe {
-            rtContextLaunch2D(
-                self.rt_ctx,
-                entry_point.index,
-                width as RTsize,
-                height as RTsize,
-            )
-        };
-        if result != RtResult::SUCCESS {
-            return Err(self.optix_error("rtContextLaunch2D", result));
-        }
-        Ok(())
+    pub fn to_launcher(self) -> (Launcher, Silo) {
+        (
+            Launcher {
+                rt_ctx: self.rt_ctx,
+            },
+            Silo { ctx: self },
+        )
     }
 
     pub fn search_path(&self) -> &SearchPath {
@@ -274,13 +340,9 @@ impl Context {
                     Variable::Pod(_vp) => (),
                     Variable::Object(vo) => match vo.object_handle {
                         ObjectHandle::Buffer2d(bh) => {
-                            // self.ga_buffer2d_obj.destroy(bh)
                             self.buffer_destroy_2d(bh)
                         }
-                        ObjectHandle::Program(ph) => {
-                            // self.ga_program_obj.destroy(ph)
-                            self.program_destroy(ph)
-                        }
+                        ObjectHandle::Program(ph) => self.program_destroy(ph),
                     },
                 };
             };
@@ -371,9 +433,11 @@ mod tests {
 
         ctx.validate().expect("Context validation failed");
 
-        ctx.launch_2d(entry_point, 256, 128).expect("Launch failed");
+        let (launcher, silo) = ctx.to_launcher();
+        launcher.launch_2d(entry_point, 256, 128)?;
+        ctx = silo.to_context(launcher);
 
-        // try destroying the buffer... the refcounting should allow the 
+        // try destroying the buffer... the refcounting should allow the
         // buffer to survive and the map and write to succeed without error
         ctx.buffer_destroy_2d(result_buffer);
 
@@ -390,6 +454,84 @@ mod tests {
                 V4f32::new(255f32 / 256f32, 127f32 / 128f32, 0f32, 0f32)
             );
             write_scoped_buf_map_v4f("solid_color.png", &buffer_map)?;
+        }
+
+        Ok(())
+    }
+
+    enum Message {
+        Done(Launcher),
+    }
+
+    #[test]
+    fn draw_solid_color_mt() -> Result<()> {
+        use std::sync::mpsc;
+        use std::thread;
+
+        let mut ctx = Context::new();
+        ctx.set_search_path(SearchPath::from_config_file(
+            "ptx_path", "ptx_path",
+        ));
+
+        let hprg_draw_solid_color = ctx
+            .program_create_from_ptx_file("draw_color.ptx", "draw_solid_color")
+            .expect("Failed to load draw_solid_color from draw_color.ptx");
+
+        let entry_point =
+            ctx.add_entry_point(hprg_draw_solid_color, None).unwrap();
+
+        let result_buffer = ctx
+            .buffer_create_2d::<V4f32>(
+                256,
+                128,
+                BufferType::OUTPUT,
+                BufferFlag::NONE,
+            ).expect("Could not create result buffer");
+
+        ctx.set_variable(
+            "result_buffer",
+            ObjectHandle::Buffer2d(result_buffer),
+        ).expect("Setting buffer2d variable failed");
+
+        ctx.validate().expect("Context validation failed");
+
+        let (launcher, silo) = ctx.to_launcher();
+
+        let (tx, rx) = mpsc::channel();
+
+        thread::spawn(move || {
+            launcher.launch_2d(entry_point, 256, 128).unwrap();
+            tx.send(Message::Done(launcher)).unwrap();
+        });
+
+        // The compiler will stop us from trying to edit the scene while a
+        // launcher is active...
+        // ctx.buffer_destroy_2d(result_buffer); <- Error: borrow of moved value
+
+        let thread_result = rx.recv().unwrap();
+        let launcher = match thread_result {
+            Message::Done(l) => l,
+        };
+
+        ctx = silo.to_context(launcher);
+
+        // try destroying the buffer... the refcounting should allow the
+        // buffer to survive and the map and write to succeed without error
+        ctx.buffer_destroy_2d(result_buffer);
+
+        {
+            let buffer_map = ctx
+                .buffer_map_2d::<V4f32>(result_buffer)
+                .expect("Buffer map failed");
+
+            assert_eq!(buffer_map[(0, 0)], v4f(0., 0., 0., 0.));
+            assert_eq!(buffer_map.width(), 256);
+            assert_eq!(buffer_map.height(), 128);
+            assert_eq!(
+                buffer_map[(255, 127)],
+                V4f32::new(255f32 / 256f32, 127f32 / 128f32, 0f32, 0f32)
+            );
+            write_scoped_buf_map_v4f("solid_color_mt.png", &buffer_map)?;
         }
 
         Ok(())
