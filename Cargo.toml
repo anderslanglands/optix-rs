@@ -1,0 +1,19 @@
+cargo-features=["edition"]
+
+[package]
+name = "optix"
+version = "0.1.0"
+authors = ["Anders Langlands <anderslanglands@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+config = "0.9"
+nalgebra = "0.16"
+
+[build-dependencies]
+bindgen = "0.41"
+config = "0.9"
+cmake = "0.1"
+
+[dev-dependencies]
+image = "0.19"

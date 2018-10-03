@@ -1,0 +1,14 @@
+cmake_minimum_required(VERSION 3.5)
+project(optix-rs)
+
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
+find_package(OptiX)
+find_package(CUDA)
+include(ptx)
+
+compile_optix_ptx(draw_color.cu)
+compile_optix_ptx(triangle_mesh.cu)
+compile_optix_ptx(mtl_constant.cu)
+compile_optix_ptx(cam_screen.cu)
+compile_optix_ptx(optixPathTracer.cu)
+compile_optix_ptx(parallelogram.cu)
