@@ -547,140 +547,142 @@ pub struct RTacceleration_api {
 /// should never be used directly. Only the typedef target name will be
 /// guaranteed to remain unchanged
 pub type RTacceleration = *mut RTacceleration_api;
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct RTbuffer_api {
     _unused: [u8; 0],
 }
-
 /// Opaque type to handle Buffers - Note that the *_api type should never be
 /// used directly. Only the typedef target name will be guaranteed to remain
 /// unchanged
 pub type RTbuffer = *mut RTbuffer_api;
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct RTcontext_api {
     _unused: [u8; 0],
 }
-
 /// Opaque type to handle Contexts - Note that the *_api type should never be
 /// used directly. Only the typedef target name will be guaranteed to remain
 /// unchanged
 pub type RTcontext = *mut RTcontext_api;
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct RTgeometry_api {
     _unused: [u8; 0],
 }
-
 /// Opaque type to handle Geometry - Note that the *_api type should never be
 /// used directly. Only the typedef target name will be guaranteed to remain
 /// unchanged
 pub type RTgeometry = *mut RTgeometry_api;
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct RTgeometryinstance_api {
     _unused: [u8; 0],
 }
-
 /// Opaque type to handle Geometry Instance - Note that the *_api type should
 /// never be used directly. Only the typedef target name will be guaranteed to
 /// remain unchanged
 pub type RTgeometryinstance = *mut RTgeometryinstance_api;
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct RTgeometrygroup_api {
     _unused: [u8; 0],
 }
-
 /// Opaque type to handle Geometry Group - Note that the *_api type should
 /// never be used directly. Only the typedef target name will be guaranteed to
 /// remain unchanged
 pub type RTgeometrygroup = *mut RTgeometrygroup_api;
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct RTgroup_api {
     _unused: [u8; 0],
 }
-
 /// Opaque type to handle Group - Note that the *_api type should never be used
 /// directly. Only the typedef target name will be guaranteed to remain
 /// unchanged
 pub type RTgroup = *mut RTgroup_api;
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct RTmaterial_api {
     _unused: [u8; 0],
 }
-
 /// Opaque type to handle Material - Note that the *_api type should never be
 /// used directly. Only the typedef target name will be guaranteed to remain
 /// unchanged
 pub type RTmaterial = *mut RTmaterial_api;
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct RTprogram_api {
     _unused: [u8; 0],
 }
-
 /// Opaque type to handle Program - Note that the *_api type should never be
 /// used directly. Only the typedef target name will be guaranteed to remain
 /// unchanged
 pub type RTprogram = *mut RTprogram_api;
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct RTselector_api {
     _unused: [u8; 0],
 }
-
 /// Opaque type to handle Selector - Note that the *_api type should never be
 /// used directly. Only the typedef target name will be guaranteed to remain
 /// unchanged
 pub type RTselector = *mut RTselector_api;
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct RTtexturesampler_api {
     _unused: [u8; 0],
 }
-
 /// Opaque type to handle Texture Sampler - Note that the *_api type should
 /// never be used directly. Only the typedef target name will be guaranteed to
 /// remain unchanged
 pub type RTtexturesampler = *mut RTtexturesampler_api;
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct RTtransform_api {
     _unused: [u8; 0],
 }
-
 /// Opaque type to handle Transform - Note that the *_api type should never be
 /// used directly. Only the typedef target name will be guaranteed to remain
 /// unchanged
 pub type RTtransform = *mut RTtransform_api;
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct RTvariable_api {
     _unused: [u8; 0],
 }
-
 /// Opaque type to handle Variable - Note that the *_api type should never be
 /// used directly. Only the typedef target name will be guaranteed to remain
 /// unchanged
 pub type RTvariable = *mut RTvariable_api;
+
 /// Opaque type to handle Object - Note that the *_api type should never be
 /// used directly. Only the typedef target name will be guaranteed to remain
 /// unchanged
 pub type RTobject = *mut ::std::os::raw::c_void;
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct RTremotedevice_api {
     _unused: [u8; 0],
 }
-
 /// Opaque type to handle RemoteDevice - Note that the *_api type should never
 /// be used directly. Only the typedef target name will be guaranteed to remain
 /// unchanged
 pub type RTremotedevice = *mut RTremotedevice_api;
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct RTpostprocessingstage_api {
