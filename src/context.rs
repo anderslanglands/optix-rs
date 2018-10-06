@@ -18,6 +18,10 @@ mod buffer;
 use self::buffer::*;
 mod variable;
 use self::variable::*;
+mod acceleration;
+use self::acceleration::*;
+mod geometry_group;
+use self::geometry_group::*;
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct RayType {
@@ -36,8 +40,8 @@ pub struct EntryPoint {
 }
 
 /// An OptiX context provides an interface for controlling the setup and
-/// subsequent launch of the ray tracing engine. 
-/// 
+/// subsequent launch of the ray tracing engine.
+///
 /// Contexts are created with the
 /// `new` method. A context object encapsulates all OptiX resources
 /// — textures, geometry, user-defined programs, etc. The destruction of a
@@ -58,10 +62,14 @@ pub struct EntryPoint {
 pub struct Context {
     rt_ctx: RTcontext,
     ray_types: HashMap<RayType, String>,
+    max_ray_type: u32,
     entry_points: Vec<EntryPoint>,
+    miss_programs: HashMap<RayType, ProgramHandle>,
     search_path: SearchPath,
 
     context_variables: HashMap<String, Variable>,
+
+    ga_acceleration_obj: GinAllocator<RTacceleration, AccelerationMarker>,
 
     ga_buffer1d_obj: GinAllocator<RTbuffer, Buffer1dMarker>,
     ga_buffer2d_obj: GinAllocator<RTbuffer, Buffer2dMarker>,
@@ -82,9 +90,15 @@ pub struct Context {
     gd_geometry_instance_variables:
         GinAllocatorChild<HashMap<String, Variable>, GeometryInstanceMarker>,
     gd_geometry_instance_geometry:
-        GinAllocatorChild<GeometryHandle, GeometryInstanceMarker>,
+        GinAllocatorChild<GeometryType, GeometryInstanceMarker>,
     gd_geometry_instance_materials:
         GinAllocatorChild<Vec<MaterialHandle>, GeometryInstanceMarker>,
+
+    ga_geometry_group_obj: GinAllocator<RTgeometrygroup, GeometryGroupMarker>,
+    gd_geometry_group_acceleration:
+        GinAllocatorChild<AccelerationHandle, GeometryGroupMarker>,
+    gd_geometry_group_children:
+        GinAllocatorChild<Vec<GeometryInstanceHandle>, GeometryGroupMarker>,
 
     ga_material_obj: GinAllocator<RTmaterial, MaterialMarker>,
     gd_material_variables:
@@ -96,7 +110,7 @@ pub struct Context {
 }
 
 /// The `Launcher` is used to launch the raytracing engine. In order to obtain a
-/// `Launcher` you must consume the `Context` with the `get_launcher` method, 
+/// `Launcher` you must consume the `Context` with the `get_launcher` method,
 /// which returns a `Launcher` and a `Silo`.
 pub struct Launcher {
     rt_ctx: RTcontext,
@@ -135,8 +149,8 @@ pub struct Silo {
     ctx: Context,
 }
 
-/// The `Silo` is storage for the `Context` while the `Launcher` is active. In 
-/// this way it is impossible to modify the scene graph while a launch is in 
+/// The `Silo` is storage for the `Context` while the `Launcher` is active. In
+/// this way it is impossible to modify the scene graph while a launch is in
 /// progress.
 impl Silo {
     /// Consume self and the given `Launcher` to get back the original `Context`
@@ -153,6 +167,9 @@ unsafe impl Send for Launcher {}
 
 impl Context {
     pub fn new() -> Context {
+        let ga_acceleration_obj =
+            GinAllocator::<RTacceleration, AccelerationMarker>::new();
+
         let ga_buffer1d_obj = GinAllocator::<RTbuffer, Buffer1dMarker>::new();
         let ga_buffer2d_obj = GinAllocator::<RTbuffer, Buffer2dMarker>::new();
         let ga_buffer3d_obj = GinAllocator::<RTbuffer, Buffer3dMarker>::new();
@@ -174,6 +191,12 @@ impl Context {
         let gd_geometry_instance_materials =
             ga_geometry_instance_obj.create_child();
 
+        let ga_geometry_group_obj =
+            GinAllocator::<RTgeometrygroup, GeometryGroupMarker>::new();
+        let gd_geometry_group_acceleration =
+            ga_geometry_group_obj.create_child();
+        let gd_geometry_group_children = ga_geometry_group_obj.create_child();
+
         let ga_material_obj = GinAllocator::<RTmaterial, MaterialMarker>::new();
         let gd_material_variables = ga_material_obj.create_child();
         let gd_material_any_hit = ga_material_obj.create_child();
@@ -191,10 +214,14 @@ impl Context {
         Context {
             rt_ctx,
             ray_types: HashMap::new(),
+            max_ray_type: 0,
             entry_points: Vec::new(),
+            miss_programs: HashMap::new(),
             search_path: SearchPath::new(),
 
             context_variables: HashMap::new(),
+
+            ga_acceleration_obj,
 
             ga_buffer1d_obj,
             ga_buffer2d_obj,
@@ -213,6 +240,10 @@ impl Context {
             gd_geometry_instance_geometry,
             gd_geometry_instance_materials,
 
+            ga_geometry_group_obj,
+            gd_geometry_group_acceleration,
+            gd_geometry_group_children,
+
             ga_material_obj,
             gd_material_variables,
             gd_material_any_hit,
@@ -220,16 +251,63 @@ impl Context {
         }
     }
 
+    /// Set the `SearchPath` this `Context` will use for finding `Programs`.
     pub fn set_search_path(&mut self, search_path: SearchPath) {
         self.search_path = search_path;
     }
 
-    pub fn add_ray_type(&mut self, index: u32, name: &str) -> RayType {
+    /// Register the ray type of the given `index` and `name` with the
+    /// `Context`. The returned `RayType` struct can be used to assign
+    /// `Materials` and miss `Programs`.
+    pub fn set_ray_type(&mut self, index: u32, name: &str) -> Result<RayType> {
+        if index >= self.max_ray_type {
+            self.max_ray_type = index + 1;
+            let result = unsafe {
+                rtContextSetRayTypeCount(self.rt_ctx, self.max_ray_type)
+            };
+            if result != RtResult::SUCCESS {
+                return Err(self.optix_error("rtContextSetRayTypeCount", result));
+            }
+        }
+
         let ray_type = RayType { ray_type: index };
         self.ray_types.insert(ray_type, name.to_owned());
-        ray_type
+
+        Ok(ray_type)
     }
 
+    /// Sets the `Program` that handles what happens when the given `RayType`
+    /// does not hit any `Geometry`.
+    pub fn set_miss_program(
+        &mut self,
+        ray_type: RayType,
+        prg: ProgramHandle,
+    ) -> Result<()> {
+        self.program_validate(prg)?;
+
+        let rt_prg = self.ga_program_obj.get(prg).unwrap();
+        let result = unsafe {
+            rtContextSetMissProgram(self.rt_ctx, ray_type.ray_type, *rt_prg)
+        };
+        if result != RtResult::SUCCESS {
+            Err(self.optix_error("rtContextSetMissProgram", result))
+        } else {
+            self.ga_program_obj.incref(prg);
+            // If we had a program set for this ray type previously, then
+            // destroy it
+            if let Some(old_prg) = self.miss_programs.insert(ray_type, prg) {
+                self.program_destroy(old_prg);
+            }
+
+            Ok(())
+        }
+    }
+
+    /// Checks the the given `Context` and all of its associated OptiX objects
+    /// for a valid state. These checks include tests for presence of necessary
+    /// `Programs` (e.g. an intersection `Program` for a `Geometry` node),
+    /// invalid internal state, and presence of variables required by all
+    /// specified programs.
     pub fn validate(&self) -> Result<()> {
         let result = unsafe { rtContextValidate(self.rt_ctx) };
         if result != RtResult::SUCCESS {
@@ -239,6 +317,9 @@ impl Context {
         }
     }
 
+    /// Creates a new `EntryPoint` into the `Context` consisting of a ray
+    /// generation `Program` and an optional exception `Program`. The returned
+    /// `EntryPointHandle` can be given to the `Launcher` to launch kernels.
     pub fn add_entry_point(
         &mut self,
         ray_generation_program: ProgramHandle,
@@ -300,6 +381,11 @@ impl Context {
         Ok(EntryPointHandle { index })
     }
 
+    /// Split this `Context` into a new `Launcher` and `Silo` pair. The
+    /// `Launcher` impls `Send` and can be used to perform rendering in another
+    /// thread if desired. The `Silo` holds onto the `Context's` state until
+    /// the `Launcher` is finished with, at which point the two can be
+    /// recombined to get back a `Context` and perform more scene edits.
     pub fn to_launcher(self) -> (Launcher, Silo) {
         (
             Launcher {
@@ -309,10 +395,13 @@ impl Context {
         )
     }
 
+    /// Get a ref to this `Context's` `SearchPath`
     pub fn search_path(&self) -> &SearchPath {
         &self.search_path
     }
 
+    /// Create a new `OptixError` by querying the `Context` for the error
+    /// string for the given `result`.
     pub fn optix_error(&self, msg: &str, result: RtResult) -> Error {
         Error::Optix((
             result,
@@ -320,6 +409,8 @@ impl Context {
         ))
     }
 
+    /// Set the Variable referred to by `name` to the given `data`. Any objects
+    /// previously assigned to the variable will be destroyed.
     pub fn set_variable<T: VariableStorable>(
         &mut self,
         name: &str,
@@ -336,15 +427,7 @@ impl Context {
             if let Some(old_variable) =
                 self.context_variables.insert(name.to_owned(), new_variable)
             {
-                match old_variable {
-                    Variable::Pod(_vp) => (),
-                    Variable::Object(vo) => match vo.object_handle {
-                        ObjectHandle::Buffer2d(bh) => {
-                            self.buffer_destroy_2d(bh)
-                        }
-                        ObjectHandle::Program(ph) => self.program_destroy(ph),
-                    },
-                };
+                self.destroy_variable(old_variable);
             };
 
             Ok(())
@@ -367,6 +450,42 @@ impl Context {
             self.context_variables.insert(name.to_owned(), variable);
 
             Ok(())
+        }
+    }
+
+    fn destroy_variable(&mut self, var: Variable) {
+        match var {
+            Variable::Pod(_) => (),
+            Variable::Object(vo) => match vo.object_handle {
+                ObjectHandle::Buffer1d(h) => {
+                    self.buffer_destroy_1d(h);
+                }
+                ObjectHandle::Buffer2d(h) => {
+                    self.buffer_destroy_2d(h);
+                }
+                ObjectHandle::GeometryGroup(h) => {
+                    self.geometry_group_destroy(h);
+                }
+                ObjectHandle::Program(h) => {
+                    self.program_destroy(h);
+                }
+            },
+        }
+    }
+
+    fn destroy_variables(&mut self, vars: HashMap<String, Variable>) {
+        for (_, var) in vars {
+            self.destroy_variable(var);
+        }
+    }
+}
+
+impl Drop for Context {
+    /// Destroys the `Context`, destroying all objects attached to it.
+    fn drop(&mut self) {
+        // destroy all stuffs here
+        unsafe {
+            rtContextDestroy(self.rt_ctx);
         }
     }
 }
@@ -495,6 +614,186 @@ mod tests {
 
         ctx.validate().expect("Context validation failed");
 
+        println!("Splitting context");
+        let (launcher, silo) = ctx.to_launcher();
+
+        let (tx, rx) = mpsc::channel();
+
+        println!("starting thread");
+        thread::spawn(move || {
+            launcher.launch_2d(entry_point, 256, 128).unwrap();
+            tx.send(Message::Done(launcher)).unwrap();
+        });
+
+        // The compiler will stop us from trying to edit the scene while a
+        // launcher is active...
+        // ctx.buffer_destroy_2d(result_buffer); <- Error: borrow of moved value
+
+        let thread_result = rx.recv().unwrap();
+        let launcher = match thread_result {
+            Message::Done(l) => l,
+        };
+
+        println!("rejoining context");
+        ctx = silo.to_context(launcher);
+
+        // try destroying the buffer... the refcounting should allow the
+        // buffer to survive and the map and write to succeed without error
+        ctx.buffer_destroy_2d(result_buffer);
+
+        {
+            let buffer_map = ctx
+                .buffer_map_2d::<V4f32>(result_buffer)
+                .expect("Buffer map failed");
+
+            assert_eq!(buffer_map[(0, 0)], v4f(0., 0., 0., 0.));
+            assert_eq!(buffer_map.width(), 256);
+            assert_eq!(buffer_map.height(), 128);
+            assert_eq!(
+                buffer_map[(255, 127)],
+                V4f32::new(255f32 / 256f32, 127f32 / 128f32, 0f32, 0f32)
+            );
+            write_scoped_buf_map_v4f("solid_color_mt.png", &buffer_map)?;
+        }
+
+        Ok(())
+    }
+    #[test]
+    fn single_triangle_mt() -> Result<()> {
+        use std::sync::mpsc;
+        use std::thread;
+
+        let mut ctx = Context::new();
+        ctx.set_search_path(SearchPath::from_config_file(
+            "ptx_path", "ptx_path",
+        ));
+
+        let prg_cam_screen =
+            ctx.program_create_from_ptx_file("cam_screen.ptx", "generate_ray")?;
+        let prg_miss =
+            ctx.program_create_from_ptx_file("cam_screen.ptx", "miss")?;
+        let prg_mesh_intersect = ctx.program_create_from_ptx_file(
+            "triangle_mesh.ptx",
+            "mesh_intersect_refine",
+        )?;
+        let prg_mesh_bound =
+            ctx.program_create_from_ptx_file("triangle_mesh.ptx", "bound")?;
+        let prg_material_constant_closest = ctx
+            .program_create_from_ptx_file("mtl_constant.ptx", "closest_hit")?;
+        let prg_material_constant_any =
+            ctx.program_create_from_ptx_file("mtl_constant.ptx", "any_hit")?;
+
+        ctx.program_set_variable(
+            prg_material_constant_closest,
+            "in_diffuse_albedo",
+            v3f(0.2, 0.2, 0.8),
+        )?;
+
+        // Create mesh data
+        let buf_vertex = ctx.buffer_create_from_slice_1d(
+            &[
+                v3f(0.2, 0.2, -10.),
+                v3f(0.8, 0.2, -10.),
+                v3f(0.5, 0.8, -10.),
+            ],
+            BufferType::INPUT,
+            BufferFlag::NONE,
+        )?;
+        let buf_indices = ctx.buffer_create_from_slice_1d(
+            &[v3i(0, 1, 2)],
+            BufferType::INPUT,
+            BufferFlag::NONE,
+        )?;
+        let buf_normal = ctx.buffer_create_1d::<V3f32>(
+            0,
+            BufferType::INPUT,
+            BufferFlag::NONE,
+        )?;
+        let buf_texcoord = ctx.buffer_create_1d::<V2f32>(
+            0,
+            BufferType::INPUT,
+            BufferFlag::NONE,
+        )?;
+        let geo_triangle =
+            ctx.geometry_create(prg_mesh_bound, prg_mesh_intersect)?;
+        ctx.geometry_set_primitive_count(geo_triangle, 1)?;
+        ctx.geometry_set_variable(
+            geo_triangle,
+            "vertex_buffer",
+            ObjectHandle::Buffer1d(buf_vertex),
+        )?;
+        ctx.geometry_set_variable(
+            geo_triangle,
+            "index_buffer",
+            ObjectHandle::Buffer1d(buf_indices),
+        )?;
+        ctx.geometry_set_variable(
+            geo_triangle,
+            "normal_buffer",
+            ObjectHandle::Buffer1d(buf_normal),
+        )?;
+        ctx.geometry_set_variable(
+            geo_triangle,
+            "texcoord_buffer",
+            ObjectHandle::Buffer1d(buf_texcoord),
+        )?;
+        let materials = vec![0];
+        let buf_material = ctx.buffer_create_from_slice_1d(
+            &materials,
+            BufferType::INPUT,
+            BufferFlag::NONE,
+        )?;
+        ctx.geometry_set_variable(
+            geo_triangle,
+            "material_buffer",
+            ObjectHandle::Buffer1d(buf_material),
+        )?;
+
+        let raytype_camera = ctx.set_ray_type(0, "camera")?;
+
+        ctx.set_miss_program(raytype_camera, prg_miss)?;
+
+        let mut map_mtl_camera_any = HashMap::new();
+        let mut map_mtl_camera_closest = HashMap::new();
+        map_mtl_camera_any.insert(raytype_camera, prg_material_constant_any);
+        map_mtl_camera_closest
+            .insert(raytype_camera, prg_material_constant_closest);
+
+        let mtl_constant =
+            ctx.material_create(map_mtl_camera_any, map_mtl_camera_closest)?;
+
+        let geo_inst = ctx.geometry_instance_create(
+            GeometryType::Geometry(geo_triangle),
+            vec![mtl_constant],
+        )?;
+
+        let acc = ctx.acceleration_create(Builder::Trbvh)?;
+
+        let geo_group = ctx.geometry_group_create(acc, vec![geo_inst])?;
+
+        ctx.program_set_variable(
+            prg_cam_screen,
+            "scene_root",
+            ObjectHandle::GeometryGroup(geo_group),
+        )?;
+
+        let entry_point = ctx.add_entry_point(prg_cam_screen, None)?;
+
+        let result_buffer = ctx
+            .buffer_create_2d::<V4f32>(
+                256,
+                128,
+                BufferType::OUTPUT,
+                BufferFlag::NONE,
+            ).expect("Could not create result buffer");
+
+        ctx.set_variable(
+            "result_buffer",
+            ObjectHandle::Buffer2d(result_buffer),
+        ).expect("Setting buffer2d variable failed");
+
+        ctx.validate().expect("Context validation failed");
+
         let (launcher, silo) = ctx.to_launcher();
 
         let (tx, rx) = mpsc::channel();
@@ -524,14 +823,14 @@ mod tests {
                 .buffer_map_2d::<V4f32>(result_buffer)
                 .expect("Buffer map failed");
 
-            assert_eq!(buffer_map[(0, 0)], v4f(0., 0., 0., 0.));
-            assert_eq!(buffer_map.width(), 256);
-            assert_eq!(buffer_map.height(), 128);
-            assert_eq!(
-                buffer_map[(255, 127)],
-                V4f32::new(255f32 / 256f32, 127f32 / 128f32, 0f32, 0f32)
-            );
-            write_scoped_buf_map_v4f("solid_color_mt.png", &buffer_map)?;
+            // assert_eq!(buffer_map[(0, 0)], v4f(0., 0., 0., 0.));
+            // assert_eq!(buffer_map.width(), 256);
+            // assert_eq!(buffer_map.height(), 128);
+            // assert_eq!(
+            //     buffer_map[(255, 127)],
+            //     V4f32::new(255f32 / 256f32, 127f32 / 128f32, 0f32, 0f32)
+            // );
+            write_scoped_buf_map_v4f("single_triangle_mt.png", &buffer_map)?;
         }
 
         Ok(())

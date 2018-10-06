@@ -47,9 +47,9 @@ pub trait Marker {
 
 #[derive(Debug, Default, Copy, Clone)]
 pub struct Handle<M: Marker> {
-    index: u32,
-    generation: u32,
-    phantom: PhantomData<M>,
+    pub(crate) index: u32,
+    pub(crate) generation: u32,
+    pub(crate) phantom: PhantomData<M>,
 }
 
 #[derive(Debug, Default, Copy, Clone)]

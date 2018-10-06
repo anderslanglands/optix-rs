@@ -16,3 +16,20 @@ pub fn v3f(x: f32, y: f32, z: f32) -> V3f32 {
 pub fn v4f(x: f32, y: f32, z: f32, w: f32) -> V4f32 {
     V4f32::new(x, y, z, w)
 }
+
+pub type V2i32 = Vector2<i32>;
+pub type V3i32 = Vector3<i32>;
+pub type V4i32 = Vector4<i32>;
+
+// short constructors
+pub fn v2i(x: i32, y: i32) -> V2i32 {
+    V2i32::new(x, y)
+}
+
+pub fn v3i(x: i32, y: i32, z: i32) -> V3i32 {
+    V3i32::new(x, y, z)
+}
+
+pub fn v4i(x: i32, y: i32, z: i32, w: i32) -> V4i32 {
+    V4i32::new(x, y, z, w)
+}
