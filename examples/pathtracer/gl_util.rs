@@ -283,6 +283,10 @@ impl f32x4 {
         f32x4 { x, y, z, w }
     }
 
+    pub fn zero() -> f32x4 {
+        f32x4::new(0.0, 0.0, 0.0, 0.0)
+    }
+
     pub fn set(&mut self, x: f32, y: f32, z: f32, w: f32) {
         self.x = x;
         self.y = y;

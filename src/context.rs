@@ -822,14 +822,6 @@ mod tests {
             let buffer_map = ctx
                 .buffer_map_2d::<V4f32>(result_buffer)
                 .expect("Buffer map failed");
-
-            // assert_eq!(buffer_map[(0, 0)], v4f(0., 0., 0., 0.));
-            // assert_eq!(buffer_map.width(), 256);
-            // assert_eq!(buffer_map.height(), 128);
-            // assert_eq!(
-            //     buffer_map[(255, 127)],
-            //     V4f32::new(255f32 / 256f32, 127f32 / 128f32, 0f32, 0f32)
-            // );
             write_scoped_buf_map_v4f("single_triangle_mt.png", &buffer_map)?;
         }
 
