@@ -1,27 +1,28 @@
-use crate::error::*;
+pub use crate::error::*;
 use std::collections::HashMap;
 
 use crate::ginallocator::{GinAllocator, GinAllocatorChild, Marker};
-use crate::math::*;
+pub use crate::math::*;
 use crate::optix_bindings::*;
-use crate::search_path::SearchPath;
+pub use crate::optix_bindings::{BufferType, BufferFlag};
+pub use crate::search_path::SearchPath;
 
 mod program;
-use self::program::*;
+pub use self::program::*;
 mod geometry;
-use self::geometry::*;
+pub use self::geometry::*;
 mod material;
-use self::material::*;
+pub use self::material::*;
 mod geometry_instance;
-use self::geometry_instance::*;
+pub use self::geometry_instance::*;
 mod buffer;
-use self::buffer::*;
+pub use self::buffer::*;
 mod variable;
-use self::variable::*;
+pub use self::variable::*;
 mod acceleration;
-use self::acceleration::*;
+pub use self::acceleration::*;
 mod geometry_group;
-use self::geometry_group::*;
+pub use self::geometry_group::*;
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct RayType {

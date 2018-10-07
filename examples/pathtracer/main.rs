@@ -1,6 +1,7 @@
 use crossbeam_channel as channel;
 use glfw::{Action, Context, Key};
 use rand::distributions::{Distribution, Uniform};
+use std::collections::HashMap;
 use std::ffi::{CStr, CString};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
@@ -8,6 +9,8 @@ use std::thread;
 
 pub mod gl_util;
 use crate::gl_util::*;
+
+use optix::context::*;
 
 fn main() -> Result<(), String> {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
@@ -44,7 +47,7 @@ fn main() -> Result<(), String> {
     let mut image_data = Vec::with_capacity((width * height) as usize);
     for y in 0..height {
         for x in 0..width {
-            image_data.push(f32x4::new(
+            image_data.push(v4f(
                 (x as f32) / width as f32,
                 (y as f32) / height as f32,
                 0.0,
@@ -57,6 +60,8 @@ fn main() -> Result<(), String> {
         gl::Viewport(0, 0, fb_width, fb_height);
     };
 
+    let (ctx, entry_point) = create_context().unwrap();
+
     let (tx_render, rx_render) = channel::unbounded();
     let main_progression_counter = Arc::new(AtomicUsize::new(0));
     let render_progression_counter = Arc::clone(&main_progression_counter);
@@ -64,49 +69,102 @@ fn main() -> Result<(), String> {
     let mtx_image_data = Arc::new(Mutex::new(image_data));
     let mtx_image_data_render = Arc::clone(&mtx_image_data);
     let render_thread = thread::spawn(move || {
-        let range = Uniform::new(0.0f32, 1.0);
-        let mut rng = rand::thread_rng();
-        let mut buffer = Vec::with_capacity((width * height) as usize);
-        buffer.resize((width * height) as usize, f32x4::zero());
         'outer: loop {
+            let mut time_min = std::time::Duration::from_secs(99999999);
+            let mut time_max = std::time::Duration::from_secs(0);
+            let mut time_total = std::time::Duration::from_secs(0);
+            let mut time_samples = 0;
+
+            // block until we receive a command message
             match rx_render.recv() {
-                Some(MsgMaster::StartRender) => 'inner: loop {
-                    match rx_render.try_recv() {
-                        Some(MsgMaster::StartRender) => {
-                            println!(
-                                "ERROR: request to start an in-progress render"
-                            );
-                            break 'outer;
+                Some(MsgMaster::StartRender(mut ctx, entry_point)) => {
+                    let result_buffer = ctx
+                        .buffer_create_2d::<V4f32>(
+                            width as usize,
+                            height as usize,
+                            optix::context::BufferType::OUTPUT,
+                            optix::context::BufferFlag::NONE,
+                        ).expect("Could not create result buffer");
+
+                    ctx.set_variable(
+                        "result_buffer",
+                        ObjectHandle::Buffer2d(result_buffer),
+                    ).expect("Setting buffer2d variable failed");
+
+                    'inner: loop {
+                        let now = std::time::Instant::now();
+                        match rx_render.try_recv() {
+                            Some(MsgMaster::StartRender(_, _)) => {
+                                println!(
+                                    "ERROR: request to start an in-progress render"
+                                );
+                                break 'outer;
+                            }
+                            Some(MsgMaster::StopRender) => {
+                                time_total /= time_samples;
+                                println!(
+                                    "Min : {}s {}ms",
+                                    time_min.as_secs(),
+                                    time_min.subsec_millis()
+                                );
+                                println!(
+                                    "Max : {}s {}ms",
+                                    time_max.as_secs(),
+                                    time_max.subsec_nanos()
+                                );
+                                println!(
+                                    "Mean: {}s {}ms",
+                                    time_total.as_secs(),
+                                    time_total.subsec_nanos()
+                                );
+                                break 'outer;
+                            }
+                            None => (),
                         }
-                        Some(MsgMaster::StopRender) => break 'outer,
-                        None => (),
-                    }
 
-                    // perform a "render progression" by sleeping and setting a
-                    // random colour
-                    thread::sleep(std::time::Duration::from_millis(1000));
-                    let r: f32 = range.sample(&mut rng);
-                    let g: f32 = range.sample(&mut rng);
-                    let b: f32 = range.sample(&mut rng);
-                    for p in buffer.iter_mut() {
-                        *p = f32x4::new(r, g, b, 1.0);
-                    }
+                        // perform a "render progression" by sleeping and
+                        // setting a random colour
+                        match ctx.launch_2d(
+                            entry_point,
+                            width as usize,
+                            height as usize,
+                        ) {
+                            Ok(()) => (),
+                            Err(_) => println!("ERROR!!!!!!111!!!11!"),
+                        }
 
-                    // update the shared buffer
-                    {
-                        let mut output = mtx_image_data_render.lock().unwrap();
-                        output.clone_from_slice(&buffer);
+                        // update the shared buffer
+                        {
+                            let buffer_map = ctx
+                                .buffer_map_2d::<V4f32>(result_buffer)
+                                .unwrap();
+                            let mut output =
+                                mtx_image_data_render.lock().unwrap();
+                            output.clone_from_slice(buffer_map.as_slice());
+                        }
+                        // let the ui thread know there's new image data to
+                        // display
+                        render_progression_counter
+                            .fetch_add(1, Ordering::SeqCst);
+
+                        let duration = now.elapsed();
+                        if duration < time_min {
+                            time_min = duration;
+                        }
+                        if duration > time_max {
+                            time_max = duration;
+                        }
+                        time_total += duration;
+                        time_samples += 1;
                     }
-                    // let the ui thread know there's new image data to display
-                    render_progression_counter.fetch_add(1, Ordering::SeqCst);
-                },
+                }
                 Some(MsgMaster::StopRender) => break 'outer,
                 _ => (),
             }
         }
     });
 
-    tx_render.send(MsgMaster::StartRender);
+    tx_render.send(MsgMaster::StartRender(ctx, entry_point));
 
     while !window.should_close() {
         glfw.poll_events();
@@ -139,8 +197,128 @@ fn main() -> Result<(), String> {
 }
 
 enum MsgMaster {
-    StartRender,
+    StartRender(optix::context::Context, EntryPointHandle),
     StopRender,
+}
+
+fn create_context(
+) -> Result<(optix::context::Context, EntryPointHandle), optix::context::Error>
+{
+    let mut ctx = optix::context::Context::new();
+    ctx.set_search_path(SearchPath::from_config_file("ptx_path", "ptx_path"));
+
+    let prg_cam_screen =
+        ctx.program_create_from_ptx_file("cam_screen.ptx", "generate_ray")?;
+    let prg_miss =
+        ctx.program_create_from_ptx_file("cam_screen.ptx", "miss")?;
+    let prg_mesh_intersect = ctx.program_create_from_ptx_file(
+        "triangle_mesh.ptx",
+        "mesh_intersect_refine",
+    )?;
+    let prg_mesh_bound =
+        ctx.program_create_from_ptx_file("triangle_mesh.ptx", "bound")?;
+    let prg_material_constant_closest =
+        ctx.program_create_from_ptx_file("mtl_constant.ptx", "closest_hit")?;
+    let prg_material_constant_any =
+        ctx.program_create_from_ptx_file("mtl_constant.ptx", "any_hit")?;
+
+    ctx.program_set_variable(
+        prg_material_constant_closest,
+        "in_diffuse_albedo",
+        v3f(0.2, 0.2, 0.8),
+    )?;
+
+    // Create mesh data
+    let buf_vertex = ctx.buffer_create_from_slice_1d(
+        &[
+            v3f(0.2, 0.2, -10.),
+            v3f(0.8, 0.2, -10.),
+            v3f(0.5, 0.8, -10.),
+        ],
+        optix::context::BufferType::INPUT,
+        BufferFlag::NONE,
+    )?;
+    let buf_indices = ctx.buffer_create_from_slice_1d(
+        &[v3i(0, 1, 2)],
+        optix::context::BufferType::INPUT,
+        BufferFlag::NONE,
+    )?;
+    let buf_normal = ctx.buffer_create_1d::<V3f32>(
+        0,
+        optix::context::BufferType::INPUT,
+        BufferFlag::NONE,
+    )?;
+    let buf_texcoord = ctx.buffer_create_1d::<V2f32>(
+        0,
+        optix::context::BufferType::INPUT,
+        BufferFlag::NONE,
+    )?;
+    let geo_triangle =
+        ctx.geometry_create(prg_mesh_bound, prg_mesh_intersect)?;
+    ctx.geometry_set_primitive_count(geo_triangle, 1)?;
+    ctx.geometry_set_variable(
+        geo_triangle,
+        "vertex_buffer",
+        ObjectHandle::Buffer1d(buf_vertex),
+    )?;
+    ctx.geometry_set_variable(
+        geo_triangle,
+        "index_buffer",
+        ObjectHandle::Buffer1d(buf_indices),
+    )?;
+    ctx.geometry_set_variable(
+        geo_triangle,
+        "normal_buffer",
+        ObjectHandle::Buffer1d(buf_normal),
+    )?;
+    ctx.geometry_set_variable(
+        geo_triangle,
+        "texcoord_buffer",
+        ObjectHandle::Buffer1d(buf_texcoord),
+    )?;
+    let materials = vec![0];
+    let buf_material = ctx.buffer_create_from_slice_1d(
+        &materials,
+        optix::context::BufferType::INPUT,
+        optix::context::BufferFlag::NONE,
+    )?;
+    ctx.geometry_set_variable(
+        geo_triangle,
+        "material_buffer",
+        ObjectHandle::Buffer1d(buf_material),
+    )?;
+
+    let raytype_camera = ctx.set_ray_type(0, "camera")?;
+
+    ctx.set_miss_program(raytype_camera, prg_miss)?;
+
+    let mut map_mtl_camera_any = HashMap::new();
+    let mut map_mtl_camera_closest = HashMap::new();
+    map_mtl_camera_any.insert(raytype_camera, prg_material_constant_any);
+    map_mtl_camera_closest
+        .insert(raytype_camera, prg_material_constant_closest);
+
+    let mtl_constant =
+        ctx.material_create(map_mtl_camera_any, map_mtl_camera_closest)?;
+
+    let geo_inst = ctx.geometry_instance_create(
+        GeometryType::Geometry(geo_triangle),
+        vec![mtl_constant],
+    )?;
+
+    let acc = ctx.acceleration_create(Builder::Trbvh)?;
+
+    let geo_group = ctx.geometry_group_create(acc, vec![geo_inst])?;
+
+    ctx.program_set_variable(
+        prg_cam_screen,
+        "scene_root",
+        ObjectHandle::GeometryGroup(geo_group),
+    )?;
+
+    let entry_point = ctx.add_entry_point(prg_cam_screen, None)?;
+
+    Ok((ctx, entry_point))
 }
 
 fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent) {

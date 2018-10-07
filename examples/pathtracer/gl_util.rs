@@ -512,7 +512,7 @@ impl FullscreenQuad {
         self.vertex_array.unbind();
     }
 
-    pub fn update_texture(&self, data: &[f32x4]) {
+    pub fn update_texture(&self, data: &[optix::math::V4f32]) {
         unsafe {
             gl::BindTexture(gl::TEXTURE_2D, self.texture_id);
             gl::TexSubImage2D(

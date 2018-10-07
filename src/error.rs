@@ -45,7 +45,7 @@ impl fmt::Display for Error {
     }
 }
 
-pub type Result<T> = result::Result<T, Error>;
+pub(crate) type Result<T> = result::Result<T, Error>;
 
 pub fn optix_error(msg: &str, ctx: RTcontext, result: RtResult) -> Error {
     Error::Optix((
