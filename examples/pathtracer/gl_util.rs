@@ -204,24 +204,30 @@ impl VertexArray {
         }
 
         VertexArray { id }
-    } 
-    
+    }
+
     pub fn id(&self) -> GLuint {
         self.id
     }
 
     pub fn bind(&self) {
-        unsafe {gl::BindVertexArray(self.id);}
+        unsafe {
+            gl::BindVertexArray(self.id);
+        }
     }
 
     pub fn unbind(&self) {
-        unsafe {gl::BindVertexArray(0);}
+        unsafe {
+            gl::BindVertexArray(0);
+        }
     }
 }
 
 impl Drop for VertexArray {
     fn drop(&mut self) {
-        unsafe { gl::DeleteVertexArrays(1, &self.id as *const GLuint);}
+        unsafe {
+            gl::DeleteVertexArrays(1, &self.id as *const GLuint);
+        }
     }
 }
 
@@ -235,7 +241,7 @@ pub struct f32x2 {
 
 impl f32x2 {
     pub fn new(x: f32, y: f32) -> f32x2 {
-        f32x2{x, y}
+        f32x2 { x, y }
     }
 
     pub fn num_components() -> usize {
@@ -249,16 +255,43 @@ impl f32x2 {
 pub struct f32x3 {
     x: f32,
     y: f32,
-    z: f32
+    z: f32,
 }
 
 impl f32x3 {
     pub fn new(x: f32, y: f32, z: f32) -> f32x3 {
-        f32x3{x, y, z}
+        f32x3 { x, y, z }
     }
 
     pub fn num_components() -> usize {
         3
+    }
+}
+
+#[allow(non_camel_case_types)]
+#[repr(C, packed)]
+#[derive(Copy, Clone, Debug)]
+pub struct f32x4 {
+    x: f32,
+    y: f32,
+    z: f32,
+    w: f32,
+}
+
+impl f32x4 {
+    pub fn new(x: f32, y: f32, z: f32, w: f32) -> f32x4 {
+        f32x4 { x, y, z, w }
+    }
+
+    pub fn set(&mut self, x: f32, y: f32, z: f32, w: f32) {
+        self.x = x;
+        self.y = y;
+        self.z = z;
+        self.w = w;
+    }
+
+    pub fn num_components() -> usize {
+        4
     }
 }
 
@@ -287,9 +320,9 @@ impl Vertex {
             gl::FLOAT,
             gl::FALSE, // normalized (int-to-float conversion),
             stride as gl::types::GLint, /* byte stride between
-                                            * successive elements */
+                        * successive elements */
             offset as *const gl::types::GLvoid, /* offset of the first
-                                                    * element */
+                                                 * element */
         );
     }
 
@@ -319,6 +352,175 @@ impl Vertex {
                 stride,
                 location,
                 offset,
+            );
+        }
+    }
+}
+
+pub struct FullscreenQuad {
+    width: u32,
+    height: u32,
+    vertex_buffer: Buffer<Vertex>,
+    vertex_array: VertexArray,
+    program: Program,
+    texture_id: GLuint,
+}
+
+impl FullscreenQuad {
+    pub fn new(width: u32, height: u32) -> Result<FullscreenQuad, String> {
+        let vert_shader = Shader::vertex_from_source(
+            CStr::from_bytes_with_nul(
+                b"
+            #version 330 core
+            layout (location = 0) in vec3 _p;
+            layout (location = 1) in vec2 _st;
+            out vec2 st;
+            void main() {
+                gl_Position = vec4(_p, 1.0);
+                st = _st;
+            }
+        \0",
+            ).unwrap(),
+        )?;
+
+        let frag_shader = Shader::fragment_from_source(
+            CStr::from_bytes_with_nul(
+                b"
+            #version 330 core
+            in vec2 st;
+            out vec4 Color;
+
+            uniform sampler2D smp2d_0;
+
+            void main() {
+                Color = texture(smp2d_0, st);
+            }
+        \0",
+            ).unwrap(),
+        )?;
+
+        let program = Program::from_shaders(&[vert_shader, frag_shader])?;
+        program.use_program();
+
+        let vertices: Vec<Vertex> = vec![
+            Vertex::new(f32x3::new(-1.0, -1.0, 0.0), f32x2::new(0.0, 0.0)),
+            Vertex::new(f32x3::new(1.0, -1.0, 0.0), f32x2::new(1.0, 0.0)),
+            Vertex::new(f32x3::new(1.0, 1.0, 0.0), f32x2::new(1.0, 1.0)),
+            Vertex::new(f32x3::new(-1.0, -1.0, 0.0), f32x2::new(0.0, 0.0)),
+            Vertex::new(f32x3::new(1.0, 1.0, 0.0), f32x2::new(1.0, 1.0)),
+            Vertex::new(f32x3::new(-1.0, 1.0, 0.0), f32x2::new(0.0, 1.0)),
+        ];
+        let vertex_buffer = Buffer::<Vertex>::new(BufferType::ArrayBuffer);
+        vertex_buffer.buffer_data(&vertices, BufferUsage::StaticDraw);
+
+        // Generate and bind the VAO
+        let vertex_array = VertexArray::new();
+
+        vertex_array.bind();
+        // Re-bind the VBO to associate the two. We could just have left it
+        // bound earlier and let the association happen when we
+        // configure the VAO but this way at least makes the connection
+        // between the two seem more explicit, despite the magical
+        // state machine hiding in OpenGL
+        vertex_buffer.bind();
+
+        // Set up the vertex attribute pointers for all locations
+        Vertex::vertex_attrib_pointers();
+
+        // now unbind both the vbo and vao to keep everything cleaner
+        vertex_buffer.unbind();
+        vertex_array.unbind();
+
+        // generate test texture data using the image width rather than the
+        // framebuffer width
+        let mut tex_data = Vec::with_capacity((width * height) as usize);
+        for y in 0..height {
+            for x in 0..width {
+                tex_data.push(f32x4::new(
+                    (x as f32) / width as f32,
+                    (y as f32) / height as f32,
+                    1.0,
+                    0.0,
+                ));
+            }
+        }
+
+        // generate the texture for the quad
+        let mut texture_id: gl::types::GLuint = 0;
+        unsafe {
+            gl::GenTextures(1, &mut texture_id);
+            gl::ActiveTexture(gl::TEXTURE0);
+            gl::Enable(gl::TEXTURE_2D);
+            gl::BindTexture(gl::TEXTURE_2D, texture_id);
+            gl::TexParameteri(
+                gl::TEXTURE_2D,
+                gl::TEXTURE_WRAP_S,
+                gl::CLAMP_TO_BORDER as gl::types::GLint,
+            );
+            gl::TexParameteri(
+                gl::TEXTURE_2D,
+                gl::TEXTURE_WRAP_T,
+                gl::CLAMP_TO_BORDER as gl::types::GLint,
+            );
+            gl::TexParameteri(
+                gl::TEXTURE_2D,
+                gl::TEXTURE_MIN_FILTER,
+                gl::NEAREST as gl::types::GLint,
+            );
+            gl::TexParameteri(
+                gl::TEXTURE_2D,
+                gl::TEXTURE_MAG_FILTER,
+                gl::NEAREST as gl::types::GLint,
+            );
+            gl::TexImage2D(
+                gl::TEXTURE_2D,
+                0,
+                gl::RGBA32F as gl::types::GLint,
+                width as gl::types::GLint,
+                height as gl::types::GLint,
+                0,
+                gl::RGBA,
+                gl::FLOAT,
+                tex_data.as_ptr() as *const gl::types::GLvoid,
+            );
+        }
+
+        Ok(FullscreenQuad {
+            width,
+            height,
+            vertex_buffer,
+            vertex_array,
+            program,
+            texture_id,
+        })
+    }
+
+    pub fn draw(&self) {
+        self.program.use_program();
+        self.vertex_array.bind();
+        unsafe {
+            gl::DrawArrays(
+                gl::TRIANGLES,
+                0, // starting index in the enabled array
+                6, // number of indices to draw
+            )
+        }
+        self.vertex_array.unbind();
+    }
+
+    pub fn update_texture(&self, data: &[f32x4]) {
+        unsafe {
+            gl::BindTexture(gl::TEXTURE_2D, self.texture_id);
+            gl::TexSubImage2D(
+                gl::TEXTURE_2D,
+                0,
+                0,
+                0,
+                self.width as GLint,
+                self.height as GLint,
+                gl::RGBA,
+                gl::FLOAT,
+                data.as_ptr() as *const GLvoid,
             );
         }
     }
