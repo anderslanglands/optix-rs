@@ -36,11 +36,11 @@ pub fn v4i(x: i32, y: i32, z: i32, w: i32) -> V4i32 {
 }
 
 // matrix constructors
-pub fn translation(x: f32, y: f32, z: f32) -> M4f32 {
+pub fn m4f_translation(x: f32, y: f32, z: f32) -> M4f32 {
     M4f32::new_translation(&v3f(x, y, z))
 }
 
-pub fn rotation(axis: V3f32, angle: f32) -> M4f32 {
+pub fn m4f_rotation(axis: V3f32, angle: f32) -> M4f32 {
     nalgebra::Rotation3::from_axis_angle(
         &nalgebra::Unit::new_normalize(axis),
         angle,

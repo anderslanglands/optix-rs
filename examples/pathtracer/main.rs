@@ -270,8 +270,8 @@ fn create_context() -> Result<(rt::Context, rt::EntryPointHandle), rt::Error> {
 
     let geo_group = ctx.geometry_group_create(acc, vec![geo_inst])?;
 
-    let mtx_t = translation(0.5, 0.5, 0.0);
-    let mtx_r = rotation(v3f(0.0, 0.0, 1.0), std::f32::consts::PI / 4.0);
+    let mtx_t = m4f_translation(0.5, 0.5, 0.0);
+    let mtx_r = m4f_rotation(v3f(0.0, 0.0, 1.0), std::f32::consts::PI / 4.0);
     let mtx = mtx_t * mtx_r;
 
     let xform = ctx.transform_create(
