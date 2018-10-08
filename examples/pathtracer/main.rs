@@ -198,11 +198,11 @@ enum MsgMaster {
     StopRender,
 }
 
-fn create_context(
-) -> Result<(rt::Context, rt::EntryPointHandle), rt::Error>
-{
+fn create_context() -> Result<(rt::Context, rt::EntryPointHandle), rt::Error> {
     let mut ctx = rt::Context::new();
-    ctx.set_search_path(rt::SearchPath::from_config_file("ptx_path", "ptx_path"));
+    ctx.set_search_path(rt::SearchPath::from_config_file(
+        "ptx_path", "ptx_path",
+    ));
 
     let prg_cam_screen =
         ctx.program_create_from_ptx_file("cam_screen.ptx", "generate_ray")?;
@@ -225,62 +225,17 @@ fn create_context(
         v3f(0.2, 0.2, 0.8),
     )?;
 
-/*
-    // Create mesh data
-    let buf_vertex = ctx.buffer_create_from_slice_1d(
-        &[
-            v3f(0.2, 0.2, -10.),
-            v3f(0.8, 0.2, -10.),
-            v3f(0.5, 0.8, -10.),
+    let geo_triangle = create_quad(
+        &mut ctx,
+        [
+            v3f(-0.3, -0.3, -10.0),
+            v3f(0.3, -0.3, -10.0),
+            v3f(0.3, 0.3, -10.0),
+            v3f(-0.3, 0.3, -10.0),
         ],
-        rt::BufferType::INPUT,
-        rt::BufferFlag::NONE,
+        prg_mesh_bound,
+        prg_mesh_intersect,
     )?;
-    let buf_indices = ctx.buffer_create_from_slice_1d(
-        &[v3i(0, 1, 2)],
-        rt::BufferType::INPUT,
-        rt::BufferFlag::NONE,
-    )?;
-    let buf_normal = ctx.buffer_create_1d::<V3f32>(
-        0,
-        rt::BufferType::INPUT,
-        rt::BufferFlag::NONE,
-    )?;
-    let buf_texcoord = ctx.buffer_create_1d::<V2f32>(
-        0,
-        rt::BufferType::INPUT,
-        rt::BufferFlag::NONE,
-    )?;
-    let geo_triangle =
-        ctx.geometry_create(prg_mesh_bound, prg_mesh_intersect)?;
-    ctx.geometry_set_primitive_count(geo_triangle, 1)?;
-    ctx.geometry_set_variable(
-        geo_triangle,
-        "vertex_buffer",
-        rt::ObjectHandle::Buffer1d(buf_vertex),
-    )?;
-    ctx.geometry_set_variable(
-        geo_triangle,
-        "index_buffer",
-        rt::ObjectHandle::Buffer1d(buf_indices),
-    )?;
-    ctx.geometry_set_variable(
-        geo_triangle,
-        "normal_buffer",
-        rt::ObjectHandle::Buffer1d(buf_normal),
-    )?;
-    ctx.geometry_set_variable(
-        geo_triangle,
-        "texcoord_buffer",
-        rt::ObjectHandle::Buffer1d(buf_texcoord),
-    )?;
-    */
-    let geo_triangle = create_quad(&mut ctx, [
-        v3f(0.2, 0.2, -10.0),
-        v3f(0.8, 0.2, -10.0),
-        v3f(0.8, 0.8, -10.0),
-        v3f(0.2, 0.8, -10.0),
-    ], prg_mesh_bound, prg_mesh_intersect)?;
     let materials = vec![0];
     let buf_material = ctx.buffer_create_from_slice_1d(
         &materials,
@@ -315,10 +270,21 @@ fn create_context(
 
     let geo_group = ctx.geometry_group_create(acc, vec![geo_inst])?;
 
+    let mtx_t = translation(0.5, 0.5, 0.0);
+    let mtx_r = rotation(v3f(0.0, 0.0, 1.0), std::f32::consts::PI / 4.0);
+    let mtx = mtx_t * mtx_r;
+
+    let xform = ctx.transform_create(
+        rt::MatrixDirection::Forward(mtx),
+        rt::MatrixFormat::ColumnMajor,
+        rt::TransformChild::GeometryGroup(geo_group),
+    )?;
+
     ctx.program_set_variable(
         prg_cam_screen,
         "scene_root",
-        rt::ObjectHandle::GeometryGroup(geo_group),
+        // rt::ObjectHandle::GeometryGroup(geo_group),
+        rt::ObjectHandle::Transform(xform),
     )?;
 
     let entry_point = ctx.add_entry_point(prg_cam_screen, None)?;

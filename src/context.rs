@@ -23,6 +23,8 @@ pub mod acceleration;
 use self::acceleration::*;
 pub mod geometry_group;
 use self::geometry_group::*;
+pub mod transform;
+use self::transform::*;
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct RayType {
@@ -108,6 +110,9 @@ pub struct Context {
         GinAllocatorChild<HashMap<RayType, ProgramHandle>, MaterialMarker>,
     gd_material_closest_hit:
         GinAllocatorChild<HashMap<RayType, ProgramHandle>, MaterialMarker>,
+
+    ga_transform_obj: GinAllocator<RTtransform, TransformMarker>,
+    gd_transform_child: GinAllocatorChild<TransformChild, TransformMarker>,
 }
 
 unsafe impl Send for Context{}
@@ -148,6 +153,9 @@ impl Context {
         let gd_material_variables = ga_material_obj.create_child();
         let gd_material_any_hit = ga_material_obj.create_child();
         let gd_material_closest_hit = ga_material_obj.create_child();
+
+        let ga_transform_obj = GinAllocator::<RTtransform, TransformMarker>::new();
+        let gd_transform_child = ga_transform_obj.create_child();
 
         let (rt_ctx, result) = unsafe {
             let mut rt_ctx: RTcontext = std::mem::uninitialized();
@@ -195,6 +203,9 @@ impl Context {
             gd_material_variables,
             gd_material_any_hit,
             gd_material_closest_hit,
+
+            ga_transform_obj,
+            gd_transform_child,
         }
     }
 
@@ -401,6 +412,9 @@ impl Context {
                 }
                 ObjectHandle::Program(h) => {
                     self.program_destroy(h);
+                }
+                ObjectHandle::Transform(h) => {
+                    self.transform_destroy(h);
                 }
             },
         }

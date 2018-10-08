@@ -153,6 +153,7 @@ impl Context {
                             self.geometry_group_destroy(ggh)
                         }
                         ObjectHandle::Program(ph) => self.program_destroy(ph),
+                        ObjectHandle::Transform(th) => self.transform_destroy(th),
                     },
                 };
             };

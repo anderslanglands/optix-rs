@@ -85,4 +85,16 @@ impl Context {
             }
         }
     }
+
+    pub fn geometry_group_validate(&self, geogrp: GeometryGroupHandle) -> Result<()> {
+        let rt_geogrp = *self.ga_geometry_group_obj.get(geogrp).unwrap();
+        let result = unsafe {
+            rtGeometryGroupValidate(rt_geogrp)
+        };
+        if result != RtResult::SUCCESS {
+            Err(self.optix_error("rtGeometryGroupValidate", result))
+        } else {
+            Ok(())
+        }
+    }
 }

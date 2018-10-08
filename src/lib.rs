@@ -18,6 +18,7 @@ pub use self::context::buffer::*;
 pub use self::context::variable::*;
 pub use self::context::acceleration::*;
 pub use self::context::geometry_group::*;
+pub use self::context::transform::*;
 pub use self::context::*;
 
 use crate::error::Result;

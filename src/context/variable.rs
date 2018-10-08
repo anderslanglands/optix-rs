@@ -10,7 +10,7 @@ pub enum ObjectHandle {
     Program(ProgramHandle),
     // Selector(SelectorHandle),
     // TextureSampler(TextureSamplerHandle),
-    // Transform(TransformHandle),
+    Transform(TransformHandle),
 }
 
 pub struct VariableObject {
@@ -128,6 +128,29 @@ impl VariableStorable for ObjectHandle {
                     ));
                 } else {
                     ctx.ga_program_obj.incref(program_handle);
+                    return Ok(Variable::Object(VariableObject {
+                        var: variable,
+                        object_handle: self,
+                    }));
+                }
+            },
+            ObjectHandle::Transform(transform_handle) => unsafe {
+                let prg =
+                    ctx.ga_transform_obj.get(transform_handle).expect(&format!(
+                        "Could not get transform object for handle {}",
+                        transform_handle
+                    ));
+                let result = rtVariableSetObject(
+                    variable,
+                    *prg as *mut ::std::os::raw::c_void,
+                );
+                if result != RtResult::SUCCESS {
+                    return Err(ctx.optix_error(
+                        &format!("rtVariableSetObject {}", transform_handle),
+                        result,
+                    ));
+                } else {
+                    ctx.ga_transform_obj.incref(transform_handle);
                     return Ok(Variable::Object(VariableObject {
                         var: variable,
                         object_handle: self,
