@@ -7,22 +7,22 @@ use crate::optix_bindings::*;
 pub use crate::optix_bindings::{BufferType, BufferFlag};
 pub use crate::search_path::SearchPath;
 
-mod program;
-pub use self::program::*;
-mod geometry;
-pub use self::geometry::*;
-mod material;
-pub use self::material::*;
-mod geometry_instance;
-pub use self::geometry_instance::*;
-mod buffer;
-pub use self::buffer::*;
-mod variable;
-pub use self::variable::*;
-mod acceleration;
-pub use self::acceleration::*;
-mod geometry_group;
-pub use self::geometry_group::*;
+pub mod program;
+use self::program::*;
+pub mod geometry;
+use self::geometry::*;
+pub mod material;
+use self::material::*;
+pub mod geometry_instance;
+use self::geometry_instance::*;
+pub mod buffer;
+use self::buffer::*;
+pub mod variable;
+use self::variable::*;
+pub mod acceleration;
+use self::acceleration::*;
+pub mod geometry_group;
+use self::geometry_group::*;
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct RayType {

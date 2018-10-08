@@ -75,7 +75,6 @@ impl SearchPath {
         for p in &self.paths {
             let mut pb = p.clone();
             pb.push(filename);
-            println!("Checking {}", pb.to_str().unwrap());
             match std::fs::File::open(pb) {
                 Ok(f) => return Ok(f),
                 Err(err) => {

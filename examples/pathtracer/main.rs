@@ -1,8 +1,6 @@
 use crossbeam_channel as channel;
 use glfw::{Action, Context, Key};
-use rand::distributions::{Distribution, Uniform};
 use std::collections::HashMap;
-use std::ffi::{CStr, CString};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -10,7 +8,8 @@ use std::thread;
 pub mod gl_util;
 use crate::gl_util::*;
 
-use optix::context::*;
+use optix as rt;
+use optix::math::*;
 
 fn main() -> Result<(), String> {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
@@ -82,13 +81,13 @@ fn main() -> Result<(), String> {
                         .buffer_create_2d::<V4f32>(
                             width as usize,
                             height as usize,
-                            optix::context::BufferType::OUTPUT,
-                            optix::context::BufferFlag::NONE,
+                            rt::BufferType::OUTPUT,
+                            rt::BufferFlag::NONE,
                         ).expect("Could not create result buffer");
 
                     ctx.set_variable(
                         "result_buffer",
-                        ObjectHandle::Buffer2d(result_buffer),
+                        rt::ObjectHandle::Buffer2d(result_buffer),
                     ).expect("Setting buffer2d variable failed");
 
                     'inner: loop {
@@ -122,8 +121,6 @@ fn main() -> Result<(), String> {
                             None => (),
                         }
 
-                        // perform a "render progression" by sleeping and
-                        // setting a random colour
                         match ctx.launch_2d(
                             entry_point,
                             width as usize,
@@ -197,15 +194,15 @@ fn main() -> Result<(), String> {
 }
 
 enum MsgMaster {
-    StartRender(optix::context::Context, EntryPointHandle),
+    StartRender(rt::Context, rt::EntryPointHandle),
     StopRender,
 }
 
 fn create_context(
-) -> Result<(optix::context::Context, EntryPointHandle), optix::context::Error>
+) -> Result<(rt::Context, rt::EntryPointHandle), rt::Error>
 {
-    let mut ctx = optix::context::Context::new();
-    ctx.set_search_path(SearchPath::from_config_file("ptx_path", "ptx_path"));
+    let mut ctx = rt::Context::new();
+    ctx.set_search_path(rt::SearchPath::from_config_file("ptx_path", "ptx_path"));
 
     let prg_cam_screen =
         ctx.program_create_from_ptx_file("cam_screen.ptx", "generate_ray")?;
@@ -228,6 +225,7 @@ fn create_context(
         v3f(0.2, 0.2, 0.8),
     )?;
 
+/*
     // Create mesh data
     let buf_vertex = ctx.buffer_create_from_slice_1d(
         &[
@@ -235,23 +233,23 @@ fn create_context(
             v3f(0.8, 0.2, -10.),
             v3f(0.5, 0.8, -10.),
         ],
-        optix::context::BufferType::INPUT,
-        BufferFlag::NONE,
+        rt::BufferType::INPUT,
+        rt::BufferFlag::NONE,
     )?;
     let buf_indices = ctx.buffer_create_from_slice_1d(
         &[v3i(0, 1, 2)],
-        optix::context::BufferType::INPUT,
-        BufferFlag::NONE,
+        rt::BufferType::INPUT,
+        rt::BufferFlag::NONE,
     )?;
     let buf_normal = ctx.buffer_create_1d::<V3f32>(
         0,
-        optix::context::BufferType::INPUT,
-        BufferFlag::NONE,
+        rt::BufferType::INPUT,
+        rt::BufferFlag::NONE,
     )?;
     let buf_texcoord = ctx.buffer_create_1d::<V2f32>(
         0,
-        optix::context::BufferType::INPUT,
-        BufferFlag::NONE,
+        rt::BufferType::INPUT,
+        rt::BufferFlag::NONE,
     )?;
     let geo_triangle =
         ctx.geometry_create(prg_mesh_bound, prg_mesh_intersect)?;
@@ -259,33 +257,40 @@ fn create_context(
     ctx.geometry_set_variable(
         geo_triangle,
         "vertex_buffer",
-        ObjectHandle::Buffer1d(buf_vertex),
+        rt::ObjectHandle::Buffer1d(buf_vertex),
     )?;
     ctx.geometry_set_variable(
         geo_triangle,
         "index_buffer",
-        ObjectHandle::Buffer1d(buf_indices),
+        rt::ObjectHandle::Buffer1d(buf_indices),
     )?;
     ctx.geometry_set_variable(
         geo_triangle,
         "normal_buffer",
-        ObjectHandle::Buffer1d(buf_normal),
+        rt::ObjectHandle::Buffer1d(buf_normal),
     )?;
     ctx.geometry_set_variable(
         geo_triangle,
         "texcoord_buffer",
-        ObjectHandle::Buffer1d(buf_texcoord),
+        rt::ObjectHandle::Buffer1d(buf_texcoord),
     )?;
+    */
+    let geo_triangle = create_quad(&mut ctx, [
+        v3f(0.2, 0.2, -10.0),
+        v3f(0.8, 0.2, -10.0),
+        v3f(0.8, 0.8, -10.0),
+        v3f(0.2, 0.8, -10.0),
+    ], prg_mesh_bound, prg_mesh_intersect)?;
     let materials = vec![0];
     let buf_material = ctx.buffer_create_from_slice_1d(
         &materials,
-        optix::context::BufferType::INPUT,
-        optix::context::BufferFlag::NONE,
+        rt::BufferType::INPUT,
+        rt::BufferFlag::NONE,
     )?;
     ctx.geometry_set_variable(
         geo_triangle,
         "material_buffer",
-        ObjectHandle::Buffer1d(buf_material),
+        rt::ObjectHandle::Buffer1d(buf_material),
     )?;
 
     let raytype_camera = ctx.set_ray_type(0, "camera")?;
@@ -302,23 +307,77 @@ fn create_context(
         ctx.material_create(map_mtl_camera_any, map_mtl_camera_closest)?;
 
     let geo_inst = ctx.geometry_instance_create(
-        GeometryType::Geometry(geo_triangle),
+        rt::GeometryType::Geometry(geo_triangle),
         vec![mtl_constant],
     )?;
 
-    let acc = ctx.acceleration_create(Builder::Trbvh)?;
+    let acc = ctx.acceleration_create(rt::Builder::NoAccel)?;
 
     let geo_group = ctx.geometry_group_create(acc, vec![geo_inst])?;
 
     ctx.program_set_variable(
         prg_cam_screen,
         "scene_root",
-        ObjectHandle::GeometryGroup(geo_group),
+        rt::ObjectHandle::GeometryGroup(geo_group),
     )?;
 
     let entry_point = ctx.add_entry_point(prg_cam_screen, None)?;
 
     Ok((ctx, entry_point))
+}
+
+pub fn create_quad(
+    ctx: &mut rt::Context,
+    vertices: [V3f32; 4],
+    prg_mesh_bound: rt::ProgramHandle,
+    prg_mesh_intersect: rt::ProgramHandle,
+) -> Result<rt::GeometryHandle, rt::Error> {
+    let buf_vertex = ctx.buffer_create_from_slice_1d(
+        &vertices,
+        rt::BufferType::INPUT,
+        rt::BufferFlag::NONE,
+    )?;
+    let indices = [v3i(0, 1, 2), v3i(0, 2, 3)];
+    let buf_indices = ctx.buffer_create_from_slice_1d(
+        &indices,
+        rt::BufferType::INPUT,
+        rt::BufferFlag::NONE,
+    )?;
+    let buf_normal = ctx.buffer_create_1d::<V3f32>(
+        0,
+        rt::BufferType::INPUT,
+        rt::BufferFlag::NONE,
+    )?;
+    let buf_texcoord = ctx.buffer_create_1d::<V2f32>(
+        0,
+        rt::BufferType::INPUT,
+        rt::BufferFlag::NONE,
+    )?;
+    let geo_triangle =
+        ctx.geometry_create(prg_mesh_bound, prg_mesh_intersect)?;
+    ctx.geometry_set_primitive_count(geo_triangle, indices.len() as u32)?;
+    ctx.geometry_set_variable(
+        geo_triangle,
+        "vertex_buffer",
+        rt::ObjectHandle::Buffer1d(buf_vertex),
+    )?;
+    ctx.geometry_set_variable(
+        geo_triangle,
+        "index_buffer",
+        rt::ObjectHandle::Buffer1d(buf_indices),
+    )?;
+    ctx.geometry_set_variable(
+        geo_triangle,
+        "normal_buffer",
+        rt::ObjectHandle::Buffer1d(buf_normal),
+    )?;
+    ctx.geometry_set_variable(
+        geo_triangle,
+        "texcoord_buffer",
+        rt::ObjectHandle::Buffer1d(buf_texcoord),
+    )?;
+
+    Ok(geo_triangle)
 }
 
 fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent) {

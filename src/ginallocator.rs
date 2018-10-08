@@ -181,7 +181,6 @@ impl<T, M: Marker> GinAllocator<T, M> {
 
     pub fn incref(&mut self, handle: Handle<M>) {
         let refcount = self.refcounts.get_mut(&handle.index).unwrap();
-        println!("Incrementing {} to {}", handle, *refcount + 1);
         *refcount += 1;
     }
 
@@ -205,9 +204,7 @@ impl<T, M: Marker> GinAllocator<T, M> {
         // decrement the ref count, panic if it's not there
         let refcount = self.refcounts.get_mut(&handle.index).unwrap();
         *refcount = refcount.saturating_sub(1);
-        println!("Decremented {} - refcount is {}", handle, refcount);
         if *refcount == 0 {
-            println!("Refcount is {} on {} - Dropping", refcount, handle);
             // Bump the generation on the item to indicate that it's empty, and
             // push the index to the free list so the allocator can reuse it
             item.generation = item.generation.wrapping_add(1);
