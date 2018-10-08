@@ -95,7 +95,9 @@ template <bool DO_REFINE> static __device__ void meshIntersect(int primIdx) {
             }
 
             int material = 0;
-            if (material_buffer.size() != 0) {
+            if (material_buffer.size() == 1) {
+                material = material_buffer[0];
+            } else if (material_buffer.size() > 1) {
                 material = material_buffer[primIdx];
             }
 
