@@ -46,3 +46,7 @@ pub fn m4f_rotation(axis: V3f32, angle: f32) -> M4f32 {
         angle,
     ).to_homogeneous()
 }
+
+pub fn m4f_scaling(x: f32, y: f32, z: f32) -> M4f32 {
+    M4f32::new_nonuniform_scaling(&v3f(x, y, z))
+}

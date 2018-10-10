@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use crate::ginallocator::{GinAllocator, GinAllocatorChild, Marker};
 pub use crate::math::*;
 use crate::optix_bindings::*;
-pub use crate::optix_bindings::{BufferType, BufferFlag};
+pub use crate::optix_bindings::{BufferFlag, BufferType};
 pub use crate::search_path::SearchPath;
 
 pub mod program;
@@ -25,6 +25,8 @@ pub mod geometry_group;
 use self::geometry_group::*;
 pub mod transform;
 use self::transform::*;
+pub mod group;
+use self::group::*;
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct RayType {
@@ -113,9 +115,14 @@ pub struct Context {
 
     ga_transform_obj: GinAllocator<RTtransform, TransformMarker>,
     gd_transform_child: GinAllocatorChild<TransformChild, TransformMarker>,
+
+    ga_group_obj: GinAllocator<RTgroup, GroupMarker>,
+    gd_group_acceleration:
+        GinAllocatorChild<AccelerationHandle, GroupMarker>,
+    gd_group_children: GinAllocatorChild<Vec<GroupChild>, GroupMarker>,
 }
 
-unsafe impl Send for Context{}
+unsafe impl Send for Context {}
 
 impl Context {
     pub fn new() -> Context {
@@ -154,8 +161,14 @@ impl Context {
         let gd_material_any_hit = ga_material_obj.create_child();
         let gd_material_closest_hit = ga_material_obj.create_child();
 
-        let ga_transform_obj = GinAllocator::<RTtransform, TransformMarker>::new();
+        let ga_transform_obj =
+            GinAllocator::<RTtransform, TransformMarker>::new();
         let gd_transform_child = ga_transform_obj.create_child();
+
+        let ga_group_obj =
+            GinAllocator::<RTgroup, GroupMarker>::new();
+        let gd_group_acceleration = ga_group_obj.create_child();
+        let gd_group_children = ga_group_obj.create_child();
 
         let (rt_ctx, result) = unsafe {
             let mut rt_ctx: RTcontext = std::mem::uninitialized();
@@ -206,6 +219,10 @@ impl Context {
 
             ga_transform_obj,
             gd_transform_child,
+
+            ga_group_obj,
+            gd_group_acceleration,
+            gd_group_children,
         }
     }
 
@@ -407,6 +424,9 @@ impl Context {
                 ObjectHandle::Buffer2d(h) => {
                     self.buffer_destroy_2d(h);
                 }
+                ObjectHandle::Group(h) => {
+                    self.group_destroy(h);
+                }
                 ObjectHandle::GeometryGroup(h) => {
                     self.geometry_group_destroy(h);
                 }
@@ -446,6 +466,16 @@ impl Context {
         Ok(())
     }
 
+    pub fn set_print_enabled(&mut self, enabled: bool) -> Result<()> {
+        let result = unsafe {
+            let en = if enabled { 1 } else { 0 };
+            rtContextSetPrintEnabled(self.rt_ctx, en)
+        };
+        if result != RtResult::SUCCESS {
+            return Err(self.optix_error("rtContextSetPrintEnabled", result));
+        }
+        Ok(())
+    }
 }
 
 impl Drop for Context {

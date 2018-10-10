@@ -34,6 +34,7 @@ macro(compile_optix_ptx SOURCES)
             -arch=sm_30
             --use_fast_math
             --relocatable-device-code=true
+            -std=c++14
             -I${OPTIX_INCLUDE_DIR}
     )
 

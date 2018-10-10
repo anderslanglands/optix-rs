@@ -160,6 +160,9 @@ impl Context {
                         ObjectHandle::Buffer2d(bh) => {
                             self.buffer_destroy_2d(bh)
                         }
+                        ObjectHandle::Group(ggh) => {
+                            self.group_destroy(ggh)
+                        }
                         ObjectHandle::GeometryGroup(ggh) => {
                             self.geometry_group_destroy(ggh)
                         }

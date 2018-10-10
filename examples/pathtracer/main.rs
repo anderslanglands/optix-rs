@@ -59,7 +59,7 @@ fn main() -> Result<(), String> {
         gl::Viewport(0, 0, fb_width, fb_height);
     };
 
-    let (ctx, entry_point) = create_context().unwrap();
+    let (ctx, entry_point) = create_context(width, height).unwrap();
 
     let (tx_render, rx_render) = channel::unbounded();
     let main_progression_counter = Arc::new(AtomicUsize::new(0));
@@ -127,7 +127,12 @@ fn main() -> Result<(), String> {
                             height as usize,
                         ) {
                             Ok(()) => (),
-                            Err(_) => println!("ERROR!!!!!!111!!!11!"),
+                            Err(rt::Error::Optix(e)) => {
+                                println!("[Optix ERROR]: {}", e.1);
+                            },
+                            Err(_) => {
+                                println!("ERROR!!!!!!!!");
+                            }
                         }
 
                         // update the shared buffer
@@ -198,16 +203,47 @@ enum MsgMaster {
     StopRender,
 }
 
-fn create_context() -> Result<(rt::Context, rt::EntryPointHandle), rt::Error> {
+fn create_context(
+    width: u32,
+    height: u32,
+) -> Result<(rt::Context, rt::EntryPointHandle), rt::Error> {
     let mut ctx = rt::Context::new();
     ctx.set_search_path(rt::SearchPath::from_config_file(
         "ptx_path", "ptx_path",
     ));
 
     let prg_cam_screen =
-        ctx.program_create_from_ptx_file("cam_screen.ptx", "generate_ray")?;
-    let prg_miss =
-        ctx.program_create_from_ptx_file("cam_screen.ptx", "miss")?;
+        ctx.program_create_from_ptx_file("pt_cam.ptx", "generate_ray")?;
+    let prg_miss = ctx.program_create_from_ptx_file("pt_cam.ptx", "miss")?;
+
+    // generate camera matrices
+    let swn = v2f(-1.0, -1.0);
+    let swx = v2f(1.0, 1.0);
+    let mtx_screen_to_raster = m4f_scaling(width as f32, height as f32, 1.0)
+        * m4f_scaling(1.0 / (swx.x - swn.x), 1.0 / (swx.y - swn.y), 1.0)
+        * m4f_translation(-swn.x, -swn.y, 0.0);
+    let mtx_raster_to_screen = mtx_screen_to_raster.try_inverse().unwrap();
+    let mtx_camera_to_screen = M4f32::new_perspective(
+        (width as f32) / (height as f32),
+        34.0f32.to_radians(), // ~40mm
+        0.1,
+        1.0e7,
+    );
+    let mtx_screen_to_camera = mtx_camera_to_screen.try_inverse().unwrap();
+    let mtx_camera_to_world = m4f_translation(275.0, 275.0, 900.0);
+    let mtx_raster_to_camera = mtx_screen_to_camera * mtx_raster_to_screen;
+    ctx.program_set_variable(
+        prg_cam_screen,
+        "raster_to_camera",
+        rt::MatrixFormat::ColumnMajor(mtx_raster_to_camera),
+    )?;
+
+    ctx.program_set_variable(
+        prg_cam_screen,
+        "camera_to_world",
+        rt::MatrixFormat::ColumnMajor(mtx_camera_to_world),
+    )?;
+
     let prg_mesh_intersect = ctx.program_create_from_ptx_file(
         "triangle_mesh.ptx",
         "mesh_intersect_refine",
@@ -215,41 +251,11 @@ fn create_context() -> Result<(rt::Context, rt::EntryPointHandle), rt::Error> {
     let prg_mesh_bound =
         ctx.program_create_from_ptx_file("triangle_mesh.ptx", "bound")?;
     let prg_material_constant_closest =
-        ctx.program_create_from_ptx_file("mtl_constant.ptx", "closest_hit")?;
+        ctx.program_create_from_ptx_file("mtl_normal.ptx", "closest_hit")?;
     let prg_material_constant_any =
-        ctx.program_create_from_ptx_file("mtl_constant.ptx", "any_hit")?;
-
-    ctx.program_set_variable(
-        prg_material_constant_closest,
-        "in_diffuse_albedo",
-        v3f(0.2, 0.2, 0.8),
-    )?;
-
-    let geo_triangle = create_quad(
-        &mut ctx,
-        [
-            v3f(-0.3, -0.3, -10.0),
-            v3f(0.3, -0.3, -10.0),
-            v3f(0.3, 0.3, -10.0),
-            v3f(-0.3, 0.3, -10.0),
-        ],
-        prg_mesh_bound,
-        prg_mesh_intersect,
-    )?;
-    let materials = vec![0];
-    let buf_material = ctx.buffer_create_from_slice_1d(
-        &materials,
-        rt::BufferType::INPUT,
-        rt::BufferFlag::NONE,
-    )?;
-    ctx.geometry_set_variable(
-        geo_triangle,
-        "material_buffer",
-        rt::ObjectHandle::Buffer1d(buf_material),
-    )?;
+        ctx.program_create_from_ptx_file("mtl_normal.ptx", "any_hit")?;
 
     let raytype_camera = ctx.set_ray_type(0, "camera")?;
-
     ctx.set_miss_program(raytype_camera, prg_miss)?;
 
     let mut map_mtl_camera_any = HashMap::new();
@@ -261,35 +267,342 @@ fn create_context() -> Result<(rt::Context, rt::EntryPointHandle), rt::Error> {
     let mtl_constant =
         ctx.material_create(map_mtl_camera_any, map_mtl_camera_closest)?;
 
-    let geo_inst = ctx.geometry_instance_create(
-        rt::GeometryType::Geometry(geo_triangle),
+    let materials = vec![0];
+    let buf_material = ctx.buffer_create_from_slice_1d(
+        &materials,
+        rt::BufferType::INPUT,
+        rt::BufferFlag::NONE,
+    )?;
+
+    // let geo_floor = create_quad(
+    //     &mut ctx,
+    //     [
+    //         v3f(0.0, 0.0, 0.0),
+    //         v3f(555.0, 0.0, 0.0),
+    //         v3f(555.0, 0.0, -555.0),
+    //         v3f(0.0, 0.0, -555.0),
+    //     ],
+    //     prg_mesh_bound,
+    //     prg_mesh_intersect,
+    // )?;
+    // let geo_ceiling = create_quad(
+    //     &mut ctx,
+    //     [
+    //         v3f(0.0, 555.0, -555.0),
+    //         v3f(555.0, 555.0, -555.0),
+    //         v3f(555.0, 555.0, 0.0),
+    //         v3f(0.0, 555.0, 0.0),
+    //     ],
+    //     prg_mesh_bound,
+    //     prg_mesh_intersect,
+    // )?;
+    // let geo_wall_back = create_quad(
+    //     &mut ctx,
+    //     [
+    //         v3f(0.0, 0.0, -555.0),
+    //         v3f(555.0, 0.0, -555.0),
+    //         v3f(555.0, 555.0, -555.0),
+    //         v3f(0.0, 555.0, -555.0),
+    //     ],
+    //     prg_mesh_bound,
+    //     prg_mesh_intersect,
+    // )?;
+    // let geo_wall_left = create_quad(
+    //     &mut ctx,
+    //     [
+    //         v3f(0.0, 0.0, 0.0),
+    //         v3f(0.0, 0.0, -555.0),
+    //         v3f(0.0, 555.0, -555.0),
+    //         v3f(0.0, 555.0, 0.0),
+    //     ],
+    //     prg_mesh_bound,
+    //     prg_mesh_intersect,
+    // )?;
+    // let geo_wall_right = create_quad(
+    //     &mut ctx,
+    //     [
+    //         v3f(555.0, 0.0, -555.0),
+    //         v3f(555.0, 0.0, 0.0),
+    //         v3f(555.0, 555.0, 0.0),
+    //         v3f(555.0, 555.0, -555.0),
+    //     ],
+    //     prg_mesh_bound,
+    //     prg_mesh_intersect,
+    // )?;
+
+    let geo_tall_box = create_box(
+        &mut ctx,
+        v3f(80.0, 0.0, -295.0),
+        v3f(165.0 + 80.0, 330.0, 165.0 - 295.0),
+        // v3f(0.0, 0.0, 0.0),
+        // v3f(165.0, 330.0, 165.0),
+        prg_mesh_bound,
+        prg_mesh_intersect,
+    )?;
+    // let geo_short_box = create_box(
+    //     &mut ctx,
+    //     v3f(300.0, 0.0, -165.0),
+    //     v3f(165.0 + 300.0, 165.0, 165.0 - 165.0),
+    //     // v3f(0.0, 0.0, 0.0),
+    //     // v3f(165.0, 165.0, 165.0),
+    //     prg_mesh_bound,
+    //     prg_mesh_intersect,
+    // )?;
+
+    // ctx.geometry_set_variable(
+    //     geo_floor,
+    //     "material_buffer",
+    //     rt::ObjectHandle::Buffer1d(buf_material),
+    // )?;
+    // ctx.geometry_set_variable(
+    //     geo_ceiling,
+    //     "material_buffer",
+    //     rt::ObjectHandle::Buffer1d(buf_material),
+    // )?;
+    // ctx.geometry_set_variable(
+    //     geo_wall_back,
+    //     "material_buffer",
+    //     rt::ObjectHandle::Buffer1d(buf_material),
+    // )?;
+    // ctx.geometry_set_variable(
+    //     geo_wall_left,
+    //     "material_buffer",
+    //     rt::ObjectHandle::Buffer1d(buf_material),
+    // )?;
+    // ctx.geometry_set_variable(
+    //     geo_wall_right,
+    //     "material_buffer",
+    //     rt::ObjectHandle::Buffer1d(buf_material),
+    // )?;
+    ctx.geometry_set_variable(
+        geo_tall_box,
+        "material_buffer",
+        rt::ObjectHandle::Buffer1d(buf_material),
+    )?;
+    // ctx.geometry_set_variable(
+    //     geo_short_box,
+    //     "material_buffer",
+    //     rt::ObjectHandle::Buffer1d(buf_material),
+    // )?;
+
+    // let geo_inst_floor = ctx.geometry_instance_create(
+    //     rt::GeometryType::Geometry(geo_floor),
+    //     vec![mtl_constant],
+    // )?;
+    // let geo_inst_ceiling = ctx.geometry_instance_create(
+    //     rt::GeometryType::Geometry(geo_ceiling),
+    //     vec![mtl_constant],
+    // )?;
+    // let geo_inst_wall_back = ctx.geometry_instance_create(
+    //     rt::GeometryType::Geometry(geo_wall_back),
+    //     vec![mtl_constant],
+    // )?;
+    // let geo_inst_wall_left = ctx.geometry_instance_create(
+    //     rt::GeometryType::Geometry(geo_wall_left),
+    //     vec![mtl_constant],
+    // )?;
+    // let geo_inst_wall_right = ctx.geometry_instance_create(
+    //     rt::GeometryType::Geometry(geo_wall_right),
+    //     vec![mtl_constant],
+    // )?;
+    let geo_inst_tall_box = ctx.geometry_instance_create(
+        rt::GeometryType::Geometry(geo_tall_box),
         vec![mtl_constant],
     )?;
+    // let geo_inst_short_box = ctx.geometry_instance_create(
+    //     rt::GeometryType::Geometry(geo_short_box),
+    //     vec![mtl_constant],
+    // )?;
 
-    let acc = ctx.acceleration_create(rt::Builder::NoAccel)?;
+    // let acc_main_box = ctx.acceleration_create(rt::Builder::Trbvh)?;
 
-    let geo_group = ctx.geometry_group_create(acc, vec![geo_inst])?;
+    // let geo_group = ctx.geometry_group_create(
+    //     acc_main_box,
+    //     vec![
+    //         geo_inst_floor,
+    //         geo_inst_ceiling,
+    //         geo_inst_wall_back,
+    //         geo_inst_wall_left,
+    //         geo_inst_wall_right,
+    //     ],
+    // )?;
+    // println!("assigned acc {} to main box", acc_main_box);
 
-    let mtx_t = m4f_translation(0.5, 0.5, 0.0);
-    let mtx_r = m4f_rotation(v3f(0.0, 0.0, 1.0), std::f32::consts::PI / 4.0);
-    let mtx = mtx_t * mtx_r;
+    let acc_tb = ctx.acceleration_create(rt::Builder::NoAccel)?;
+    let geo_group_tall_box =
+        ctx.geometry_group_create(acc_tb, vec![geo_inst_tall_box])?;
+    println!("assigned acc {} to tall box", acc_tb);
+    // drop(acc_tb);
+    // let acc_sb = ctx.acceleration_create(rt::Builder::NoAccel)?;
+    // let geo_group_short_box =
+    //     ctx.geometry_group_create(acc_sb, vec![geo_inst_short_box])?;
+    // println!("assigned acc {} to short box", acc_sb);
+    // drop(acc_sb);
 
-    let xform = ctx.transform_create(
-        rt::MatrixDirection::Forward(mtx),
-        rt::MatrixFormat::ColumnMajor,
-        rt::TransformChild::GeometryGroup(geo_group),
-    )?;
+    let mtx_tall_box = M4f32::identity();
+    let mtx_short_box = M4f32::identity();
+    // let mtx_tall_box = m4f_translation(80.0, 0.0, -295.0);
+        // * m4f_rotation(v3f(0.0, 1.0, 0.0), 0.3925);
+    // let mtx_short_box = m4f_translation(300.0, 0.0, -165.0);
+        // * m4f_rotation(v3f(0.0, 1.0, 0.0), -0.314);
+
+    // let xform_tall_box = ctx.transform_create(
+    //     rt::MatrixFormat::ColumnMajor(mtx_tall_box),
+    //     rt::TransformChild::GeometryGroup(geo_group_tall_box),
+    // )?;
+    // let xform_short_box = ctx.transform_create(
+    //     rt::MatrixFormat::ColumnMajor(mtx_short_box),
+    //     rt::TransformChild::GeometryGroup(geo_group_short_box),
+    // )?;
+
+    let mtx = M4f32::identity();
+
+    // let xform = ctx.transform_create(
+    //     rt::MatrixFormat::ColumnMajor(mtx),
+    //     rt::TransformChild::GeometryGroup(geo_group),
+    // )?;
+
+    // let acc_grp = ctx.acceleration_create(rt::Builder::NoAccel)?;
+    // let grp_all = ctx.group_create(
+    //     acc_grp,
+    //     vec![
+    //         // rt::GroupChild::Transform(xform),
+    //         // rt::GroupChild::Transform(xform_tall_box),
+    //         // rt::GroupChild::Transform(xform_short_box),
+    //         rt::GroupChild::GeometryGroup(geo_group),
+    //         rt::GroupChild::GeometryGroup(geo_group_tall_box),
+    //         rt::GroupChild::GeometryGroup(geo_group_short_box),
+    //     ],
+    // )?;
 
     ctx.program_set_variable(
         prg_cam_screen,
         "scene_root",
-        // rt::ObjectHandle::GeometryGroup(geo_group),
-        rt::ObjectHandle::Transform(xform),
+        rt::ObjectHandle::GeometryGroup(geo_group_tall_box),
     )?;
 
     let entry_point = ctx.add_entry_point(prg_cam_screen, None)?;
 
+    ctx.set_print_enabled(true)?;
+
     Ok((ctx, entry_point))
+}
+
+pub fn create_box(
+    ctx: &mut rt::Context,
+    min: V3f32,
+    max: V3f32,
+    prg_mesh_bound: rt::ProgramHandle,
+    prg_mesh_intersect: rt::ProgramHandle,
+) -> Result<rt::GeometryHandle, rt::Error> {
+    let buf_vertex = ctx.buffer_create_from_slice_1d(
+        &[
+            // BLF - 0
+            v3f(min.x, min.y, min.z),
+            // BRF - 1
+            v3f(max.x, min.y, min.z),
+            // TRF - 2
+            v3f(max.x, max.y, min.z),
+            // TLF - 3
+            v3f(min.x, max.y, min.z),
+            // BLB - 4
+            v3f(min.x, min.y, max.z),
+            // BRB - 5
+            v3f(max.x, min.y, max.z),
+            // TRB - 6
+            v3f(max.x, max.y, max.z),
+            // TLB - 7
+            v3f(min.x, max.y, max.z),
+        ],
+        rt::BufferType::INPUT,
+        rt::BufferFlag::NONE,
+    )?;
+
+    // let indices = [
+    //     // FRONT
+    //     v3i(0, 1, 2),
+    //     v3i(0, 2, 3),
+    //     // BACK
+    //     v3i(6, 5, 4),
+    //     v3i(7, 6, 4),
+    //     // LEFT
+    //     v3i(7, 4, 0),
+    //     v3i(3, 7, 0),
+    //     // RIGHT
+    //     v3i(2, 1, 5),
+    //     v3i(6, 2, 5),
+    //     // TOP
+    //     v3i(3, 2, 6),
+    //     v3i(3, 6, 7),
+    //     // BOTTOM
+    //     v3i(4, 5, 1),
+    //     v3i(4, 1, 0),
+    // ];
+
+    let indices = [
+        // FRONT
+        v3i(2, 1, 0),
+        v3i(3, 2, 0),
+        // BACK
+        v3i(4, 5, 6),
+        v3i(4, 6, 7),
+        // // LEFT
+        // v3i(0, 4, 7),
+        // v3i(0, 7, 3),
+        // // RIGHT
+        // v3i(5, 1, 2),
+        // v3i(5, 2, 6),
+        // // TOP
+        // v3i(6, 2, 3),
+        // v3i(7, 6, 3),
+        // // BOTTOM
+        // v3i(1, 5, 4),
+        // v3i(0, 1, 4),
+    ];
+
+    let buf_indices = ctx.buffer_create_from_slice_1d(
+        &indices,
+        rt::BufferType::INPUT,
+        rt::BufferFlag::NONE,
+    )?;
+
+    let buf_normal = ctx.buffer_create_1d::<V3f32>(
+        0,
+        rt::BufferType::INPUT,
+        rt::BufferFlag::NONE,
+    )?;
+
+    let buf_texcoord = ctx.buffer_create_1d::<V2f32>(
+        0,
+        rt::BufferType::INPUT,
+        rt::BufferFlag::NONE,
+    )?;
+
+    let geo_box = ctx.geometry_create(prg_mesh_bound, prg_mesh_intersect)?;
+    ctx.geometry_set_primitive_count(geo_box, indices.len() as u32)?;
+    ctx.geometry_set_variable(
+        geo_box,
+        "vertex_buffer",
+        rt::ObjectHandle::Buffer1d(buf_vertex),
+    )?;
+    ctx.geometry_set_variable(
+        geo_box,
+        "index_buffer",
+        rt::ObjectHandle::Buffer1d(buf_indices),
+    )?;
+    ctx.geometry_set_variable(
+        geo_box,
+        "normal_buffer",
+        rt::ObjectHandle::Buffer1d(buf_normal),
+    )?;
+    ctx.geometry_set_variable(
+        geo_box,
+        "texcoord_buffer",
+        rt::ObjectHandle::Buffer1d(buf_texcoord),
+    )?;
+
+    println!("Created geo box {}", geo_box);
+    Ok(geo_box)
 }
 
 pub fn create_quad(
