@@ -26,7 +26,6 @@ RT_PROGRAM void closest_hit() {
     float3 hit_point = ray.origin + ray.direction * t_hit;
 
     prd.result = world_shading_normal * 0.5 + 0.5;
-    // prd.result = make_float3(dot(world_shading_normal, -ray.direction));
     prd.z = t_hit;
     prd.depth = 1;
 }

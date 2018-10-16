@@ -258,14 +258,12 @@ fn create_context(
     let raytype_camera = ctx.set_ray_type(0, "camera")?;
     ctx.set_miss_program(raytype_camera, prg_miss)?;
 
-    let mut map_mtl_camera_any = HashMap::new();
-    let mut map_mtl_camera_closest = HashMap::new();
-    map_mtl_camera_any.insert(raytype_camera, prg_material_constant_any);
-    map_mtl_camera_closest
-        .insert(raytype_camera, prg_material_constant_closest);
+    let mut map_mtl_camera_programs = HashMap::new();
+    map_mtl_camera_programs
+        .insert(raytype_camera, rt::MaterialProgram::ClosestHit(prg_material_constant_closest));
 
     let mtl_constant =
-        ctx.material_create(map_mtl_camera_any, map_mtl_camera_closest)?;
+        ctx.material_create(map_mtl_camera_programs)?;
 
     let materials = vec![0];
     let buf_material = ctx.buffer_create_from_slice_1d(
@@ -274,216 +272,206 @@ fn create_context(
         rt::BufferFlag::NONE,
     )?;
 
-    // let geo_floor = create_quad(
-    //     &mut ctx,
-    //     [
-    //         v3f(0.0, 0.0, 0.0),
-    //         v3f(555.0, 0.0, 0.0),
-    //         v3f(555.0, 0.0, -555.0),
-    //         v3f(0.0, 0.0, -555.0),
-    //     ],
-    //     prg_mesh_bound,
-    //     prg_mesh_intersect,
-    // )?;
-    // let geo_ceiling = create_quad(
-    //     &mut ctx,
-    //     [
-    //         v3f(0.0, 555.0, -555.0),
-    //         v3f(555.0, 555.0, -555.0),
-    //         v3f(555.0, 555.0, 0.0),
-    //         v3f(0.0, 555.0, 0.0),
-    //     ],
-    //     prg_mesh_bound,
-    //     prg_mesh_intersect,
-    // )?;
-    // let geo_wall_back = create_quad(
-    //     &mut ctx,
-    //     [
-    //         v3f(0.0, 0.0, -555.0),
-    //         v3f(555.0, 0.0, -555.0),
-    //         v3f(555.0, 555.0, -555.0),
-    //         v3f(0.0, 555.0, -555.0),
-    //     ],
-    //     prg_mesh_bound,
-    //     prg_mesh_intersect,
-    // )?;
-    // let geo_wall_left = create_quad(
-    //     &mut ctx,
-    //     [
-    //         v3f(0.0, 0.0, 0.0),
-    //         v3f(0.0, 0.0, -555.0),
-    //         v3f(0.0, 555.0, -555.0),
-    //         v3f(0.0, 555.0, 0.0),
-    //     ],
-    //     prg_mesh_bound,
-    //     prg_mesh_intersect,
-    // )?;
-    // let geo_wall_right = create_quad(
-    //     &mut ctx,
-    //     [
-    //         v3f(555.0, 0.0, -555.0),
-    //         v3f(555.0, 0.0, 0.0),
-    //         v3f(555.0, 555.0, 0.0),
-    //         v3f(555.0, 555.0, -555.0),
-    //     ],
-    //     prg_mesh_bound,
-    //     prg_mesh_intersect,
-    // )?;
-
-    let geo_tall_box = create_box(
+    let geo_floor = create_quad(
         &mut ctx,
-        v3f(80.0, 0.0, -295.0),
-        v3f(165.0 + 80.0, 330.0, 165.0 - 295.0),
-        // v3f(0.0, 0.0, 0.0),
-        // v3f(165.0, 330.0, 165.0),
+        [
+            v3f(0.0, 0.0, 0.0),
+            v3f(555.0, 0.0, 0.0),
+            v3f(555.0, 0.0, -555.0),
+            v3f(0.0, 0.0, -555.0),
+        ],
         prg_mesh_bound,
         prg_mesh_intersect,
     )?;
-    // let geo_short_box = create_box(
-    //     &mut ctx,
-    //     v3f(300.0, 0.0, -165.0),
-    //     v3f(165.0 + 300.0, 165.0, 165.0 - 165.0),
-    //     // v3f(0.0, 0.0, 0.0),
-    //     // v3f(165.0, 165.0, 165.0),
-    //     prg_mesh_bound,
-    //     prg_mesh_intersect,
-    // )?;
+    let geo_ceiling = create_quad(
+        &mut ctx,
+        [
+            v3f(0.0, 555.0, -555.0),
+            v3f(555.0, 555.0, -555.0),
+            v3f(555.0, 555.0, 0.0),
+            v3f(0.0, 555.0, 0.0),
+        ],
+        prg_mesh_bound,
+        prg_mesh_intersect,
+    )?;
+    let geo_wall_back = create_quad(
+        &mut ctx,
+        [
+            v3f(0.0, 0.0, -555.0),
+            v3f(555.0, 0.0, -555.0),
+            v3f(555.0, 555.0, -555.0),
+            v3f(0.0, 555.0, -555.0),
+        ],
+        prg_mesh_bound,
+        prg_mesh_intersect,
+    )?;
+    let geo_wall_left = create_quad(
+        &mut ctx,
+        [
+            v3f(0.0, 0.0, 0.0),
+            v3f(0.0, 0.0, -555.0),
+            v3f(0.0, 555.0, -555.0),
+            v3f(0.0, 555.0, 0.0),
+        ],
+        prg_mesh_bound,
+        prg_mesh_intersect,
+    )?;
+    let geo_wall_right = create_quad(
+        &mut ctx,
+        [
+            v3f(555.0, 0.0, -555.0),
+            v3f(555.0, 0.0, 0.0),
+            v3f(555.0, 555.0, 0.0),
+            v3f(555.0, 555.0, -555.0),
+        ],
+        prg_mesh_bound,
+        prg_mesh_intersect,
+    )?;
 
-    // ctx.geometry_set_variable(
-    //     geo_floor,
-    //     "material_buffer",
-    //     rt::ObjectHandle::Buffer1d(buf_material),
-    // )?;
-    // ctx.geometry_set_variable(
-    //     geo_ceiling,
-    //     "material_buffer",
-    //     rt::ObjectHandle::Buffer1d(buf_material),
-    // )?;
-    // ctx.geometry_set_variable(
-    //     geo_wall_back,
-    //     "material_buffer",
-    //     rt::ObjectHandle::Buffer1d(buf_material),
-    // )?;
-    // ctx.geometry_set_variable(
-    //     geo_wall_left,
-    //     "material_buffer",
-    //     rt::ObjectHandle::Buffer1d(buf_material),
-    // )?;
-    // ctx.geometry_set_variable(
-    //     geo_wall_right,
-    //     "material_buffer",
-    //     rt::ObjectHandle::Buffer1d(buf_material),
-    // )?;
+    let geo_tall_box = create_box(
+        &mut ctx,
+        v3f(0.0, 0.0, 0.0),
+        v3f(165.0, 330.0, 165.0),
+        prg_mesh_bound,
+        prg_mesh_intersect,
+    )?;
+    let geo_short_box = create_box(
+        &mut ctx,
+        v3f(0.0, 0.0, 0.0),
+        v3f(165.0, 165.0, 165.0),
+        prg_mesh_bound,
+        prg_mesh_intersect,
+    )?;
+
+    ctx.geometry_set_variable(
+        geo_floor,
+        "material_buffer",
+        rt::ObjectHandle::Buffer1d(buf_material),
+    )?;
+    ctx.geometry_set_variable(
+        geo_ceiling,
+        "material_buffer",
+        rt::ObjectHandle::Buffer1d(buf_material),
+    )?;
+    ctx.geometry_set_variable(
+        geo_wall_back,
+        "material_buffer",
+        rt::ObjectHandle::Buffer1d(buf_material),
+    )?;
+    ctx.geometry_set_variable(
+        geo_wall_left,
+        "material_buffer",
+        rt::ObjectHandle::Buffer1d(buf_material),
+    )?;
+    ctx.geometry_set_variable(
+        geo_wall_right,
+        "material_buffer",
+        rt::ObjectHandle::Buffer1d(buf_material),
+    )?;
     ctx.geometry_set_variable(
         geo_tall_box,
         "material_buffer",
         rt::ObjectHandle::Buffer1d(buf_material),
     )?;
-    // ctx.geometry_set_variable(
-    //     geo_short_box,
-    //     "material_buffer",
-    //     rt::ObjectHandle::Buffer1d(buf_material),
-    // )?;
+    ctx.geometry_set_variable(
+        geo_short_box,
+        "material_buffer",
+        rt::ObjectHandle::Buffer1d(buf_material),
+    )?;
 
-    // let geo_inst_floor = ctx.geometry_instance_create(
-    //     rt::GeometryType::Geometry(geo_floor),
-    //     vec![mtl_constant],
-    // )?;
-    // let geo_inst_ceiling = ctx.geometry_instance_create(
-    //     rt::GeometryType::Geometry(geo_ceiling),
-    //     vec![mtl_constant],
-    // )?;
-    // let geo_inst_wall_back = ctx.geometry_instance_create(
-    //     rt::GeometryType::Geometry(geo_wall_back),
-    //     vec![mtl_constant],
-    // )?;
-    // let geo_inst_wall_left = ctx.geometry_instance_create(
-    //     rt::GeometryType::Geometry(geo_wall_left),
-    //     vec![mtl_constant],
-    // )?;
-    // let geo_inst_wall_right = ctx.geometry_instance_create(
-    //     rt::GeometryType::Geometry(geo_wall_right),
-    //     vec![mtl_constant],
-    // )?;
+    let geo_inst_floor = ctx.geometry_instance_create(
+        rt::GeometryType::Geometry(geo_floor),
+        vec![mtl_constant],
+    )?;
+    let geo_inst_ceiling = ctx.geometry_instance_create(
+        rt::GeometryType::Geometry(geo_ceiling),
+        vec![mtl_constant],
+    )?;
+    let geo_inst_wall_back = ctx.geometry_instance_create(
+        rt::GeometryType::Geometry(geo_wall_back),
+        vec![mtl_constant],
+    )?;
+    let geo_inst_wall_left = ctx.geometry_instance_create(
+        rt::GeometryType::Geometry(geo_wall_left),
+        vec![mtl_constant],
+    )?;
+    let geo_inst_wall_right = ctx.geometry_instance_create(
+        rt::GeometryType::Geometry(geo_wall_right),
+        vec![mtl_constant],
+    )?;
     let geo_inst_tall_box = ctx.geometry_instance_create(
         rt::GeometryType::Geometry(geo_tall_box),
         vec![mtl_constant],
     )?;
-    // let geo_inst_short_box = ctx.geometry_instance_create(
-    //     rt::GeometryType::Geometry(geo_short_box),
-    //     vec![mtl_constant],
-    // )?;
+    let geo_inst_short_box = ctx.geometry_instance_create(
+        rt::GeometryType::Geometry(geo_short_box),
+        vec![mtl_constant],
+    )?;
 
-    // let acc_main_box = ctx.acceleration_create(rt::Builder::Trbvh)?;
+    let acc_main_box = ctx.acceleration_create(rt::Builder::Trbvh)?;
 
-    // let geo_group = ctx.geometry_group_create(
-    //     acc_main_box,
-    //     vec![
-    //         geo_inst_floor,
-    //         geo_inst_ceiling,
-    //         geo_inst_wall_back,
-    //         geo_inst_wall_left,
-    //         geo_inst_wall_right,
-    //     ],
-    // )?;
-    // println!("assigned acc {} to main box", acc_main_box);
+    let geo_group = ctx.geometry_group_create(
+        acc_main_box,
+        vec![
+            geo_inst_floor,
+            geo_inst_ceiling,
+            geo_inst_wall_back,
+            geo_inst_wall_left,
+            geo_inst_wall_right,
+        ],
+    )?;
+    println!("assigned acc {} to main box", acc_main_box);
 
     let acc_tb = ctx.acceleration_create(rt::Builder::NoAccel)?;
     let geo_group_tall_box =
         ctx.geometry_group_create(acc_tb, vec![geo_inst_tall_box])?;
     println!("assigned acc {} to tall box", acc_tb);
-    // drop(acc_tb);
-    // let acc_sb = ctx.acceleration_create(rt::Builder::NoAccel)?;
-    // let geo_group_short_box =
-    //     ctx.geometry_group_create(acc_sb, vec![geo_inst_short_box])?;
-    // println!("assigned acc {} to short box", acc_sb);
-    // drop(acc_sb);
 
-    let mtx_tall_box = M4f32::identity();
-    let mtx_short_box = M4f32::identity();
-    // let mtx_tall_box = m4f_translation(80.0, 0.0, -295.0);
-        // * m4f_rotation(v3f(0.0, 1.0, 0.0), 0.3925);
-    // let mtx_short_box = m4f_translation(300.0, 0.0, -165.0);
-        // * m4f_rotation(v3f(0.0, 1.0, 0.0), -0.314);
+    let acc_sb = ctx.acceleration_create(rt::Builder::NoAccel)?;
+    let geo_group_short_box =
+        ctx.geometry_group_create(acc_sb, vec![geo_inst_short_box])?;
+    println!("assigned acc {} to short box", acc_sb);
 
-    // let xform_tall_box = ctx.transform_create(
-    //     rt::MatrixFormat::ColumnMajor(mtx_tall_box),
-    //     rt::TransformChild::GeometryGroup(geo_group_tall_box),
-    // )?;
-    // let xform_short_box = ctx.transform_create(
-    //     rt::MatrixFormat::ColumnMajor(mtx_short_box),
-    //     rt::TransformChild::GeometryGroup(geo_group_short_box),
-    // )?;
+    let mtx_tall_box = m4f_translation(80.0, 0.0, -295.0)
+        * m4f_rotation(v3f(0.0, 1.0, 0.0), 0.3925);
+    let mtx_short_box = m4f_translation(300.0, 0.0, -165.0)
+        * m4f_rotation(v3f(0.0, 1.0, 0.0), -0.314);
+
+    let xform_tall_box = ctx.transform_create(
+        rt::MatrixFormat::ColumnMajor(mtx_tall_box),
+        rt::TransformChild::GeometryGroup(geo_group_tall_box),
+    )?;
+    let xform_short_box = ctx.transform_create(
+        rt::MatrixFormat::ColumnMajor(mtx_short_box),
+        rt::TransformChild::GeometryGroup(geo_group_short_box),
+    )?;
 
     let mtx = M4f32::identity();
 
-    // let xform = ctx.transform_create(
-    //     rt::MatrixFormat::ColumnMajor(mtx),
-    //     rt::TransformChild::GeometryGroup(geo_group),
-    // )?;
+    let xform = ctx.transform_create(
+        rt::MatrixFormat::ColumnMajor(mtx),
+        rt::TransformChild::GeometryGroup(geo_group),
+    )?;
 
-    // let acc_grp = ctx.acceleration_create(rt::Builder::NoAccel)?;
-    // let grp_all = ctx.group_create(
-    //     acc_grp,
-    //     vec![
-    //         // rt::GroupChild::Transform(xform),
-    //         // rt::GroupChild::Transform(xform_tall_box),
-    //         // rt::GroupChild::Transform(xform_short_box),
-    //         rt::GroupChild::GeometryGroup(geo_group),
-    //         rt::GroupChild::GeometryGroup(geo_group_tall_box),
-    //         rt::GroupChild::GeometryGroup(geo_group_short_box),
-    //     ],
-    // )?;
+    let acc_grp = ctx.acceleration_create(rt::Builder::NoAccel)?;
+    let grp_all = ctx.group_create(
+        acc_grp,
+        vec![
+            rt::GroupChild::Transform(xform),
+            rt::GroupChild::Transform(xform_tall_box),
+            rt::GroupChild::Transform(xform_short_box),
+        ],
+    )?;
 
     ctx.program_set_variable(
         prg_cam_screen,
         "scene_root",
-        rt::ObjectHandle::GeometryGroup(geo_group_tall_box),
+        rt::ObjectHandle::Group(grp_all),
     )?;
 
     let entry_point = ctx.add_entry_point(prg_cam_screen, None)?;
 
-    ctx.set_print_enabled(true)?;
+    ctx.set_print_enabled(false)?;
 
     Ok((ctx, entry_point))
 }
@@ -518,27 +506,6 @@ pub fn create_box(
         rt::BufferFlag::NONE,
     )?;
 
-    // let indices = [
-    //     // FRONT
-    //     v3i(0, 1, 2),
-    //     v3i(0, 2, 3),
-    //     // BACK
-    //     v3i(6, 5, 4),
-    //     v3i(7, 6, 4),
-    //     // LEFT
-    //     v3i(7, 4, 0),
-    //     v3i(3, 7, 0),
-    //     // RIGHT
-    //     v3i(2, 1, 5),
-    //     v3i(6, 2, 5),
-    //     // TOP
-    //     v3i(3, 2, 6),
-    //     v3i(3, 6, 7),
-    //     // BOTTOM
-    //     v3i(4, 5, 1),
-    //     v3i(4, 1, 0),
-    // ];
-
     let indices = [
         // FRONT
         v3i(2, 1, 0),
@@ -546,18 +513,18 @@ pub fn create_box(
         // BACK
         v3i(4, 5, 6),
         v3i(4, 6, 7),
-        // // LEFT
-        // v3i(0, 4, 7),
-        // v3i(0, 7, 3),
-        // // RIGHT
-        // v3i(5, 1, 2),
-        // v3i(5, 2, 6),
-        // // TOP
-        // v3i(6, 2, 3),
-        // v3i(7, 6, 3),
-        // // BOTTOM
-        // v3i(1, 5, 4),
-        // v3i(0, 1, 4),
+        // LEFT
+        v3i(0, 4, 7),
+        v3i(0, 7, 3),
+        // RIGHT
+        v3i(5, 1, 2),
+        v3i(5, 2, 6),
+        // TOP
+        v3i(6, 2, 3),
+        v3i(7, 6, 3),
+        // BOTTOM
+        v3i(1, 5, 4),
+        v3i(0, 1, 4),
     ];
 
     let buf_indices = ctx.buffer_create_from_slice_1d(

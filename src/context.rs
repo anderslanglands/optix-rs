@@ -108,17 +108,14 @@ pub struct Context {
     ga_material_obj: GinAllocator<RTmaterial, MaterialMarker>,
     gd_material_variables:
         GinAllocatorChild<HashMap<String, Variable>, MaterialMarker>,
-    gd_material_any_hit:
-        GinAllocatorChild<HashMap<RayType, ProgramHandle>, MaterialMarker>,
-    gd_material_closest_hit:
-        GinAllocatorChild<HashMap<RayType, ProgramHandle>, MaterialMarker>,
+    gd_material_programs:
+        GinAllocatorChild<HashMap<RayType, MaterialProgram>, MaterialMarker>,
 
     ga_transform_obj: GinAllocator<RTtransform, TransformMarker>,
     gd_transform_child: GinAllocatorChild<TransformChild, TransformMarker>,
 
     ga_group_obj: GinAllocator<RTgroup, GroupMarker>,
-    gd_group_acceleration:
-        GinAllocatorChild<AccelerationHandle, GroupMarker>,
+    gd_group_acceleration: GinAllocatorChild<AccelerationHandle, GroupMarker>,
     gd_group_children: GinAllocatorChild<Vec<GroupChild>, GroupMarker>,
 }
 
@@ -158,15 +155,13 @@ impl Context {
 
         let ga_material_obj = GinAllocator::<RTmaterial, MaterialMarker>::new();
         let gd_material_variables = ga_material_obj.create_child();
-        let gd_material_any_hit = ga_material_obj.create_child();
-        let gd_material_closest_hit = ga_material_obj.create_child();
+        let gd_material_programs = ga_material_obj.create_child();
 
         let ga_transform_obj =
             GinAllocator::<RTtransform, TransformMarker>::new();
         let gd_transform_child = ga_transform_obj.create_child();
 
-        let ga_group_obj =
-            GinAllocator::<RTgroup, GroupMarker>::new();
+        let ga_group_obj = GinAllocator::<RTgroup, GroupMarker>::new();
         let gd_group_acceleration = ga_group_obj.create_child();
         let gd_group_children = ga_group_obj.create_child();
 
@@ -214,8 +209,7 @@ impl Context {
 
             ga_material_obj,
             gd_material_variables,
-            gd_material_any_hit,
-            gd_material_closest_hit,
+            gd_material_programs,
 
             ga_transform_obj,
             gd_transform_child,
@@ -473,6 +467,20 @@ impl Context {
         };
         if result != RtResult::SUCCESS {
             return Err(self.optix_error("rtContextSetPrintEnabled", result));
+        }
+        Ok(())
+    }
+
+    pub fn set_print_launch_index(
+        &mut self,
+        x: i32,
+        y: i32,
+        z: i32,
+    ) -> Result<()> {
+        let result =
+            unsafe { rtContextSetPrintLaunchIndex(self.rt_ctx, x, y, z) };
+        if result != RtResult::SUCCESS {
+            return Err(self.optix_error("rtContextSetPrintLaunchIndex", result));
         }
         Ok(())
     }
@@ -743,14 +751,20 @@ mod tests {
 
         ctx.set_miss_program(raytype_camera, prg_miss)?;
 
-        let mut map_mtl_camera_any = HashMap::new();
-        let mut map_mtl_camera_closest = HashMap::new();
-        map_mtl_camera_any.insert(raytype_camera, prg_material_constant_any);
-        map_mtl_camera_closest
-            .insert(raytype_camera, prg_material_constant_closest);
+        // let mut map_mtl_camera_any = HashMap::new();
+        // let mut map_mtl_camera_closest = HashMap::new();
+        // map_mtl_camera_any.insert(raytype_camera, prg_material_constant_any);
+        // map_mtl_camera_closest
+        //     .insert(raytype_camera, prg_material_constant_closest);
 
-        let mtl_constant =
-            ctx.material_create(map_mtl_camera_any, map_mtl_camera_closest)?;
+        // let mtl_constant =
+        //     ctx.material_create(map_mtl_camera_any, map_mtl_camera_closest)?;
+        let mut mtl_camera_programs = HashMap::new();
+        mtl_camera_programs.insert(
+            raytype_camera,
+            MaterialProgram::ClosestHit(prg_material_constant_closest),
+        );
+        let mtl_constant = ctx.material_create(mtl_camera_programs)?;
 
         let geo_inst = ctx.geometry_instance_create(
             GeometryType::Geometry(geo_triangle),

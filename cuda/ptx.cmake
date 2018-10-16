@@ -32,7 +32,7 @@ macro(compile_optix_ptx SOURCES)
         GENERATED_FILES PTX_SOURCES
         NVCC_OPTIONS
             -arch=sm_30
-            --use_fast_math
+            # --use_fast_math
             --relocatable-device-code=true
             -std=c++14
             -I${OPTIX_INCLUDE_DIR}

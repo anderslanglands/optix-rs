@@ -28,6 +28,7 @@ RT_PROGRAM void generate_ray() {
     prd.z = 1000.0f;
     prd.pixel = launch_index;
 
+#if 1
     float4 Pras4 = make_float4(x, y, 0.0f, 1.0f);
     float4 Pcam4 = raster_to_camera * Pras4;
     float4 Dcam4 = make_float4(Pcam4.x, Pcam4.y, -1 * Pcam4.z, 0.0f);
@@ -37,8 +38,10 @@ RT_PROGRAM void generate_ray() {
     float4 P_world = camera_to_world * Pcam4;
     auto origin = make_float3(P_origin_world);
     auto direction = normalize(make_float3(Pcam4));
-    // auto origin = make_float3(camu * 555, camv * 555, 200);
-    // auto direction = make_float3(0, 0, -1);
+#else
+    auto origin = make_float3(camu * 555, camv * 555, 0);
+    auto direction = make_float3(0, 0, -1);
+#endif
 
     optix::Ray ray = optix::make_Ray(origin, direction, 0, 1e-5f, RT_DEFAULT_MAX);
     rtTrace(scene_root, ray, prd);

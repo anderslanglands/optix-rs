@@ -8,6 +8,7 @@ include(ptx)
 
 compile_optix_ptx(draw_color.cu)
 compile_optix_ptx(triangle_mesh.cu)
+compile_optix_ptx(triangle_mesh_simple.cu)
 compile_optix_ptx(mtl_constant.cu)
 compile_optix_ptx(mtl_normal.cu)
 compile_optix_ptx(cam_screen.cu)
