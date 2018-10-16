@@ -213,8 +213,8 @@ fn create_context(
     ));
 
     let prg_cam_screen =
-        ctx.program_create_from_ptx_file("pt_cam.ptx", "generate_ray")?;
-    let prg_miss = ctx.program_create_from_ptx_file("pt_cam.ptx", "miss")?;
+        ctx.program_create_from_ptx_file("pathtracer.ptx", "generate_ray")?;
+    let prg_miss = ctx.program_create_from_ptx_file("pathtracer.ptx", "miss")?;
 
     // generate camera matrices
     let swn = v2f(-1.0, -1.0);
@@ -245,15 +245,15 @@ fn create_context(
     )?;
 
     let prg_mesh_intersect = ctx.program_create_from_ptx_file(
-        "triangle_mesh.ptx",
-        "mesh_intersect_refine",
+        "pathtracer.ptx",
+        "mesh_intersect",
     )?;
     let prg_mesh_bound =
-        ctx.program_create_from_ptx_file("triangle_mesh.ptx", "bound")?;
+        ctx.program_create_from_ptx_file("pathtracer.ptx", "bound")?;
     let prg_material_constant_closest =
-        ctx.program_create_from_ptx_file("mtl_normal.ptx", "closest_hit")?;
+        ctx.program_create_from_ptx_file("pathtracer.ptx", "mtl_ch_diffuse")?;
     let prg_material_constant_any =
-        ctx.program_create_from_ptx_file("mtl_normal.ptx", "any_hit")?;
+        ctx.program_create_from_ptx_file("pathtracer.ptx", "mtl_ah_shadow")?;
 
     let raytype_camera = ctx.set_ray_type(0, "camera")?;
     ctx.set_miss_program(raytype_camera, prg_miss)?;
@@ -420,17 +420,14 @@ fn create_context(
             geo_inst_wall_right,
         ],
     )?;
-    println!("assigned acc {} to main box", acc_main_box);
 
     let acc_tb = ctx.acceleration_create(rt::Builder::NoAccel)?;
     let geo_group_tall_box =
         ctx.geometry_group_create(acc_tb, vec![geo_inst_tall_box])?;
-    println!("assigned acc {} to tall box", acc_tb);
 
     let acc_sb = ctx.acceleration_create(rt::Builder::NoAccel)?;
     let geo_group_short_box =
         ctx.geometry_group_create(acc_sb, vec![geo_inst_short_box])?;
-    println!("assigned acc {} to short box", acc_sb);
 
     let mtx_tall_box = m4f_translation(80.0, 0.0, -295.0)
         * m4f_rotation(v3f(0.0, 1.0, 0.0), 0.3925);
@@ -463,8 +460,7 @@ fn create_context(
         ],
     )?;
 
-    ctx.program_set_variable(
-        prg_cam_screen,
+    ctx.set_variable(
         "scene_root",
         rt::ObjectHandle::Group(grp_all),
     )?;
