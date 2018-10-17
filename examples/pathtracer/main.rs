@@ -264,11 +264,17 @@ fn create_context(
     let mut map_mtl_camera_programs = HashMap::new();
     map_mtl_camera_programs.insert(
         raytype_camera,
-        rt::MaterialProgram::ClosestHit(prg_material_constant_closest),
+        rt::MaterialProgram {
+            closest: Some(prg_material_constant_closest),
+            any: None,
+        },
     );
     map_mtl_camera_programs.insert(
         raytype_shadow,
-        rt::MaterialProgram::AnyHit(prg_material_constant_any),
+        rt::MaterialProgram {
+            closest: None,
+            any: Some(prg_material_constant_any),
+        },
     );
 
     let mtl_constant = ctx.material_create(map_mtl_camera_programs)?;
@@ -276,11 +282,17 @@ fn create_context(
     let mut map_mtl_emission = HashMap::new();
     map_mtl_emission.insert(
         raytype_camera,
-        rt::MaterialProgram::ClosestHit(prg_material_emission),
+        rt::MaterialProgram {
+            closest: Some(prg_material_emission),
+            any: None,
+        },
     );
     map_mtl_emission.insert(
         raytype_shadow,
-        rt::MaterialProgram::AnyHit(prg_material_constant_any),
+        rt::MaterialProgram {
+            closest: None,
+            any: Some(prg_material_constant_any),
+        },
     );
     let mtl_emission = ctx.material_create(map_mtl_emission)?;
 

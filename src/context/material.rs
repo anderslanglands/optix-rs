@@ -9,9 +9,9 @@ impl Marker for MaterialMarker {
 }
 pub type MaterialHandle = Handle<MaterialMarker>;
 
-pub enum MaterialProgram {
-    ClosestHit(ProgramHandle),
-    AnyHit(ProgramHandle),
+pub struct MaterialProgram {
+    pub closest: Option<ProgramHandle>,
+    pub any: Option<ProgramHandle>,
 }
 
 impl Context {
@@ -21,10 +21,12 @@ impl Context {
     ) -> Result<MaterialHandle> {
         // First check that the programs are well-defined
         for (_, program) in &programs {
-            match program {
-                MaterialProgram::ClosestHit(prg) => self.program_validate(*prg)?,
-                MaterialProgram::AnyHit(prg) => self.program_validate(*prg)?,
-            }
+            if let Some(prg) = program.closest {
+                self.program_validate(prg)?
+            };
+            if let Some(prg) = program.any {
+                self.program_validate(prg)?
+            };
         }
 
         let (mat, result) = unsafe {
@@ -36,32 +38,38 @@ impl Context {
             Err(self.optix_error("rtMaterialCreate", result))
         } else {
             for (raytype, program) in &programs {
-                match program {
-                    MaterialProgram::ClosestHit(prg) => {
-                        let rt_prg = self.ga_program_obj.get(*prg).unwrap();
-                        let result = unsafe {
-                            rtMaterialSetClosestHitProgram(mat, raytype.ray_type, *rt_prg)
-                        };
-                        if result != RtResult::SUCCESS {
-                            return Err(
-                                self.optix_error("rtMaterialSetClosestHitProgram", result)
-                            );
-                        } else {
-                            self.ga_program_obj.incref(*prg);
-                        }
+                if let Some(prg) = program.closest {
+                    let rt_prg = self.ga_program_obj.get(prg).unwrap();
+                    let result = unsafe {
+                        rtMaterialSetClosestHitProgram(
+                            mat,
+                            raytype.ray_type,
+                            *rt_prg,
+                        )
+                    };
+                    if result != RtResult::SUCCESS {
+                        return Err(self.optix_error(
+                            "rtMaterialSetClosestHitProgram",
+                            result,
+                        ));
+                    } else {
+                        self.ga_program_obj.incref(prg);
                     }
-                    MaterialProgram::AnyHit(prg) => {
-                        let rt_prg = self.ga_program_obj.get(*prg).unwrap();
-                        let result = unsafe {
-                            rtMaterialSetAnyHitProgram(mat, raytype.ray_type, *rt_prg)
-                        };
-                        if result != RtResult::SUCCESS {
-                            return Err(
-                                self.optix_error("rtMaterialSetAnyHitProgram", result)
-                            );
-                        } else {
-                            self.ga_program_obj.incref(*prg);
-                        }
+                }
+                if let Some(prg) = program.any {
+                    let rt_prg = self.ga_program_obj.get(prg).unwrap();
+                    let result = unsafe {
+                        rtMaterialSetAnyHitProgram(
+                            mat,
+                            raytype.ray_type,
+                            *rt_prg,
+                        )
+                    };
+                    if result != RtResult::SUCCESS {
+                        return Err(self
+                            .optix_error("rtMaterialSetAnyHitProgram", result));
+                    } else {
+                        self.ga_program_obj.incref(prg);
                     }
                 }
             }
@@ -79,17 +87,18 @@ impl Context {
     ///
     pub fn material_destroy(&mut self, mat: MaterialHandle) {
         if let Some(cmat) = self.ga_material_obj.check_handle(mat) {
-
             let vars = self.gd_material_variables.remove(cmat);
             self.destroy_variables(vars);
 
             // destroy material programs
             let programs = self.gd_material_programs.remove(cmat);
-            for (_, program) in programs {
-                match program {
-                    MaterialProgram::ClosestHit(prg) => self.program_destroy(prg),
-                    MaterialProgram::AnyHit(prg) => self.program_destroy(prg),
-                }
+            for (_, program) in &programs {
+                if let Some(prg) = program.closest {
+                    self.program_destroy(prg)
+                };
+                if let Some(prg) = program.any {
+                    self.program_destroy(prg)
+                };
             }
 
             let rt_mat = *self.ga_material_obj.get(mat).unwrap();
@@ -152,14 +161,14 @@ impl Context {
                         ObjectHandle::Buffer2d(bh) => {
                             self.buffer_destroy_2d(bh)
                         }
-                        ObjectHandle::Group(ggh) => {
-                            self.group_destroy(ggh)
-                        }
+                        ObjectHandle::Group(ggh) => self.group_destroy(ggh),
                         ObjectHandle::GeometryGroup(ggh) => {
                             self.geometry_group_destroy(ggh)
                         }
                         ObjectHandle::Program(ph) => self.program_destroy(ph),
-                        ObjectHandle::Transform(th) => self.transform_destroy(th),
+                        ObjectHandle::Transform(th) => {
+                            self.transform_destroy(th)
+                        }
                     },
                 };
             };
