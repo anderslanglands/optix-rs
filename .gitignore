@@ -4,3 +4,4 @@ Cargo.lock
 *.png
 build-settings.toml
 ptx_path.toml
+.ccls-cache

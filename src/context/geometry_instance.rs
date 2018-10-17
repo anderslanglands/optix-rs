@@ -93,6 +93,63 @@ impl Context {
         }
     }
 
+    /// Set the Variable referred to by `name` to the given `data`. Any objects
+    /// previously assigned to the variable will be destroyed.
+    pub fn geometry_instance_set_variable<T: VariableStorable>(
+        &mut self,
+        geoinst: GeometryInstanceHandle,
+        name: &str,
+        data: T,
+    ) -> Result<()> {
+        let cgeoinst = self
+            .ga_geometry_instance_obj
+            .check_handle(geoinst)
+            .expect("Tried to access an invalid geometry_instance handle");
+        let rt_geoinst = self.ga_geometry_instance_obj.get(geoinst).unwrap();
+
+        if let Some(old_variable) =
+            self.gd_geometry_instance_variables.get(cgeoinst).get(name)
+        {
+            let var = match old_variable {
+                Variable::Pod(vp) => vp.var,
+                Variable::Object(vo) => vo.var,
+            };
+            let new_variable = data.set_optix_variable(self, var)?;
+            // destroy any resources the existing variable holds
+            if let Some(old_variable) = self
+                .gd_geometry_instance_variables
+                .get_mut(cgeoinst)
+                .insert(name.to_owned(), new_variable)
+            {
+                self.destroy_variable(old_variable);
+            };
+
+            Ok(())
+
+        } else {
+            let (var, result) = unsafe {
+                let mut var: RTvariable = ::std::mem::uninitialized();
+                let c_name = std::ffi::CString::new(name).unwrap();
+                let result = rtGeometryInstanceDeclareVariable(
+                    *rt_geoinst,
+                    c_name.as_ptr(),
+                    &mut var,
+                );
+                (var, result)
+            };
+            if result != RtResult::SUCCESS {
+                return Err(self.optix_error("rtGeometryInstanceDeclareVariable", result));
+            }
+
+            let variable = data.set_optix_variable(self, var)?;
+            self.gd_geometry_instance_variables
+                .get_mut(cgeoinst)
+                .insert(name.to_owned(), variable);
+
+            Ok(())
+        }
+    }
+
     pub fn geometry_instance_destroy(
         &mut self,
         geoinst: GeometryInstanceHandle,

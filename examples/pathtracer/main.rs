@@ -43,17 +43,7 @@ fn main() -> Result<(), String> {
 
     let fsq = FullscreenQuad::new(width, height)?;
 
-    let mut image_data = Vec::with_capacity((width * height) as usize);
-    for y in 0..height {
-        for x in 0..width {
-            image_data.push(v4f(
-                (x as f32) / width as f32,
-                (y as f32) / height as f32,
-                0.0,
-                1.0,
-            ));
-        }
-    }
+    let image_data = vec![v4f(0.0, 0.0, 0.0, 0.0); (width * height) as usize];
 
     unsafe {
         gl::Viewport(0, 0, fb_width, fb_height);
@@ -90,6 +80,8 @@ fn main() -> Result<(), String> {
                         rt::ObjectHandle::Buffer2d(result_buffer),
                     ).expect("Setting buffer2d variable failed");
 
+                    let mut progression = 0u32;
+
                     'inner: loop {
                         let now = std::time::Instant::now();
                         match rx_render.try_recv() {
@@ -121,6 +113,9 @@ fn main() -> Result<(), String> {
                             None => (),
                         }
 
+                        ctx.set_variable("progression", progression).unwrap();
+                        progression += 1;
+
                         match ctx.launch_2d(
                             entry_point,
                             width as usize,
@@ -129,7 +124,7 @@ fn main() -> Result<(), String> {
                             Ok(()) => (),
                             Err(rt::Error::Optix(e)) => {
                                 println!("[Optix ERROR]: {}", e.1);
-                            },
+                            }
                             Err(_) => {
                                 println!("ERROR!!!!!!!!");
                             }
@@ -142,7 +137,11 @@ fn main() -> Result<(), String> {
                                 .unwrap();
                             let mut output =
                                 mtx_image_data_render.lock().unwrap();
-                            output.clone_from_slice(buffer_map.as_slice());
+
+                            // output.clone_from_slice(buffer_map.as_slice());
+                            for i in 0..output.len() {
+                                output[i] += buffer_map.as_slice()[i];
+                            }
                         }
                         // let the ui thread know there's new image data to
                         // display
@@ -184,6 +183,7 @@ fn main() -> Result<(), String> {
                 let buffer = mtx_image_data.lock().unwrap();
                 fsq.update_texture(&buffer);
             }
+            fsq.set_progression(current_progression as i32);
         }
 
         // draw the quad
@@ -214,7 +214,8 @@ fn create_context(
 
     let prg_cam_screen =
         ctx.program_create_from_ptx_file("pathtracer.ptx", "generate_ray")?;
-    let prg_miss = ctx.program_create_from_ptx_file("pathtracer.ptx", "miss")?;
+    let prg_miss =
+        ctx.program_create_from_ptx_file("pathtracer.ptx", "miss")?;
 
     // generate camera matrices
     let swn = v2f(-1.0, -1.0);
@@ -244,10 +245,8 @@ fn create_context(
         rt::MatrixFormat::ColumnMajor(mtx_camera_to_world),
     )?;
 
-    let prg_mesh_intersect = ctx.program_create_from_ptx_file(
-        "pathtracer.ptx",
-        "mesh_intersect",
-    )?;
+    let prg_mesh_intersect =
+        ctx.program_create_from_ptx_file("pathtracer.ptx", "mesh_intersect")?;
     let prg_mesh_bound =
         ctx.program_create_from_ptx_file("pathtracer.ptx", "bound")?;
     let prg_material_constant_closest =
@@ -255,15 +254,35 @@ fn create_context(
     let prg_material_constant_any =
         ctx.program_create_from_ptx_file("pathtracer.ptx", "mtl_ah_shadow")?;
 
+    let prg_material_emission =
+        ctx.program_create_from_ptx_file("pathtracer.ptx", "mtl_ch_emission")?;
+
     let raytype_camera = ctx.set_ray_type(0, "camera")?;
+    let raytype_shadow = ctx.set_ray_type(1, "shadow")?;
     ctx.set_miss_program(raytype_camera, prg_miss)?;
 
     let mut map_mtl_camera_programs = HashMap::new();
-    map_mtl_camera_programs
-        .insert(raytype_camera, rt::MaterialProgram::ClosestHit(prg_material_constant_closest));
+    map_mtl_camera_programs.insert(
+        raytype_camera,
+        rt::MaterialProgram::ClosestHit(prg_material_constant_closest),
+    );
+    map_mtl_camera_programs.insert(
+        raytype_shadow,
+        rt::MaterialProgram::AnyHit(prg_material_constant_any),
+    );
 
-    let mtl_constant =
-        ctx.material_create(map_mtl_camera_programs)?;
+    let mtl_constant = ctx.material_create(map_mtl_camera_programs)?;
+
+    let mut map_mtl_emission = HashMap::new();
+    map_mtl_emission.insert(
+        raytype_camera,
+        rt::MaterialProgram::ClosestHit(prg_material_emission),
+    );
+    map_mtl_emission.insert(
+        raytype_shadow,
+        rt::MaterialProgram::AnyHit(prg_material_constant_any),
+    );
+    let mtl_emission = ctx.material_create(map_mtl_emission)?;
 
     let materials = vec![0];
     let buf_material = ctx.buffer_create_from_slice_1d(
@@ -328,6 +347,22 @@ fn create_context(
         prg_mesh_intersect,
     )?;
 
+    let light_center = v3f(277.5, 554.0, -277.5);
+    let light_dim = v3f(100.0, 0.0, 100.0);
+    let light_min = light_center - light_dim / 2.0f32;
+    let light_max = light_min + light_dim;
+    let geo_light = create_quad(
+        &mut ctx,
+        [
+            v3f(light_min.x, light_min.y, light_min.z),
+            v3f(light_max.x, light_min.y, light_min.z),
+            v3f(light_max.x, light_min.y, light_max.z),
+            v3f(light_min.x, light_min.y, light_max.z),
+        ],
+        prg_mesh_bound,
+        prg_mesh_intersect,
+    )?;
+
     let geo_tall_box = create_box(
         &mut ctx,
         v3f(0.0, 0.0, 0.0),
@@ -379,6 +414,12 @@ fn create_context(
         rt::ObjectHandle::Buffer1d(buf_material),
     )?;
 
+    ctx.geometry_set_variable(
+        geo_light,
+        "material_buffer",
+        rt::ObjectHandle::Buffer1d(buf_material),
+    )?;
+
     let geo_inst_floor = ctx.geometry_instance_create(
         rt::GeometryType::Geometry(geo_floor),
         vec![mtl_constant],
@@ -408,6 +449,51 @@ fn create_context(
         vec![mtl_constant],
     )?;
 
+    let geo_inst_light = ctx.geometry_instance_create(
+        rt::GeometryType::Geometry(geo_light),
+        vec![mtl_emission],
+    )?;
+
+    let col_white = v3f(0.76, 0.75, 0.5);
+    let col_red = v3f(0.63, 0.06, 0.04);
+    let col_green = v3f(0.15, 0.48, 0.09);
+
+    ctx.geometry_instance_set_variable(
+        geo_inst_floor,
+        "in_diffuse_albedo",
+        col_white,
+    )?;
+    ctx.geometry_instance_set_variable(
+        geo_inst_ceiling,
+        "in_diffuse_albedo",
+        col_white,
+    )?;
+    ctx.geometry_instance_set_variable(
+        geo_inst_wall_back,
+        "in_diffuse_albedo",
+        col_white,
+    )?;
+    ctx.geometry_instance_set_variable(
+        geo_inst_wall_left,
+        "in_diffuse_albedo",
+        col_red,
+    )?;
+    ctx.geometry_instance_set_variable(
+        geo_inst_wall_right,
+        "in_diffuse_albedo",
+        col_green,
+    )?;
+    ctx.geometry_instance_set_variable(
+        geo_inst_tall_box,
+        "in_diffuse_albedo",
+        col_white,
+    )?;
+    ctx.geometry_instance_set_variable(
+        geo_inst_short_box,
+        "in_diffuse_albedo",
+        col_white,
+    )?;
+
     let acc_main_box = ctx.acceleration_create(rt::Builder::Trbvh)?;
 
     let geo_group = ctx.geometry_group_create(
@@ -418,6 +504,7 @@ fn create_context(
             geo_inst_wall_back,
             geo_inst_wall_left,
             geo_inst_wall_right,
+            geo_inst_light,
         ],
     )?;
 
@@ -429,9 +516,9 @@ fn create_context(
     let geo_group_short_box =
         ctx.geometry_group_create(acc_sb, vec![geo_inst_short_box])?;
 
-    let mtx_tall_box = m4f_translation(80.0, 0.0, -295.0)
+    let mtx_tall_box = m4f_translation(70.0, 0.0, -385.0)
         * m4f_rotation(v3f(0.0, 1.0, 0.0), 0.3925);
-    let mtx_short_box = m4f_translation(300.0, 0.0, -165.0)
+    let mtx_short_box = m4f_translation(320.0, 0.0, -255.0)
         * m4f_rotation(v3f(0.0, 1.0, 0.0), -0.314);
 
     let xform_tall_box = ctx.transform_create(
@@ -460,10 +547,7 @@ fn create_context(
         ],
     )?;
 
-    ctx.set_variable(
-        "scene_root",
-        rt::ObjectHandle::Group(grp_all),
-    )?;
+    ctx.set_variable("scene_root", rt::ObjectHandle::Group(grp_all))?;
 
     let entry_point = ctx.add_entry_point(prg_cam_screen, None)?;
 

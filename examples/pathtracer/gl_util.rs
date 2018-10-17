@@ -114,6 +114,23 @@ impl Program {
             gl::UseProgram(self.id);
         }
     }
+
+    pub fn get_location(&self, name: &str) -> Result<GLint, String> {
+        let cname = CString::new(name).unwrap();
+        let loc = unsafe {
+            gl::GetUniformLocation(self.id, cname.as_ptr() as *mut GLchar)
+        };
+
+        if loc != 0 {
+            Ok(loc)
+        } else {
+            Err("Could not get location".to_owned())
+        }
+    }
+
+    pub fn set_uniform(&self, loc: GLint, v: i32) {
+        unsafe {gl::ProgramUniform1i(self.id, loc, v);}
+    }
 }
 
 fn create_whitespace_cstring(len: usize) -> CString {
@@ -368,6 +385,7 @@ pub struct FullscreenQuad {
     vertex_array: VertexArray,
     program: Program,
     texture_id: GLuint,
+    loc_progression: GLint,
 }
 
 impl FullscreenQuad {
@@ -395,9 +413,14 @@ impl FullscreenQuad {
             out vec4 Color;
 
             uniform sampler2D smp2d_0;
+            uniform int progression;
 
             void main() {
-                Color = texture(smp2d_0, st);
+                vec4 col = texture(smp2d_0, st); 
+                col.r = pow(col.r / progression, 1/2.2);
+                col.g = pow(col.g / progression, 1/2.2);
+                col.b = pow(col.b / progression, 1/2.2);
+                Color = col;
             }
         \0",
             ).unwrap(),
@@ -405,6 +428,7 @@ impl FullscreenQuad {
 
         let program = Program::from_shaders(&[vert_shader, frag_shader])?;
         program.use_program();
+        let loc_progression = program.get_location("progression")?;
 
         let vertices: Vec<Vertex> = vec![
             Vertex::new(f32x3::new(-1.0, -1.0, 0.0), f32x2::new(0.0, 0.0)),
@@ -496,6 +520,7 @@ impl FullscreenQuad {
             vertex_array,
             program,
             texture_id,
+            loc_progression,
         })
     }
 
@@ -527,5 +552,9 @@ impl FullscreenQuad {
                 data.as_ptr() as *const GLvoid,
             );
         }
+    }
+
+    pub fn set_progression(&self, progression: i32) {
+        self.program.set_uniform(self.loc_progression, progression);
     }
 }

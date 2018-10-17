@@ -195,6 +195,21 @@ impl VariableStorable for ObjectHandle {
     }
 }
 
+impl VariableStorable for u32 {
+    fn set_optix_variable(
+        self,
+        ctx: &mut Context,
+        variable: RTvariable,
+    ) -> Result<Variable> {
+        let result = unsafe { rtVariableSet1ui(variable, self) };
+        if result != RtResult::SUCCESS {
+            Err(ctx.optix_error("rtVariableSet1ui", result))
+        } else {
+            Ok(Variable::Pod(VariablePod { var: variable }))
+        }
+    }
+}
+
 impl VariableStorable for f32 {
     fn set_optix_variable(
         self,

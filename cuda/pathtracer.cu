@@ -1,9 +1,27 @@
 #include <optix.h>
 #include <optix_world.h>
 #include "random.cuh"
-#include "raydata.cuh"
 
 using namespace optix;
+
+struct PerRayData_radiance
+{
+    optix::float3 L_e;
+    bool done;
+    int depth;
+    float z;
+    uint seed;
+    float3 p;
+    float3 w;
+    float3 f;
+    float g_c;
+    float g_nee;
+};
+
+struct PerRayData_shadow
+{
+    optix::float3 attenuation;
+};
 
 rtDeclareVariable(uint2, launch_index, rtLaunchIndex, );
 rtDeclareVariable(uint2, launch_dim, rtLaunchDim, );
@@ -13,20 +31,21 @@ rtBuffer<float4, 2> result_buffer;
 rtDeclareVariable(Matrix4x4, camera_to_world, , );
 rtDeclareVariable(Matrix4x4, raster_to_camera, , );
 
+rtDeclareVariable(unsigned int, progression, , );
+
 // a simple screen generator
 RT_PROGRAM void generate_ray() {
-    float x = float(launch_index.x);
-    float y = float(launch_index.y);
+    PerRayData_radiance prd;
+    prd.z = 1000.0f;
+    // prd.pixel = launch_index;
+    prd.seed = tea<16>(launch_index.y * launch_dim.x + launch_index.x, progression);
+    float u0 = rnd(prd.seed);
+    float u1 = rnd(prd.seed);
 
-    float camu = x / launch_dim.x;
-    float camv = y / launch_dim.y;
+    float x = float(launch_index.x) + u0;
+    float y = float(launch_index.y) + u1;
 
     float3 result = make_float3(0.0f);
-
-    PerRayData_radiance prd;
-    prd.depth = 0;
-    prd.z = 1000.0f;
-    prd.pixel = launch_index;
 
     float4 Pras4 = make_float4(x, y, 0.0f, 1.0f);
     float4 Pcam4 = raster_to_camera * Pras4;
@@ -37,11 +56,35 @@ RT_PROGRAM void generate_ray() {
     float4 P_world = camera_to_world * Pcam4;
     auto origin = make_float3(P_origin_world);
     auto direction = normalize(make_float3(Pcam4));
+    auto throughput = make_float3(1.0f);
 
-    optix::Ray ray = optix::make_Ray(origin, direction, 0, 1e-5f, RT_DEFAULT_MAX);
-    rtTrace(scene_root, ray, prd);
+    for (int i = 0; i < 32; ++i) {
+        optix::Ray ray = optix::make_Ray(origin, direction, 0, 1e-5f, RT_DEFAULT_MAX);
+        prd.depth = 0;
+        prd.done = false;
+        prd.L_e = make_float3(0.0f);
+        rtTrace(scene_root, ray, prd);
 
-    result = prd.result;
+        throughput *= prd.f;
+        result += prd.L_e * throughput * prd.g_nee;
+        throughput *= prd.g_c;
+
+        if (i > 2) {
+            float p = fmaxf(throughput);
+            if (rnd(prd.seed) >= p) {
+                break;
+            } else {
+                throughput /= p;
+            }
+        }
+
+        if (prd.done) {
+            break;
+        }
+
+        origin = prd.p;
+        direction = prd.w;
+    }
     float alpha = prd.depth > 0 ? 1.0f : 0.0f;
 
     result_buffer[launch_index] = make_float4(result, alpha);
@@ -51,7 +94,7 @@ rtDeclareVariable(PerRayData_radiance, prd_radiance, rtPayload, );
 rtDeclareVariable(PerRayData_shadow, prd_shadow, rtPayload, );
 
 RT_PROGRAM void miss() {
-    prd_radiance.result = make_float3(0.f);
+    prd_radiance.L_e = make_float3(0.f);
 }
 
 RT_PROGRAM void miss_shadow() { prd_shadow.attenuation = make_float3(1); }
@@ -64,23 +107,68 @@ rtDeclareVariable(float3, shading_normal, attribute shading_normal, );
 rtDeclareVariable(optix::Ray, ray, rtCurrentRay, );
 rtDeclareVariable(float, t_hit, rtIntersectionDistance, );
 
+rtDeclareVariable(float3, in_diffuse_albedo, , );
 // Diffuse surface
 RT_PROGRAM void mtl_ch_diffuse() {
-    float3 world_shading_normal =
+    float3 n =
         normalize(rtTransformNormal(RT_OBJECT_TO_WORLD, shading_normal));
-    float3 world_geometric_normal =
-        normalize(rtTransformNormal(RT_OBJECT_TO_WORLD, geometric_normal));
 
     float3 hit_point = ray.origin + ray.direction * t_hit;
 
-    prd_radiance.result = make_float3(dot(world_shading_normal, -ray.direction));
+    float3 light_center = make_float3(277.5, 554, -277.5);
+    float3 light_dim = make_float3(100.0f, 0.0f, 100.0f);
+    float3 light_min = light_center - light_dim / 2;
+
+    float3 light_origin = light_min + light_dim * make_float3(
+        rnd(prd_radiance.seed), 0.0f, rnd(prd_radiance.seed)
+    );
+    float3 light_normal = make_float3(0.0f, -1.0f, 0.0f);
+
+
+    float3 w_o = -ray.direction;
+    float3 W_i = light_origin - hit_point;
+    float d2 = dot(W_i, W_i);
+    float3 w_i = normalize(W_i);
+
+    float geo_l = max(0.0f, dot(w_i, n));
+
+    PerRayData_shadow prd_shadow;
+    prd_shadow.attenuation = make_float3(1.0f);
+    if (geo_l > 0) {
+        float d = sqrtf(d2);
+        Ray ray_shadow = make_Ray(hit_point, w_i, 1, 1e-3f, d - 1e-3f);
+        rtTrace(scene_root, ray_shadow, prd_shadow);
+    }
+
+    prd_radiance.L_e = 
+        make_float3(1.0f) 
+        * prd_shadow.attenuation;
+    prd_radiance.g_nee = geo_l;    
+
     prd_radiance.z = t_hit;
     prd_radiance.depth = 1;
+
+    optix::Onb onb(n);
+    auto u0 = rnd(prd_radiance.seed);
+    auto u1 = rnd(prd_radiance.seed);
+    float3 w;
+    cosine_sample_hemisphere(u0, u1, w);
+    onb.inverse_transform(w);
+    prd_radiance.w = w;
+    prd_radiance.p = hit_point;
+    prd_radiance.f = in_diffuse_albedo; 
+    prd_radiance.g_c = dot(w, n);
 }
 
 RT_PROGRAM void mtl_ah_shadow() {
     prd_shadow.attenuation = optix::make_float3(0.0f);
     rtTerminateRay();
+}
+
+RT_PROGRAM void mtl_ch_emission() {
+    prd_radiance.L_e = make_float3(3.0f);
+    prd_radiance.f = make_float3(1.0f);
+    prd_radiance.done = true;
 }
 
 // intersection
@@ -89,11 +177,6 @@ rtBuffer<float3> normal_buffer;
 rtBuffer<float2> texcoord_buffer;
 rtBuffer<int3> index_buffer;
 rtBuffer<int> material_buffer;
-
-// rtDeclareVariable(float3, back_hit_point, attribute back_hit_point, );
-// rtDeclareVariable(float3, front_hit_point, attribute front_hit_point, );
-
-// rtDeclareVariable(optix::Ray, ray, rtCurrentRay, );
 
 RT_PROGRAM void mesh_intersect(int primIdx) {
     const int3 v_idx = index_buffer[primIdx];
