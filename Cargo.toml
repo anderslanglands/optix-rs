@@ -8,6 +8,10 @@ edition = "2018"
 repository = "https://github.com/anderslanglands/optix-rs"
 description = "A Rust wrapper for NVidia's OptiX raytracing library"
 license = "MIT/Apache-2.0"
+exclude = [
+    "ptx_path.toml",
+    "rustfmt.toml",
+]
 
 [dependencies]
 config = "0.9"
