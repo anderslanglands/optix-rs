@@ -5,6 +5,9 @@ name = "optix"
 version = "0.1.0"
 authors = ["Anders Langlands <anderslanglands@gmail.com>"]
 edition = "2018"
+repository = "https://github.com/anderslanglands/optix-rs"
+description = "A Rust wrapper for NVidia's OptiX raytracing library"
+license = "MIT/Apache-2.0"
 
 [dependencies]
 config = "0.9"

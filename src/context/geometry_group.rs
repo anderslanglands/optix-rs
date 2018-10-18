@@ -14,7 +14,6 @@ impl Context {
         acc: AccelerationHandle,
         children: Vec<GeometryInstanceHandle>,
     ) -> Result<GeometryGroupHandle> {
-
         self.acceleration_validate(acc)?;
         for child in &children {
             self.geometry_instance_validate(*child)?;
@@ -33,11 +32,12 @@ impl Context {
         let cgeogrp = self.ga_geometry_group_obj.check_handle(geogrp).unwrap();
 
         let rt_acc = *self.ga_acceleration_obj.get(acc).unwrap();
-        let result = unsafe {
-            rtGeometryGroupSetAcceleration(rt_geogrp, rt_acc)
-        };
+        let result =
+            unsafe { rtGeometryGroupSetAcceleration(rt_geogrp, rt_acc) };
         if result != RtResult::SUCCESS {
-            return Err(self.optix_error("rtGeometryGroupSetAcceleration", result));
+            return Err(
+                self.optix_error("rtGeometryGroupSetAcceleration", result)
+            );
         } else {
             self.gd_geometry_group_acceleration.insert(&cgeogrp, acc);
             self.ga_acceleration_obj.incref(acc);
@@ -51,10 +51,11 @@ impl Context {
         }
 
         for (i, geoinst) in children.iter().enumerate() {
-            let rt_geoinst = *self.ga_geometry_instance_obj.get(*geoinst).unwrap();
+            let rt_geoinst =
+                *self.ga_geometry_instance_obj.get(*geoinst).unwrap();
             let result = unsafe {
                 rtGeometryGroupSetChild(rt_geogrp, i as u32, rt_geoinst)
-            };            
+            };
             if result != RtResult::SUCCESS {
                 return Err(self.optix_error("rtGeometryGroupSetChild", result));
             } else {
@@ -68,7 +69,7 @@ impl Context {
 
     pub fn geometry_group_destroy(&mut self, geogrp: GeometryGroupHandle) {
         let rt_geogrp = *self.ga_geometry_group_obj.get(geogrp).unwrap();
-        let cgeogrp = self.ga_geometry_group_obj.check_handle(geogrp).unwrap();      
+        let cgeogrp = self.ga_geometry_group_obj.check_handle(geogrp).unwrap();
         let acc = self.gd_geometry_group_acceleration.get(cgeogrp);
         self.acceleration_destroy(*acc);
         let children = self.gd_geometry_group_children.remove(cgeogrp);
@@ -79,18 +80,21 @@ impl Context {
         match self.ga_geometry_group_obj.destroy(geogrp) {
             DestroyResult::StillAlive => (),
             DestroyResult::ShouldDrop => {
-                if unsafe { rtGeometryGroupDestroy(rt_geogrp) } != RtResult::SUCCESS {
+                if unsafe { rtGeometryGroupDestroy(rt_geogrp) }
+                    != RtResult::SUCCESS
+                {
                     panic!("Error destroying geometry_group {}", geogrp);
                 }
             }
         }
     }
 
-    pub fn geometry_group_validate(&self, geogrp: GeometryGroupHandle) -> Result<()> {
+    pub fn geometry_group_validate(
+        &self,
+        geogrp: GeometryGroupHandle,
+    ) -> Result<()> {
         let rt_geogrp = *self.ga_geometry_group_obj.get(geogrp).unwrap();
-        let result = unsafe {
-            rtGeometryGroupValidate(rt_geogrp)
-        };
+        let result = unsafe { rtGeometryGroupValidate(rt_geogrp) };
         if result != RtResult::SUCCESS {
             Err(self.optix_error("rtGeometryGroupValidate", result))
         } else {
