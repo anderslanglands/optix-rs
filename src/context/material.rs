@@ -1,20 +1,31 @@
+//! Materials contain the Programs that decide what to do when a ray/primitive
+//! intersection is found.
+
 use crate::context::*;
 use crate::ginallocator::*;
 use std::collections::HashMap;
 
 #[derive(Default, Copy, Clone)]
+#[doc(hidden)]
 pub struct MaterialMarker;
 impl Marker for MaterialMarker {
     const ID: &'static str = "Material";
 }
 pub type MaterialHandle = Handle<MaterialMarker>;
 
+/// Struct to hold the Programs associated with a particular Material and
+/// RayType.
 pub struct MaterialProgram {
     pub closest: Option<ProgramHandle>,
     pub any: Option<ProgramHandle>,
 }
 
 impl Context {
+    /// Creates a new Material on this Context, returning a handle that can be
+    /// used to access it later.
+    ///
+    /// # Errors
+    /// If any of the programs in the `programs` map are invalid
     pub fn material_create(
         &mut self,
         programs: HashMap<RayType, MaterialProgram>,
@@ -84,7 +95,11 @@ impl Context {
         }
     }
 
-    ///
+    /// Destroys this Material an all objects attached to it. Note that the
+    /// Material will not actually be destroyed until all references to it from
+    /// other scene graph objects are released.
+    /// # Panics
+    /// If mat is not a valid MaterialHandle
     pub fn material_destroy(&mut self, mat: MaterialHandle) {
         if let Some(cmat) = self.ga_material_obj.check_handle(mat) {
             let vars = self.gd_material_variables.remove(cmat);
@@ -116,6 +131,10 @@ impl Context {
         }
     }
 
+    /// Check that the Material and all objects attached to it are correctly
+    /// set up.
+    /// # Panics
+    /// If mat is not a valid MaterialHandle
     pub fn material_validate(&self, mat: MaterialHandle) -> Result<()> {
         let rt_mat = self.ga_material_obj.get(mat).unwrap();
         let result = unsafe { rtMaterialValidate(*rt_mat) };
@@ -126,6 +145,14 @@ impl Context {
         }
     }
 
+    /// Set the Variable named `name` to `data`. If a Variable named `name` does
+    /// not exist then it is created.
+    ///
+    /// # Panics
+    /// If mat is not a valid MaterialHandle
+    ///
+    /// # Errors
+    /// If `data` is a different type than a pre-existing Variable called `name`
     pub fn material_set_variable<T: VariableStorable>(
         &mut self,
         mat: MaterialHandle,

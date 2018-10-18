@@ -1,3 +1,5 @@
+// This example shows how to use the crate to generate a simple, progressive,
+// Cornell box. 
 use crossbeam_channel as channel;
 use glfw::{Action, Context, Key};
 use std::collections::HashMap;
@@ -51,6 +53,10 @@ fn main() -> Result<(), String> {
 
     let (ctx, entry_point) = create_context(width, height).unwrap();
 
+    // We'll create a second, render thread and pass messages to it in order to
+    // control rendering, sharing an image buffer for the rendered frames and 
+    // using an atomic counter to signal when the context has finished each
+    // render progression.
     let (tx_render, rx_render) = channel::unbounded();
     let main_progression_counter = Arc::new(AtomicUsize::new(0));
     let render_progression_counter = Arc::clone(&main_progression_counter);
@@ -173,8 +179,8 @@ fn main() -> Result<(), String> {
             handle_window_event(&mut window, event);
         }
 
-        // If the render has progressed since we last updated our display, then
-        // synchronize and update the diplay
+        // If the render thread has progressed since we last updated our display,
+        // synchronize and update the display
         let current_progression =
             main_progression_counter.load(Ordering::SeqCst);
         if current_progression > last_progression {
@@ -207,7 +213,12 @@ fn create_context(
     width: u32,
     height: u32,
 ) -> Result<(rt::Context, rt::EntryPointHandle), rt::Error> {
+    // The context owns everything
     let mut ctx = rt::Context::new();
+
+    // The search path is used for finding ptx files. In this case the path to
+    // the generated ptx is known by the build script, which outputs a config
+    // file for us so we know where to look...
     ctx.set_search_path(rt::SearchPath::from_config_file(
         "ptx_path", "ptx_path",
     ));
@@ -226,7 +237,7 @@ fn create_context(
     let mtx_raster_to_screen = mtx_screen_to_raster.try_inverse().unwrap();
     let mtx_camera_to_screen = M4f32::new_perspective(
         (width as f32) / (height as f32),
-        34.0f32.to_radians(), // ~40mm
+        34.0f32.to_radians(),
         0.1,
         1.0e7,
     );
@@ -660,7 +671,6 @@ pub fn create_box(
         rt::ObjectHandle::Buffer1d(buf_texcoord),
     )?;
 
-    println!("Created geo box {}", geo_box);
     Ok(geo_box)
 }
 

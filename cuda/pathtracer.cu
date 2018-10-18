@@ -1,3 +1,6 @@
+// Example pathtracer, partially based on the optixPathTracer example.
+// This is not an example of how to write a good renderer.
+
 #include <optix.h>
 #include <optix_world.h>
 #include "random.cuh"
@@ -136,7 +139,8 @@ RT_PROGRAM void mtl_ch_diffuse() {
     prd_shadow.attenuation = make_float3(1.0f);
     if (geo_l > 0) {
         float d = sqrtf(d2);
-        Ray ray_shadow = make_Ray(hit_point, w_i, 1, 1e-3f, d - 1e-3f);
+        auto epsilon = 2.0e-5f * t_hit;
+        Ray ray_shadow = make_Ray(hit_point, w_i, 1, epsilon, d - epsilon);
         rtTrace(scene_root, ray_shadow, prd_shadow);
     }
 
