@@ -717,6 +717,7 @@ pub type RTusagereportcallback = ::std::option::Option<
     ),
 >;
 
+#[link(name="optix", kind="dylib")]
 extern "C" {
     /// @brief Returns the current OptiX version
     ///
@@ -749,7 +750,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtDeviceGetDeviceCount
     ///
-    #[link_name = "\u{1}_rtGetVersion"]
     pub fn rtGetVersion(version: *mut ::std::os::raw::c_uint) -> RtResult;
 }
 extern "C" {
@@ -778,14 +778,13 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtGetVersion
     ///
-    #[link_name = "\u{1}_rtDeviceGetDeviceCount"]
     pub fn rtDeviceGetDeviceCount(
         count: *mut ::std::os::raw::c_uint,
     ) -> RtResult;
 }
 extern "C" {
-    /// @brief Returns an attribute specific to an OptiX device
     ///
+    /// @brief Returns an attribute specific to an OptiX device
     /// @ingroup ContextFreeFunctions
     ///
     /// <B>Description</B>
@@ -841,7 +840,6 @@ extern "C" {
     /// @ref rtDeviceGetDeviceCount,
     /// @ref rtContextGetAttribute
     ///
-    #[link_name = "\u{1}_rtDeviceGetAttribute"]
     pub fn rtDeviceGetAttribute(
         ordinal: ::std::os::raw::c_int,
         attrib: DeviceAttribute,
@@ -907,7 +905,6 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable to be modified
     /// @param[in]   f1         Specifies the new float value of the program
     /// variable
-    #[link_name = "\u{1}_rtVariableSet1f"]
     pub fn rtVariableSet1f(v: RTvariable, f1: f32) -> RtResult;
 }
 extern "C" {
@@ -915,7 +912,6 @@ extern "C" {
     /// @param[in]   f1         Specifies the new float value of the program
     /// variable @param[in]   f2         Specifies the new float value of
     /// the program variable
-    #[link_name = "\u{1}_rtVariableSet2f"]
     pub fn rtVariableSet2f(v: RTvariable, f1: f32, f2: f32) -> RtResult;
 }
 extern "C" {
@@ -924,7 +920,6 @@ extern "C" {
     /// variable @param[in]   f2         Specifies the new float value of
     /// the program variable @param[in]   f3         Specifies the new
     /// float value of the program variable
-    #[link_name = "\u{1}_rtVariableSet3f"]
     pub fn rtVariableSet3f(
         v: RTvariable,
         f1: f32,
@@ -940,7 +935,6 @@ extern "C" {
     /// float value of the program variable @param[in]   f4
     /// Specifies the new float value
     /// of the program variable
-    #[link_name = "\u{1}_rtVariableSet4f"]
     pub fn rtVariableSet4f(
         v: RTvariable,
         f1: f32,
@@ -952,32 +946,27 @@ extern "C" {
 extern "C" {
     /// @param[in]   v          Specifies the program variable to be modified
     /// @param[in]   f          Array of float values to set the variable to
-    #[link_name = "\u{1}_rtVariableSet1fv"]
     pub fn rtVariableSet1fv(v: RTvariable, f: *const f32) -> RtResult;
 }
 extern "C" {
     /// @param[in]   v          Specifies the program variable to be modified
     /// @param[in]   f          Array of float values to set the variable to
-    #[link_name = "\u{1}_rtVariableSet2fv"]
     pub fn rtVariableSet2fv(v: RTvariable, f: *const f32) -> RtResult;
 }
 extern "C" {
     /// @param[in]   v          Specifies the program variable to be modified
     /// @param[in]   f          Array of float values to set the variable to
-    #[link_name = "\u{1}_rtVariableSet3fv"]
     pub fn rtVariableSet3fv(v: RTvariable, f: *const f32) -> RtResult;
 }
 extern "C" {
     /// @param[in]   v          Specifies the program variable to be modified
     /// @param[in]   f          Array of float values to set the variable to
-    #[link_name = "\u{1}_rtVariableSet4fv"]
     pub fn rtVariableSet4fv(v: RTvariable, f: *const f32) -> RtResult;
 }
 extern "C" {
     /// @param[in]   v          Specifies the program variable to be modified
     /// @param[in]   i1         Specifies the new integer value of the program
     /// variable
-    #[link_name = "\u{1}_rtVariableSet1i"]
     pub fn rtVariableSet1i(
         v: RTvariable,
         i1: ::std::os::raw::c_int,
@@ -988,7 +977,6 @@ extern "C" {
     /// @param[in]   i1         Specifies the new integer value of the program
     /// variable @param[in]   i2         Specifies the new integer value of
     /// the program variable
-    #[link_name = "\u{1}_rtVariableSet2i"]
     pub fn rtVariableSet2i(
         v: RTvariable,
         i1: ::std::os::raw::c_int,
@@ -1001,7 +989,6 @@ extern "C" {
     /// variable @param[in]   i2         Specifies the new integer value of
     /// the program variable @param[in]   i3         Specifies the new
     /// integer value of the program variable
-    #[link_name = "\u{1}_rtVariableSet3i"]
     pub fn rtVariableSet3i(
         v: RTvariable,
         i1: ::std::os::raw::c_int,
@@ -1017,7 +1004,6 @@ extern "C" {
     /// integer value of the program variable @param[in]   i4
     /// Specifies the new integer
     /// value of the program variable
-    #[link_name = "\u{1}_rtVariableSet4i"]
     pub fn rtVariableSet4i(
         v: RTvariable,
         i1: ::std::os::raw::c_int,
@@ -1029,7 +1015,6 @@ extern "C" {
 extern "C" {
     /// @param[in]   v          Specifies the program variable to be modified
     /// @param[in]   i          Array of integer values to set the variable to
-    #[link_name = "\u{1}_rtVariableSet1iv"]
     pub fn rtVariableSet1iv(
         v: RTvariable,
         i: *const ::std::os::raw::c_int,
@@ -1038,7 +1023,6 @@ extern "C" {
 extern "C" {
     /// @param[in]   v          Specifies the program variable to be modified
     /// @param[in]   i          Array of integer values to set the variable to
-    #[link_name = "\u{1}_rtVariableSet2iv"]
     pub fn rtVariableSet2iv(
         v: RTvariable,
         i: *const ::std::os::raw::c_int,
@@ -1047,7 +1031,6 @@ extern "C" {
 extern "C" {
     /// @param[in]   v          Specifies the program variable to be modified
     /// @param[in]   i          Array of integer values to set the variable to
-    #[link_name = "\u{1}_rtVariableSet3iv"]
     pub fn rtVariableSet3iv(
         v: RTvariable,
         i: *const ::std::os::raw::c_int,
@@ -1056,7 +1039,6 @@ extern "C" {
 extern "C" {
     /// @param[in]   v          Specifies the program variable to be modified
     /// @param[in]   i          Array of integer values to set the variable to
-    #[link_name = "\u{1}_rtVariableSet4iv"]
     pub fn rtVariableSet4iv(
         v: RTvariable,
         i: *const ::std::os::raw::c_int,
@@ -1066,7 +1048,6 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable to be modified
     /// @param[in]   u1         Specifies the new unsigned integer value of the
     /// program variable
-    #[link_name = "\u{1}_rtVariableSet1ui"]
     pub fn rtVariableSet1ui(
         v: RTvariable,
         u1: ::std::os::raw::c_uint,
@@ -1077,7 +1058,6 @@ extern "C" {
     /// @param[in]   u1         Specifies the new unsigned integer value of the
     /// program variable @param[in]   u2         Specifies the new unsigned
     /// integer value of the program variable
-    #[link_name = "\u{1}_rtVariableSet2ui"]
     pub fn rtVariableSet2ui(
         v: RTvariable,
         u1: ::std::os::raw::c_uint,
@@ -1092,7 +1072,6 @@ extern "C" {
     /// Specifies the new unsigned
     /// integer value of the program
     /// variable
-    #[link_name = "\u{1}_rtVariableSet3ui"]
     pub fn rtVariableSet3ui(
         v: RTvariable,
         u1: ::std::os::raw::c_uint,
@@ -1109,7 +1088,6 @@ extern "C" {
     /// integer value of the program
     /// variable @param[in]   u4         Specifies the new unsigned integer
     /// value of the program variable
-    #[link_name = "\u{1}_rtVariableSet4ui"]
     pub fn rtVariableSet4ui(
         v: RTvariable,
         u1: ::std::os::raw::c_uint,
@@ -1122,7 +1100,6 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable to be modified
     /// @param[in]   u          Array of unsigned integer values to set the
     /// variable to
-    #[link_name = "\u{1}_rtVariableSet1uiv"]
     pub fn rtVariableSet1uiv(
         v: RTvariable,
         u: *const ::std::os::raw::c_uint,
@@ -1132,7 +1109,6 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable to be modified
     /// @param[in]   u          Array of unsigned integer values to set the
     /// variable to
-    #[link_name = "\u{1}_rtVariableSet2uiv"]
     pub fn rtVariableSet2uiv(
         v: RTvariable,
         u: *const ::std::os::raw::c_uint,
@@ -1142,7 +1118,6 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable to be modified
     /// @param[in]   u          Array of unsigned integer values to set the
     /// variable to
-    #[link_name = "\u{1}_rtVariableSet3uiv"]
     pub fn rtVariableSet3uiv(
         v: RTvariable,
         u: *const ::std::os::raw::c_uint,
@@ -1152,7 +1127,6 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable to be modified
     /// @param[in]   u          Array of unsigned integer values to set the
     /// variable to
-    #[link_name = "\u{1}_rtVariableSet4uiv"]
     pub fn rtVariableSet4uiv(
         v: RTvariable,
         u: *const ::std::os::raw::c_uint,
@@ -1162,7 +1136,6 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable to be modified
     /// @param[in]   transpose  Specifies row-major or column-major order
     /// @param[in]   m          Array of float values to set the matrix to
-    #[link_name = "\u{1}_rtVariableSetMatrix2x2fv"]
     pub fn rtVariableSetMatrix2x2fv(
         v: RTvariable,
         transpose: ::std::os::raw::c_int,
@@ -1173,7 +1146,6 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable to be modified
     /// @param[in]   transpose  Specifies row-major or column-major order
     /// @param[in]   m          Array of float values to set the matrix to
-    #[link_name = "\u{1}_rtVariableSetMatrix2x3fv"]
     pub fn rtVariableSetMatrix2x3fv(
         v: RTvariable,
         transpose: ::std::os::raw::c_int,
@@ -1184,7 +1156,7 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable to be modified
     /// @param[in]   transpose  Specifies row-major or column-major order
     /// @param[in]   m          Array of float values to set the matrix to
-    #[link_name = "\u{1}_rtVariableSetMatrix2x4fv"]
+    
     pub fn rtVariableSetMatrix2x4fv(
         v: RTvariable,
         transpose: ::std::os::raw::c_int,
@@ -1195,7 +1167,7 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable to be modified
     /// @param[in]   transpose  Specifies row-major or column-major order
     /// @param[in]   m          Array of float values to set the matrix to
-    #[link_name = "\u{1}_rtVariableSetMatrix3x2fv"]
+    
     pub fn rtVariableSetMatrix3x2fv(
         v: RTvariable,
         transpose: ::std::os::raw::c_int,
@@ -1206,7 +1178,7 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable to be modified
     /// @param[in]   transpose  Specifies row-major or column-major order
     /// @param[in]   m          Array of float values to set the matrix to
-    #[link_name = "\u{1}_rtVariableSetMatrix3x3fv"]
+    
     pub fn rtVariableSetMatrix3x3fv(
         v: RTvariable,
         transpose: ::std::os::raw::c_int,
@@ -1217,7 +1189,7 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable to be modified
     /// @param[in]   transpose  Specifies row-major or column-major order
     /// @param[in]   m          Array of float values to set the matrix to
-    #[link_name = "\u{1}_rtVariableSetMatrix3x4fv"]
+    
     pub fn rtVariableSetMatrix3x4fv(
         v: RTvariable,
         transpose: ::std::os::raw::c_int,
@@ -1228,7 +1200,7 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable to be modified
     /// @param[in]   transpose  Specifies row-major or column-major order
     /// @param[in]   m          Array of float values to set the matrix to
-    #[link_name = "\u{1}_rtVariableSetMatrix4x2fv"]
+    
     pub fn rtVariableSetMatrix4x2fv(
         v: RTvariable,
         transpose: ::std::os::raw::c_int,
@@ -1239,7 +1211,7 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable to be modified
     /// @param[in]   transpose  Specifies row-major or column-major order
     /// @param[in]   m          Array of float values to set the matrix to
-    #[link_name = "\u{1}_rtVariableSetMatrix4x3fv"]
+    
     pub fn rtVariableSetMatrix4x3fv(
         v: RTvariable,
         transpose: ::std::os::raw::c_int,
@@ -1250,7 +1222,7 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable to be modified
     /// @param[in]   transpose  Specifies row-major or column-major order
     /// @param[in]   m          Array of float values to set the matrix to
-    #[link_name = "\u{1}_rtVariableSetMatrix4x4fv"]
+    
     pub fn rtVariableSetMatrix4x4fv(
         v: RTvariable,
         transpose: ::std::os::raw::c_int,
@@ -1294,7 +1266,7 @@ extern "C" {
     /// @ref rtVariableGetObject,
     /// @ref rtContextDeclareVariable
     ///
-    #[link_name = "\u{1}_rtVariableSetObject"]
+    
     pub fn rtVariableSetObject(v: RTvariable, object: RTobject) -> RtResult;
 }
 extern "C" {
@@ -1334,7 +1306,7 @@ extern "C" {
     /// @ref rtVariableGetUserData,
     /// @ref rtContextDeclareVariable
     ///
-    #[link_name = "\u{1}_rtVariableSetUserData"]
+    
     pub fn rtVariableSetUserData(
         v: RTvariable,
         size: RTsize,
@@ -1405,14 +1377,14 @@ extern "C" {
     ////**
     /// @param[in]   v          Specifies the program variable whose value is
     /// to be returned @param[in]   f1         Float value to be returned
-    #[link_name = "\u{1}_rtVariableGet1f"]
+    
     pub fn rtVariableGet1f(v: RTvariable, f1: *mut f32) -> RtResult;
 }
 extern "C" {
     /// @param[in]   v          Specifies the program variable whose value is
     /// to be returned @param[in]   f1         Float value to be returned
     /// @param[in]   f2         Float value to be returned
-    #[link_name = "\u{1}_rtVariableGet2f"]
+    
     pub fn rtVariableGet2f(
         v: RTvariable,
         f1: *mut f32,
@@ -1424,7 +1396,7 @@ extern "C" {
     /// to be returned @param[in]   f1         Float value to be returned
     /// @param[in]   f2         Float value to be returned
     /// @param[in]   f3         Float value to be returned
-    #[link_name = "\u{1}_rtVariableGet3f"]
+    
     pub fn rtVariableGet3f(
         v: RTvariable,
         f1: *mut f32,
@@ -1438,7 +1410,7 @@ extern "C" {
     /// @param[in]   f2         Float value to be returned
     /// @param[in]   f3         Float value to be returned
     /// @param[in]   f4         Float value to be returned
-    #[link_name = "\u{1}_rtVariableGet4f"]
+    
     pub fn rtVariableGet4f(
         v: RTvariable,
         f1: *mut f32,
@@ -1451,34 +1423,34 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable whose value is
     /// to be returned @param[in]   f          Array of float value(s) to
     /// be returned
-    #[link_name = "\u{1}_rtVariableGet1fv"]
+    
     pub fn rtVariableGet1fv(v: RTvariable, f: *mut f32) -> RtResult;
 }
 extern "C" {
     /// @param[in]   v          Specifies the program variable whose value is
     /// to be returned @param[in]   f          Array of float value(s) to
     /// be returned
-    #[link_name = "\u{1}_rtVariableGet2fv"]
+    
     pub fn rtVariableGet2fv(v: RTvariable, f: *mut f32) -> RtResult;
 }
 extern "C" {
     /// @param[in]   v          Specifies the program variable whose value is
     /// to be returned @param[in]   f          Array of float value(s) to
     /// be returned
-    #[link_name = "\u{1}_rtVariableGet3fv"]
+    
     pub fn rtVariableGet3fv(v: RTvariable, f: *mut f32) -> RtResult;
 }
 extern "C" {
     /// @param[in]   v          Specifies the program variable whose value is
     /// to be returned @param[in]   f          Array of float value(s) to
     /// be returned
-    #[link_name = "\u{1}_rtVariableGet4fv"]
+    
     pub fn rtVariableGet4fv(v: RTvariable, f: *mut f32) -> RtResult;
 }
 extern "C" {
     /// @param[in]   v          Specifies the program variable whose value is
     /// to be returned @param[in]   i1         Integer value to be returned
-    #[link_name = "\u{1}_rtVariableGet1i"]
+    
     pub fn rtVariableGet1i(
         v: RTvariable,
         i1: *mut ::std::os::raw::c_int,
@@ -1488,7 +1460,7 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable whose value is
     /// to be returned @param[in]   i1         Integer value to be returned
     /// @param[in]   i2         Integer value to be returned
-    #[link_name = "\u{1}_rtVariableGet2i"]
+    
     pub fn rtVariableGet2i(
         v: RTvariable,
         i1: *mut ::std::os::raw::c_int,
@@ -1500,7 +1472,7 @@ extern "C" {
     /// to be returned @param[in]   i1         Integer value to be returned
     /// @param[in]   i2         Integer value to be returned
     /// @param[in]   i3         Integer value to be returned
-    #[link_name = "\u{1}_rtVariableGet3i"]
+    
     pub fn rtVariableGet3i(
         v: RTvariable,
         i1: *mut ::std::os::raw::c_int,
@@ -1514,7 +1486,7 @@ extern "C" {
     /// @param[in]   i2         Integer value to be returned
     /// @param[in]   i3         Integer value to be returned
     /// @param[in]   i4         Integer value to be returned
-    #[link_name = "\u{1}_rtVariableGet4i"]
+    
     pub fn rtVariableGet4i(
         v: RTvariable,
         i1: *mut ::std::os::raw::c_int,
@@ -1527,7 +1499,7 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable whose value is
     /// to be returned @param[in]   i          Array of integer values to
     /// be returned
-    #[link_name = "\u{1}_rtVariableGet1iv"]
+    
     pub fn rtVariableGet1iv(
         v: RTvariable,
         i: *mut ::std::os::raw::c_int,
@@ -1537,7 +1509,7 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable whose value is
     /// to be returned @param[in]   i          Array of integer values to
     /// be returned
-    #[link_name = "\u{1}_rtVariableGet2iv"]
+    
     pub fn rtVariableGet2iv(
         v: RTvariable,
         i: *mut ::std::os::raw::c_int,
@@ -1547,7 +1519,7 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable whose value is
     /// to be returned @param[in]   i          Array of integer values to
     /// be returned
-    #[link_name = "\u{1}_rtVariableGet3iv"]
+    
     pub fn rtVariableGet3iv(
         v: RTvariable,
         i: *mut ::std::os::raw::c_int,
@@ -1557,7 +1529,7 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable whose value is
     /// to be returned @param[in]   i          Array of integer values to
     /// be returned
-    #[link_name = "\u{1}_rtVariableGet4iv"]
+    
     pub fn rtVariableGet4iv(
         v: RTvariable,
         i: *mut ::std::os::raw::c_int,
@@ -1567,7 +1539,7 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable whose value is
     /// to be returned @param[in]   u1         Unsigned integer value to be
     /// returned
-    #[link_name = "\u{1}_rtVariableGet1ui"]
+    
     pub fn rtVariableGet1ui(
         v: RTvariable,
         u1: *mut ::std::os::raw::c_uint,
@@ -1578,7 +1550,7 @@ extern "C" {
     /// to be returned @param[in]   u1         Unsigned integer value to be
     /// returned @param[in]   u2         Unsigned integer value to be
     /// returned
-    #[link_name = "\u{1}_rtVariableGet2ui"]
+    
     pub fn rtVariableGet2ui(
         v: RTvariable,
         u1: *mut ::std::os::raw::c_uint,
@@ -1591,7 +1563,7 @@ extern "C" {
     /// returned @param[in]   u2         Unsigned integer value to be
     /// returned @param[in]   u3         Unsigned integer value to be
     /// returned
-    #[link_name = "\u{1}_rtVariableGet3ui"]
+    
     pub fn rtVariableGet3ui(
         v: RTvariable,
         u1: *mut ::std::os::raw::c_uint,
@@ -1606,7 +1578,7 @@ extern "C" {
     /// returned @param[in]   u3         Unsigned integer value to be
     /// returned @param[in]   u4         Unsigned integer value to be
     /// returned
-    #[link_name = "\u{1}_rtVariableGet4ui"]
+    
     pub fn rtVariableGet4ui(
         v: RTvariable,
         u1: *mut ::std::os::raw::c_uint,
@@ -1619,7 +1591,7 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable whose value is
     /// to be returned @param[in]   u          Array of unsigned integer
     /// values to be returned
-    #[link_name = "\u{1}_rtVariableGet1uiv"]
+    
     pub fn rtVariableGet1uiv(
         v: RTvariable,
         u: *mut ::std::os::raw::c_uint,
@@ -1629,7 +1601,7 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable whose value is
     /// to be returned @param[in]   u          Array of unsigned integer
     /// values to be returned
-    #[link_name = "\u{1}_rtVariableGet2uiv"]
+    
     pub fn rtVariableGet2uiv(
         v: RTvariable,
         u: *mut ::std::os::raw::c_uint,
@@ -1639,7 +1611,7 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable whose value is
     /// to be returned @param[in]   u          Array of unsigned integer
     /// values to be returned
-    #[link_name = "\u{1}_rtVariableGet3uiv"]
+    
     pub fn rtVariableGet3uiv(
         v: RTvariable,
         u: *mut ::std::os::raw::c_uint,
@@ -1649,7 +1621,7 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable whose value is
     /// to be returned @param[in]   u          Array of unsigned integer
     /// values to be returned
-    #[link_name = "\u{1}_rtVariableGet4uiv"]
+    
     pub fn rtVariableGet4uiv(
         v: RTvariable,
         u: *mut ::std::os::raw::c_uint,
@@ -1660,7 +1632,7 @@ extern "C" {
     /// to be returned @param[in]   transpose  Specify(ies) row-major or
     /// column-major order @param[in]   m          Array of float values to
     /// be returned
-    #[link_name = "\u{1}_rtVariableGetMatrix2x2fv"]
+    
     pub fn rtVariableGetMatrix2x2fv(
         v: RTvariable,
         transpose: ::std::os::raw::c_int,
@@ -1672,7 +1644,7 @@ extern "C" {
     /// to be returned @param[in]   transpose  Specify(ies) row-major or
     /// column-major order @param[in]   m          Array of float values to
     /// be returned
-    #[link_name = "\u{1}_rtVariableGetMatrix2x3fv"]
+    
     pub fn rtVariableGetMatrix2x3fv(
         v: RTvariable,
         transpose: ::std::os::raw::c_int,
@@ -1684,7 +1656,7 @@ extern "C" {
     /// to be returned @param[in]   transpose  Specify(ies) row-major or
     /// column-major order @param[in]   m          Array of float values to
     /// be returned
-    #[link_name = "\u{1}_rtVariableGetMatrix2x4fv"]
+    
     pub fn rtVariableGetMatrix2x4fv(
         v: RTvariable,
         transpose: ::std::os::raw::c_int,
@@ -1696,7 +1668,7 @@ extern "C" {
     /// to be returned @param[in]   transpose  Specify(ies) row-major or
     /// column-major order @param[in]   m          Array of float values to
     /// be returned
-    #[link_name = "\u{1}_rtVariableGetMatrix3x2fv"]
+    
     pub fn rtVariableGetMatrix3x2fv(
         v: RTvariable,
         transpose: ::std::os::raw::c_int,
@@ -1708,7 +1680,7 @@ extern "C" {
     /// to be returned @param[in]   transpose  Specify(ies) row-major or
     /// column-major order @param[in]   m          Array of float values to
     /// be returned
-    #[link_name = "\u{1}_rtVariableGetMatrix3x3fv"]
+    
     pub fn rtVariableGetMatrix3x3fv(
         v: RTvariable,
         transpose: ::std::os::raw::c_int,
@@ -1720,7 +1692,7 @@ extern "C" {
     /// to be returned @param[in]   transpose  Specify(ies) row-major or
     /// column-major order @param[in]   m          Array of float values to
     /// be returned
-    #[link_name = "\u{1}_rtVariableGetMatrix3x4fv"]
+    
     pub fn rtVariableGetMatrix3x4fv(
         v: RTvariable,
         transpose: ::std::os::raw::c_int,
@@ -1732,7 +1704,7 @@ extern "C" {
     /// to be returned @param[in]   transpose  Specify(ies) row-major or
     /// column-major order @param[in]   m          Array of float values to
     /// be returned
-    #[link_name = "\u{1}_rtVariableGetMatrix4x2fv"]
+    
     pub fn rtVariableGetMatrix4x2fv(
         v: RTvariable,
         transpose: ::std::os::raw::c_int,
@@ -1744,7 +1716,7 @@ extern "C" {
     /// to be returned @param[in]   transpose  Specify(ies) row-major or
     /// column-major order @param[in]   m          Array of float values to
     /// be returned
-    #[link_name = "\u{1}_rtVariableGetMatrix4x3fv"]
+    
     pub fn rtVariableGetMatrix4x3fv(
         v: RTvariable,
         transpose: ::std::os::raw::c_int,
@@ -1756,7 +1728,7 @@ extern "C" {
     /// to be returned @param[in]   transpose  Specify(ies) row-major or
     /// column-major order @param[in]   m          Array of float values to
     /// be returned
-    #[link_name = "\u{1}_rtVariableGetMatrix4x4fv"]
+    
     pub fn rtVariableGetMatrix4x4fv(
         v: RTvariable,
         transpose: ::std::os::raw::c_int,
@@ -1799,7 +1771,7 @@ extern "C" {
     /// @ref rtVariableGetType,
     /// @ref rtContextDeclareVariable
     ///
-    #[link_name = "\u{1}_rtVariableGetObject"]
+    
     pub fn rtVariableGetObject(
         v: RTvariable,
         object: *mut RTobject,
@@ -1843,7 +1815,7 @@ extern "C" {
     /// @ref rtVariableSetUserData,
     /// @ref rtContextDeclareVariable
     ///
-    #[link_name = "\u{1}_rtVariableGetUserData"]
+    
     pub fn rtVariableGetUserData(
         v: RTvariable,
         size: RTsize,
@@ -1885,7 +1857,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextDeclareVariable
     ///
-    #[link_name = "\u{1}_rtVariableGetName"]
+    
     pub fn rtVariableGetName(
         v: RTvariable,
         name_return: *mut *const ::std::os::raw::c_char,
@@ -1926,7 +1898,7 @@ extern "C" {
     /// @ref rtDeclareVariable,
     /// @ref rtDeclareAnnotation
     ///
-    #[link_name = "\u{1}_rtVariableGetAnnotation"]
+    
     pub fn rtVariableGetAnnotation(
         v: RTvariable,
         annotation_return: *mut *const ::std::os::raw::c_char,
@@ -1998,7 +1970,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextDeclareVariable
     ///
-    #[link_name = "\u{1}_rtVariableGetType"]
+    
     pub fn rtVariableGetType(
         v: RTvariable,
         type_return: *mut ObjectType,
@@ -2036,7 +2008,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextDeclareVariable
     ///
-    #[link_name = "\u{1}_rtVariableGetContext"]
+    
     pub fn rtVariableGetContext(
         v: RTvariable,
         context: *mut RTcontext,
@@ -2075,7 +2047,7 @@ extern "C" {
     /// @ref rtVariableGetUserData,
     /// @ref rtContextDeclareVariable
     ///
-    #[link_name = "\u{1}_rtVariableGetSize"]
+    
     pub fn rtVariableGetSize(v: RTvariable, size: *mut RTsize) -> RtResult;
 }
 extern "C" {
@@ -2105,7 +2077,7 @@ extern "C" {
     /// <B>See also</B>
     ///
     ///
-    #[link_name = "\u{1}_rtContextCreate"]
+    
     pub fn rtContextCreate(context: *mut RTcontext) -> RtResult;
 }
 extern "C" {
@@ -2138,7 +2110,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextCreate
     ///
-    #[link_name = "\u{1}_rtContextDestroy"]
+    
     pub fn rtContextDestroy(context: RTcontext) -> RtResult;
 }
 extern "C" {
@@ -2175,7 +2147,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextGetErrorString
     ///
-    #[link_name = "\u{1}_rtContextValidate"]
+    
     pub fn rtContextValidate(context: RTcontext) -> RtResult;
 }
 extern "C" {
@@ -2211,7 +2183,7 @@ extern "C" {
     /// <B>See also</B>
     ///
     ///
-    #[link_name = "\u{1}_rtContextGetErrorString"]
+    
     pub fn rtContextGetErrorString(
         context: RTcontext,
         code: RtResult,
@@ -2256,7 +2228,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextGetAttribute
     ///
-    #[link_name = "\u{1}_rtContextSetAttribute"]
+    
     pub fn rtContextSetAttribute(
         context: RTcontext,
         attrib: ContextAttribute,
@@ -2337,7 +2309,7 @@ extern "C" {
     /// @ref rtContextSetAttribute,
     /// @ref rtDeviceGetAttribute
     ///
-    #[link_name = "\u{1}_rtContextGetAttribute"]
+    
     pub fn rtContextGetAttribute(
         context: RTcontext,
         attrib: ContextAttribute,
@@ -2379,7 +2351,7 @@ extern "C" {
     /// @ref rtContextGetDevices,
     /// @ref rtContextGetDeviceCount
     ///
-    #[link_name = "\u{1}_rtContextSetDevices"]
+    
     pub fn rtContextSetDevices(
         context: RTcontext,
         count: ::std::os::raw::c_uint,
@@ -2422,7 +2394,7 @@ extern "C" {
     /// @ref rtContextSetDevices,
     /// @ref rtContextGetDeviceCount
     ///
-    #[link_name = "\u{1}_rtContextGetDevices"]
+    
     pub fn rtContextGetDevices(
         context: RTcontext,
         devices: *mut ::std::os::raw::c_int,
@@ -2456,7 +2428,7 @@ extern "C" {
     /// @ref rtContextSetDevices,
     /// @ref rtContextGetDevices
     ///
-    #[link_name = "\u{1}_rtContextGetDeviceCount"]
+    
     pub fn rtContextGetDeviceCount(
         context: RTcontext,
         count: *mut ::std::os::raw::c_uint,
@@ -2506,7 +2478,7 @@ extern "C" {
     /// @ref rtRemoteDeviceReserve
     /// @ref rtContextLaunchProgressive2D
     ///
-    #[link_name = "\u{1}_rtContextSetRemoteDevice"]
+    
     pub fn rtContextSetRemoteDevice(
         context: RTcontext,
         remote_dev: RTremotedevice,
@@ -2539,7 +2511,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextGetStackSize
     ///
-    #[link_name = "\u{1}_rtContextSetStackSize"]
+    
     pub fn rtContextSetStackSize(
         context: RTcontext,
         stack_size_bytes: RTsize,
@@ -2573,7 +2545,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextSetStackSize
     ///
-    #[link_name = "\u{1}_rtContextGetStackSize"]
+    
     pub fn rtContextGetStackSize(
         context: RTcontext,
         stack_size_bytes: *mut RTsize,
@@ -2640,7 +2612,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextLaunch
     ///
-    #[link_name = "\u{1}_rtContextSetTimeoutCallback"]
+    
     pub fn rtContextSetTimeoutCallback(
         context: RTcontext,
         callback: RTtimeoutcallback,
@@ -2707,7 +2679,7 @@ extern "C" {
     ///
     /// <B>See also</B>
     ///
-    #[link_name = "\u{1}_rtContextSetUsageReportCallback"]
+    
     pub fn rtContextSetUsageReportCallback(
         context: RTcontext,
         callback: RTusagereportcallback,
@@ -2741,7 +2713,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextGetEntryPointCount
     ///
-    #[link_name = "\u{1}_rtContextSetEntryPointCount"]
+    
     pub fn rtContextSetEntryPointCount(
         context: RTcontext,
         num_entry_points: ::std::os::raw::c_uint,
@@ -2776,7 +2748,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextSetEntryPointCount
     ///
-    #[link_name = "\u{1}_rtContextGetEntryPointCount"]
+    
     pub fn rtContextGetEntryPointCount(
         context: RTcontext,
         num_entry_points: *mut ::std::os::raw::c_uint,
@@ -2818,7 +2790,7 @@ extern "C" {
     /// @ref rtContextGetEntryPointCount,
     /// @ref rtContextGetRayGenerationProgram
     ///
-    #[link_name = "\u{1}_rtContextSetRayGenerationProgram"]
+    
     pub fn rtContextSetRayGenerationProgram(
         context: RTcontext,
         entry_point_index: ::std::os::raw::c_uint,
@@ -2858,7 +2830,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextSetRayGenerationProgram
     ///
-    #[link_name = "\u{1}_rtContextGetRayGenerationProgram"]
+    
     pub fn rtContextGetRayGenerationProgram(
         context: RTcontext,
         entry_point_index: ::std::os::raw::c_uint,
@@ -2904,7 +2876,7 @@ extern "C" {
     /// @ref rtThrow,
     /// @ref rtPrintExceptionDetails
     ///
-    #[link_name = "\u{1}_rtContextSetExceptionProgram"]
+    
     pub fn rtContextSetExceptionProgram(
         context: RTcontext,
         entry_point_index: ::std::os::raw::c_uint,
@@ -2950,7 +2922,7 @@ extern "C" {
     /// @ref rtThrow,
     /// @ref rtPrintExceptionDetails
     ///
-    #[link_name = "\u{1}_rtContextGetExceptionProgram"]
+    
     pub fn rtContextGetExceptionProgram(
         context: RTcontext,
         entry_point_index: ::std::os::raw::c_uint,
@@ -3043,7 +3015,7 @@ extern "C" {
     /// @ref rtThrow,
     /// @ref rtPrintExceptionDetails
     ///
-    #[link_name = "\u{1}_rtContextSetExceptionEnabled"]
+    
     pub fn rtContextSetExceptionEnabled(
         context: RTcontext,
         exception: Exception,
@@ -3088,7 +3060,7 @@ extern "C" {
     /// @ref rtThrow,
     /// @ref rtPrintExceptionDetails
     ///
-    #[link_name = "\u{1}_rtContextGetExceptionEnabled"]
+    
     pub fn rtContextGetExceptionEnabled(
         context: RTcontext,
         exception: Exception,
@@ -3121,7 +3093,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextGetRayTypeCount
     ///
-    #[link_name = "\u{1}_rtContextSetRayTypeCount"]
+    
     pub fn rtContextSetRayTypeCount(
         context: RTcontext,
         num_ray_types: ::std::os::raw::c_uint,
@@ -3156,7 +3128,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextSetRayTypeCount
     ///
-    #[link_name = "\u{1}_rtContextGetRayTypeCount"]
+    
     pub fn rtContextGetRayTypeCount(
         context: RTcontext,
         num_ray_types: *mut ::std::os::raw::c_uint,
@@ -3195,7 +3167,7 @@ extern "C" {
     /// @ref rtContextGetRayTypeCount,
     /// @ref rtContextGetMissProgram
     ///
-    #[link_name = "\u{1}_rtContextSetMissProgram"]
+    
     pub fn rtContextSetMissProgram(
         context: RTcontext,
         ray_type_index: ::std::os::raw::c_uint,
@@ -3235,7 +3207,7 @@ extern "C" {
     /// @ref rtContextSetMissProgram,
     /// @ref rtContextGetRayTypeCount
     ///
-    #[link_name = "\u{1}_rtContextGetMissProgram"]
+    
     pub fn rtContextGetMissProgram(
         context: RTcontext,
         ray_type_index: ::std::os::raw::c_uint,
@@ -3274,7 +3246,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerGetId
     ///
-    #[link_name = "\u{1}_rtContextGetTextureSamplerFromId"]
+    
     pub fn rtContextGetTextureSamplerFromId(
         context: RTcontext,
         sampler_id: ::std::os::raw::c_int,
@@ -3285,7 +3257,7 @@ extern "C" {
     /// Deprecated in OptiX 4.0. Calling this function has no effect. The
     /// kernel is automatically compiled at launch if needed.
     ///
-    #[link_name = "\u{1}_rtContextCompile"]
+    
     pub fn rtContextCompile(context: RTcontext) -> RtResult;
 }
 extern "C" {
@@ -3337,7 +3309,7 @@ extern "C" {
     /// be executed @param[in]   entry_point_index
     /// The initial entry point into kernel @param[in]   width
     /// Width of the computation grid
-    #[link_name = "\u{1}_rtContextLaunch1D"]
+    
     pub fn rtContextLaunch1D(
         context: RTcontext,
         entry_point_index: ::std::os::raw::c_uint,
@@ -3351,7 +3323,7 @@ extern "C" {
     /// The initial entry point into kernel @param[in]   width
     /// Width of the computation grid @param[in]   height
     /// Height of the computation grid
-    #[link_name = "\u{1}_rtContextLaunch2D"]
+    
     pub fn rtContextLaunch2D(
         context: RTcontext,
         entry_point_index: ::std::os::raw::c_uint,
@@ -3367,7 +3339,7 @@ extern "C" {
     /// Width of the computation grid @param[in]   height
     /// Height of the computation grid @param[in]   depth
     /// Depth of the computation grid
-    #[link_name = "\u{1}_rtContextLaunch3D"]
+    
     pub fn rtContextLaunch3D(
         context: RTcontext,
         entry_point_index: ::std::os::raw::c_uint,
@@ -3404,7 +3376,7 @@ extern "C" {
     /// @ref rtContextLaunch2D,
     /// @ref rtContextLaunch3D
     ///
-    #[link_name = "\u{1}_rtContextGetRunningState"]
+    
     pub fn rtContextGetRunningState(
         context: RTcontext,
         running: *mut ::std::os::raw::c_int,
@@ -3484,7 +3456,7 @@ extern "C" {
     /// @ref rtContextStopProgressive
     /// @ref rtBufferGetProgressiveUpdateReady
     ///
-    #[link_name = "\u{1}_rtContextLaunchProgressive2D"]
+    
     pub fn rtContextLaunchProgressive2D(
         context: RTcontext,
         entry_index: ::std::os::raw::c_uint,
@@ -3532,7 +3504,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextLaunchProgressive2D
     ///
-    #[link_name = "\u{1}_rtContextStopProgressive"]
+    
     pub fn rtContextStopProgressive(context: RTcontext) -> RtResult;
 }
 extern "C" {
@@ -3568,7 +3540,7 @@ extern "C" {
     /// @ref rtContextSetPrintLaunchIndex,
     /// @ref rtContextGetPrintLaunchIndex
     ///
-    #[link_name = "\u{1}_rtContextSetPrintEnabled"]
+    
     pub fn rtContextSetPrintEnabled(
         context: RTcontext,
         enabled: ::std::os::raw::c_int,
@@ -3609,7 +3581,7 @@ extern "C" {
     /// @ref rtContextSetPrintLaunchIndex,
     /// @ref rtContextGetPrintLaunchIndex
     ///
-    #[link_name = "\u{1}_rtContextGetPrintEnabled"]
+    
     pub fn rtContextGetPrintEnabled(
         context: RTcontext,
         enabled: *mut ::std::os::raw::c_int,
@@ -3650,7 +3622,7 @@ extern "C" {
     /// @ref rtContextSetPrintLaunchIndex,
     /// @ref rtContextGetPrintLaunchIndex
     ///
-    #[link_name = "\u{1}_rtContextSetPrintBufferSize"]
+    
     pub fn rtContextSetPrintBufferSize(
         context: RTcontext,
         buffer_size_bytes: RTsize,
@@ -3689,7 +3661,7 @@ extern "C" {
     /// @ref rtContextSetPrintLaunchIndex,
     /// @ref rtContextGetPrintLaunchIndex
     ///
-    #[link_name = "\u{1}_rtContextGetPrintBufferSize"]
+    
     pub fn rtContextGetPrintBufferSize(
         context: RTcontext,
         buffer_size_bytes: *mut RTsize,
@@ -3741,7 +3713,7 @@ extern "C" {
     /// @ref rtContextGetPrintBufferSize,
     /// @ref rtContextGetPrintLaunchIndex
     ///
-    #[link_name = "\u{1}_rtContextSetPrintLaunchIndex"]
+    
     pub fn rtContextSetPrintLaunchIndex(
         context: RTcontext,
         x: ::std::os::raw::c_int,
@@ -3791,7 +3763,7 @@ extern "C" {
     /// @ref rtContextGetPrintBufferSize,
     /// @ref rtContextSetPrintLaunchIndex
     ///
-    #[link_name = "\u{1}_rtContextGetPrintLaunchIndex"]
+    
     pub fn rtContextGetPrintLaunchIndex(
         context: RTcontext,
         x: *mut ::std::os::raw::c_int,
@@ -3844,7 +3816,7 @@ extern "C" {
     /// @ref rtContextQueryVariable,
     /// @ref rtContextRemoveVariable
     ///
-    #[link_name = "\u{1}_rtContextDeclareVariable"]
+    
     pub fn rtContextDeclareVariable(
         context: RTcontext,
         name: *const ::std::os::raw::c_char,
@@ -3891,7 +3863,7 @@ extern "C" {
     /// @ref rtContextGetVariable,
     /// @ref rtContextRemoveVariable
     ///
-    #[link_name = "\u{1}_rtContextQueryVariable"]
+    
     pub fn rtContextQueryVariable(
         context: RTcontext,
         name: *const ::std::os::raw::c_char,
@@ -3936,7 +3908,7 @@ extern "C" {
     /// @ref rtContextGetVariableCount,
     /// @ref rtContextQueryVariable,
     ///
-    #[link_name = "\u{1}_rtContextRemoveVariable"]
+    
     pub fn rtContextRemoveVariable(
         context: RTcontext,
         v: RTvariable,
@@ -3979,7 +3951,7 @@ extern "C" {
     /// @ref rtContextQueryVariable,
     /// @ref rtContextRemoveVariable
     ///
-    #[link_name = "\u{1}_rtContextGetVariableCount"]
+    
     pub fn rtContextGetVariableCount(
         context: RTcontext,
         count: *mut ::std::os::raw::c_uint,
@@ -4024,7 +3996,7 @@ extern "C" {
     /// @ref rtContextQueryVariable,
     /// @ref rtContextRemoveVariable
     ///
-    #[link_name = "\u{1}_rtContextGetVariable"]
+    
     pub fn rtContextGetVariable(
         context: RTcontext,
         index: ::std::os::raw::c_uint,
@@ -4066,7 +4038,7 @@ extern "C" {
     /// @ref rtProgramCreateFromPTXFile,
     /// @ref rtProgramDestroy
     ///
-    #[link_name = "\u{1}_rtProgramCreateFromPTXString"]
+    
     pub fn rtProgramCreateFromPTXString(
         context: RTcontext,
         ptx: *const ::std::os::raw::c_char,
@@ -4110,7 +4082,7 @@ extern "C" {
     /// @ref rtProgramCreateFromPTXString,
     /// @ref rtProgramDestroy
     ///
-    #[link_name = "\u{1}_rtProgramCreateFromPTXFile"]
+    
     pub fn rtProgramCreateFromPTXFile(
         context: RTcontext,
         filename: *const ::std::os::raw::c_char,
@@ -4148,7 +4120,7 @@ extern "C" {
     /// @ref rtProgramCreateFromPTXFile,
     /// @ref rtProgramCreateFromPTXString
     ///
-    #[link_name = "\u{1}_rtProgramDestroy"]
+    
     pub fn rtProgramDestroy(program: RTprogram) -> RtResult;
 }
 extern "C" {
@@ -4180,7 +4152,7 @@ extern "C" {
     /// @ref rtProgramCreateFromPTXFile,
     /// @ref rtProgramCreateFromPTXString
     ///
-    #[link_name = "\u{1}_rtProgramValidate"]
+    
     pub fn rtProgramValidate(program: RTprogram) -> RtResult;
 }
 extern "C" {
@@ -4213,7 +4185,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextCreate
     ///
-    #[link_name = "\u{1}_rtProgramGetContext"]
+    
     pub fn rtProgramGetContext(
         program: RTprogram,
         context: *mut RTcontext,
@@ -4259,7 +4231,7 @@ extern "C" {
     /// @ref rtProgramGetVariableCount,
     /// @ref rtProgramQueryVariable
     ///
-    #[link_name = "\u{1}_rtProgramDeclareVariable"]
+    
     pub fn rtProgramDeclareVariable(
         program: RTprogram,
         name: *const ::std::os::raw::c_char,
@@ -4302,7 +4274,7 @@ extern "C" {
     /// @ref rtProgramGetVariable,
     /// @ref rtProgramGetVariableCount
     ///
-    #[link_name = "\u{1}_rtProgramQueryVariable"]
+    
     pub fn rtProgramQueryVariable(
         program: RTprogram,
         name: *const ::std::os::raw::c_char,
@@ -4343,7 +4315,7 @@ extern "C" {
     /// @ref rtProgramGetVariableCount,
     /// @ref rtProgramQueryVariable
     ///
-    #[link_name = "\u{1}_rtProgramRemoveVariable"]
+    
     pub fn rtProgramRemoveVariable(
         program: RTprogram,
         v: RTvariable,
@@ -4381,7 +4353,7 @@ extern "C" {
     /// @ref rtProgramGetVariable,
     /// @ref rtProgramQueryVariable
     ///
-    #[link_name = "\u{1}_rtProgramGetVariableCount"]
+    
     pub fn rtProgramGetVariableCount(
         program: RTprogram,
         count: *mut ::std::os::raw::c_uint,
@@ -4427,7 +4399,7 @@ extern "C" {
     /// @ref rtProgramGetVariableCount,
     /// @ref rtProgramQueryVariable
     ///
-    #[link_name = "\u{1}_rtProgramGetVariable"]
+    
     pub fn rtProgramGetVariable(
         program: RTprogram,
         index: ::std::os::raw::c_uint,
@@ -4466,7 +4438,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextGetProgramFromId
     ///
-    #[link_name = "\u{1}_rtProgramGetId"]
+    
     pub fn rtProgramGetId(
         program: RTprogram,
         program_id: *mut ::std::os::raw::c_int,
@@ -4504,7 +4476,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtProgramGetId
     ///
-    #[link_name = "\u{1}_rtContextGetProgramFromId"]
+    
     pub fn rtContextGetProgramFromId(
         context: RTcontext,
         program_id: ::std::os::raw::c_int,
@@ -4542,7 +4514,7 @@ extern "C" {
     /// @ref rtGroupDestroy,
     /// @ref rtContextCreate
     ///
-    #[link_name = "\u{1}_rtGroupCreate"]
+    
     pub fn rtGroupCreate(context: RTcontext, group: *mut RTgroup) -> RtResult;
 }
 extern "C" {
@@ -4573,7 +4545,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtGroupCreate
     ///
-    #[link_name = "\u{1}_rtGroupDestroy"]
+    
     pub fn rtGroupDestroy(group: RTgroup) -> RtResult;
 }
 extern "C" {
@@ -4602,7 +4574,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtGroupCreate
     ///
-    #[link_name = "\u{1}_rtGroupValidate"]
+    
     pub fn rtGroupValidate(group: RTgroup) -> RtResult;
 }
 extern "C" {
@@ -4634,7 +4606,7 @@ extern "C" {
     /// @ref rtContextCreate,
     /// @ref rtGroupCreate
     ///
-    #[link_name = "\u{1}_rtGroupGetContext"]
+    
     pub fn rtGroupGetContext(
         group: RTgroup,
         context: *mut RTcontext,
@@ -4698,7 +4670,7 @@ extern "C" {
     /// @ref rtAccelerationCreate,
     /// @ref rtGeometryGroupSetAcceleration
     ///
-    #[link_name = "\u{1}_rtGroupSetAcceleration"]
+    
     pub fn rtGroupSetAcceleration(
         group: RTgroup,
         acceleration: RTacceleration,
@@ -4735,7 +4707,7 @@ extern "C" {
     /// @ref rtGroupSetAcceleration,
     /// @ref rtAccelerationCreate
     ///
-    #[link_name = "\u{1}_rtGroupGetAcceleration"]
+    
     pub fn rtGroupGetAcceleration(
         group: RTgroup,
         acceleration: *mut RTacceleration,
@@ -4775,7 +4747,7 @@ extern "C" {
     /// @ref rtGroupGetChildType,
     /// @ref rtGroupSetChild
     ///
-    #[link_name = "\u{1}_rtGroupSetChildCount"]
+    
     pub fn rtGroupSetChildCount(
         group: RTgroup,
         count: ::std::os::raw::c_uint,
@@ -4814,7 +4786,7 @@ extern "C" {
     /// @ref rtGroupSetChildCount,
     /// @ref rtGroupGetChildType
     ///
-    #[link_name = "\u{1}_rtGroupGetChildCount"]
+    
     pub fn rtGroupGetChildCount(
         group: RTgroup,
         count: *mut ::std::os::raw::c_uint,
@@ -4857,7 +4829,7 @@ extern "C" {
     /// @ref rtGroupGetChild,
     /// @ref rtGroupGetChildType
     ///
-    #[link_name = "\u{1}_rtGroupSetChild"]
+    
     pub fn rtGroupSetChild(
         group: RTgroup,
         index: ::std::os::raw::c_uint,
@@ -4897,7 +4869,7 @@ extern "C" {
     /// @ref rtGroupGetChildCount,
     /// @ref rtGroupGetChildType
     ///
-    #[link_name = "\u{1}_rtGroupGetChild"]
+    
     pub fn rtGroupGetChild(
         group: RTgroup,
         index: ::std::os::raw::c_uint,
@@ -4937,7 +4909,7 @@ extern "C" {
     /// @ref rtGroupSetChildCount,
     /// @ref rtGroupGetChildCount
     ///
-    #[link_name = "\u{1}_rtGroupGetChildType"]
+    
     pub fn rtGroupGetChildType(
         group: RTgroup,
         index: ::std::os::raw::c_uint,
@@ -4983,7 +4955,7 @@ extern "C" {
     /// @ref rtSelectorSetChildCount,
     /// @ref rtSelectorSetChild
     ///
-    #[link_name = "\u{1}_rtSelectorCreate"]
+    
     pub fn rtSelectorCreate(
         context: RTcontext,
         selector: *mut RTselector,
@@ -5022,7 +4994,7 @@ extern "C" {
     /// @ref rtSelectorValidate,
     /// @ref rtSelectorGetContext
     ///
-    #[link_name = "\u{1}_rtSelectorDestroy"]
+    
     pub fn rtSelectorDestroy(selector: RTselector) -> RtResult;
 }
 extern "C" {
@@ -5062,7 +5034,7 @@ extern "C" {
     /// @ref rtSelectorSetChildCount,
     /// @ref rtSelectorSetChild
     ///
-    #[link_name = "\u{1}_rtSelectorValidate"]
+    
     pub fn rtSelectorValidate(selector: RTselector) -> RtResult;
 }
 extern "C" {
@@ -5095,7 +5067,7 @@ extern "C" {
     /// @ref rtSelectorDestroy,
     /// @ref rtSelectorValidate
     ///
-    #[link_name = "\u{1}_rtSelectorGetContext"]
+    
     pub fn rtSelectorGetContext(
         selector: RTselector,
         context: *mut RTcontext,
@@ -5136,7 +5108,7 @@ extern "C" {
     /// @ref rtSelectorGetVisitProgram,
     /// @ref rtProgramCreateFromPTXFile
     ///
-    #[link_name = "\u{1}_rtSelectorSetVisitProgram"]
+    
     pub fn rtSelectorSetVisitProgram(
         selector: RTselector,
         program: RTprogram,
@@ -5170,7 +5142,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtSelectorSetVisitProgram
     ///
-    #[link_name = "\u{1}_rtSelectorGetVisitProgram"]
+    
     pub fn rtSelectorGetVisitProgram(
         selector: RTselector,
         program: *mut RTprogram,
@@ -5213,7 +5185,7 @@ extern "C" {
     /// @ref rtSelectorGetChild,
     /// @ref rtSelectorGetChildType
     ///
-    #[link_name = "\u{1}_rtSelectorSetChildCount"]
+    
     pub fn rtSelectorSetChildCount(
         selector: RTselector,
         count: ::std::os::raw::c_uint,
@@ -5255,7 +5227,7 @@ extern "C" {
     /// @ref rtSelectorGetChild,
     /// @ref rtSelectorGetChildType
     ///
-    #[link_name = "\u{1}_rtSelectorGetChildCount"]
+    
     pub fn rtSelectorGetChildCount(
         selector: RTselector,
         count: *mut ::std::os::raw::c_uint,
@@ -5300,7 +5272,7 @@ extern "C" {
     /// @ref rtSelectorGetChild,
     /// @ref rtSelectorGetChildType
     ///
-    #[link_name = "\u{1}_rtSelectorSetChild"]
+    
     pub fn rtSelectorSetChild(
         selector: RTselector,
         index: ::std::os::raw::c_uint,
@@ -5348,7 +5320,7 @@ extern "C" {
     /// @ref rtSelectorSetChild,
     /// @ref rtSelectorGetChildType
     ///
-    #[link_name = "\u{1}_rtSelectorGetChild"]
+    
     pub fn rtSelectorGetChild(
         selector: RTselector,
         index: ::std::os::raw::c_uint,
@@ -5397,7 +5369,7 @@ extern "C" {
     /// @ref rtSelectorSetChild,
     /// @ref rtSelectorGetChild
     ///
-    #[link_name = "\u{1}_rtSelectorGetChildType"]
+    
     pub fn rtSelectorGetChildType(
         selector: RTselector,
         index: ::std::os::raw::c_uint,
@@ -5445,7 +5417,7 @@ extern "C" {
     /// @ref rtSelectorGetVariable,
     /// @ref rtVariableSet{...}
     ///
-    #[link_name = "\u{1}_rtSelectorDeclareVariable"]
+    
     pub fn rtSelectorDeclareVariable(
         selector: RTselector,
         name: *const ::std::os::raw::c_char,
@@ -5488,7 +5460,7 @@ extern "C" {
     /// @ref rtSelectorGetVariable,
     /// \a rtVariableGet{...}
     ///
-    #[link_name = "\u{1}_rtSelectorQueryVariable"]
+    
     pub fn rtSelectorQueryVariable(
         selector: RTselector,
         name: *const ::std::os::raw::c_char,
@@ -5528,7 +5500,7 @@ extern "C" {
     /// @ref rtSelectorGetVariableCount,
     /// @ref rtSelectorGetVariable
     ///
-    #[link_name = "\u{1}_rtSelectorRemoveVariable"]
+    
     pub fn rtSelectorRemoveVariable(
         selector: RTselector,
         v: RTvariable,
@@ -5567,7 +5539,7 @@ extern "C" {
     /// @ref rtSelectorRemoveVariable,
     /// @ref rtSelectorGetVariable
     ///
-    #[link_name = "\u{1}_rtSelectorGetVariableCount"]
+    
     pub fn rtSelectorGetVariableCount(
         selector: RTselector,
         count: *mut ::std::os::raw::c_uint,
@@ -5612,7 +5584,7 @@ extern "C" {
     /// @ref rtSelectorGetVariableCount,
     /// \a rtVariableGet{...}
     ///
-    #[link_name = "\u{1}_rtSelectorGetVariable"]
+    
     pub fn rtSelectorGetVariable(
         selector: RTselector,
         index: ::std::os::raw::c_uint,
@@ -5660,7 +5632,7 @@ extern "C" {
     /// @ref rtTransformGetChild,
     /// @ref rtTransformGetChildType
     ///
-    #[link_name = "\u{1}_rtTransformCreate"]
+    
     pub fn rtTransformCreate(
         context: RTcontext,
         transform: *mut RTtransform,
@@ -5697,7 +5669,7 @@ extern "C" {
     /// @ref rtTransformValidate,
     /// @ref rtTransformGetContext
     ///
-    #[link_name = "\u{1}_rtTransformDestroy"]
+    
     pub fn rtTransformDestroy(transform: RTtransform) -> RtResult;
 }
 extern "C" {
@@ -5737,7 +5709,7 @@ extern "C" {
     /// @ref rtTransformSetMatrix,
     /// @ref rtTransformSetChild
     ///
-    #[link_name = "\u{1}_rtTransformValidate"]
+    
     pub fn rtTransformValidate(transform: RTtransform) -> RtResult;
 }
 extern "C" {
@@ -5773,7 +5745,7 @@ extern "C" {
     /// @ref rtTransformDestroy,
     /// @ref rtTransformValidate
     ///
-    #[link_name = "\u{1}_rtTransformGetContext"]
+    
     pub fn rtTransformGetContext(
         transform: RTtransform,
         context: *mut RTcontext,
@@ -5831,7 +5803,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTransformGetMatrix
     ///
-    #[link_name = "\u{1}_rtTransformSetMatrix"]
+    
     pub fn rtTransformSetMatrix(
         transform: RTtransform,
         transpose: ::std::os::raw::c_int,
@@ -5878,7 +5850,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTransformSetMatrix
     ///
-    #[link_name = "\u{1}_rtTransformGetMatrix"]
+    
     pub fn rtTransformGetMatrix(
         transform: RTtransform,
         transpose: ::std::os::raw::c_int,
@@ -5922,7 +5894,7 @@ extern "C" {
     /// @ref rtTransformSetMotionBorderMode,
     /// @ref rtTransformSetMotionKeys,
     ///
-    #[link_name = "\u{1}_rtTransformSetMotionRange"]
+    
     pub fn rtTransformSetMotionRange(
         transform: RTtransform,
         timeBegin: f32,
@@ -5960,7 +5932,7 @@ extern "C" {
     /// @ref rtTransformGetMotionKeyType,
     /// @ref rtTransformGetMotionKeys,
     ///
-    #[link_name = "\u{1}_rtTransformGetMotionRange"]
+    
     pub fn rtTransformGetMotionRange(
         transform: RTtransform,
         timeBegin: *mut f32,
@@ -6008,7 +5980,7 @@ extern "C" {
     /// @ref rtTransformSetMotionRange,
     /// @ref rtTransformSetMotionKeys,
     ///
-    #[link_name = "\u{1}_rtTransformSetMotionBorderMode"]
+    
     pub fn rtTransformSetMotionBorderMode(
         transform: RTtransform,
         beginMode: MotionBorderMode,
@@ -6046,7 +6018,7 @@ extern "C" {
     /// @ref rtTransformGetMotionKeyType,
     /// @ref rtTransformGetMotionKeys,
     ///
-    #[link_name = "\u{1}_rtTransformGetMotionBorderMode"]
+    
     pub fn rtTransformGetMotionBorderMode(
         transform: RTtransform,
         beginMode: *mut MotionBorderMode,
@@ -6115,7 +6087,7 @@ extern "C" {
     /// @ref rtTransformSetMotionBorderMode,
     /// @ref rtTransformSetMotionRange,
     ///
-    #[link_name = "\u{1}_rtTransformSetMotionKeys"]
+    
     pub fn rtTransformSetMotionKeys(
         transform: RTtransform,
         n: ::std::os::raw::c_uint,
@@ -6154,7 +6126,7 @@ extern "C" {
     /// @ref rtTransformGetMotionKeyCount,
     /// @ref rtTransformGetMotionKeys
     ///
-    #[link_name = "\u{1}_rtTransformGetMotionKeyType"]
+    
     pub fn rtTransformGetMotionKeyType(
         transform: RTtransform,
         type_: *mut MotionKeyType,
@@ -6193,7 +6165,7 @@ extern "C" {
     /// @ref rtTransformGetMotionKeyType
     /// @ref rtTransformGetMotionKeys
     ///
-    #[link_name = "\u{1}_rtTransformGetMotionKeyCount"]
+    
     pub fn rtTransformGetMotionKeyCount(
         transform: RTtransform,
         n: *mut ::std::os::raw::c_uint,
@@ -6235,7 +6207,7 @@ extern "C" {
     /// @ref rtTransformGetMotionKeyCount,
     /// @ref rtTransformGetMotionKeyType
     ///
-    #[link_name = "\u{1}_rtTransformGetMotionKeys"]
+    
     pub fn rtTransformGetMotionKeys(
         transform: RTtransform,
         keys: *mut f32,
@@ -6276,7 +6248,7 @@ extern "C" {
     /// @ref rtTransformGetChild,
     /// @ref rtTransformGetChildType
     ///
-    #[link_name = "\u{1}_rtTransformSetChild"]
+    
     pub fn rtTransformSetChild(
         transform: RTtransform,
         child: RTobject,
@@ -6318,7 +6290,7 @@ extern "C" {
     /// @ref rtTransformSetChild,
     /// @ref rtTransformGetChildType
     ///
-    #[link_name = "\u{1}_rtTransformGetChild"]
+    
     pub fn rtTransformGetChild(
         transform: RTtransform,
         child: *mut RTobject,
@@ -6362,7 +6334,7 @@ extern "C" {
     /// @ref rtTransformSetChild,
     /// @ref rtTransformGetChild
     ///
-    #[link_name = "\u{1}_rtTransformGetChildType"]
+    
     pub fn rtTransformGetChildType(
         transform: RTtransform,
         type_: *mut ObjectType,
@@ -6403,7 +6375,7 @@ extern "C" {
     /// @ref rtGeometryGroupDestroy,
     /// @ref rtContextCreate
     ///
-    #[link_name = "\u{1}_rtGeometryGroupCreate"]
+    
     pub fn rtGeometryGroupCreate(
         context: RTcontext,
         geometrygroup: *mut RTgeometrygroup,
@@ -6439,7 +6411,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtGeometryGroupCreate
     ///
-    #[link_name = "\u{1}_rtGeometryGroupDestroy"]
+    
     pub fn rtGeometryGroupDestroy(geometrygroup: RTgeometrygroup) -> RtResult;
 }
 extern "C" {
@@ -6472,7 +6444,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtGeometryGroupCreate
     ///
-    #[link_name = "\u{1}_rtGeometryGroupValidate"]
+    
     pub fn rtGeometryGroupValidate(geometrygroup: RTgeometrygroup) -> RtResult;
 }
 extern "C" {
@@ -6508,7 +6480,7 @@ extern "C" {
     /// @ref rtContextCreate,
     /// @ref rtGeometryGroupCreate
     ///
-    #[link_name = "\u{1}_rtGeometryGroupGetContext"]
+    
     pub fn rtGeometryGroupGetContext(
         geometrygroup: RTgeometrygroup,
         context: *mut RTcontext,
@@ -6559,7 +6531,7 @@ extern "C" {
     /// @ref rtAccelerationCreate,
     /// @ref rtGroupSetAcceleration
     ///
-    #[link_name = "\u{1}_rtGeometryGroupSetAcceleration"]
+    
     pub fn rtGeometryGroupSetAcceleration(
         geometrygroup: RTgeometrygroup,
         acceleration: RTacceleration,
@@ -6597,7 +6569,7 @@ extern "C" {
     /// @ref rtGeometryGroupSetAcceleration,
     /// @ref rtAccelerationCreate
     ///
-    #[link_name = "\u{1}_rtGeometryGroupGetAcceleration"]
+    
     pub fn rtGeometryGroupGetAcceleration(
         geometrygroup: RTgeometrygroup,
         acceleration: *mut RTacceleration,
@@ -6640,7 +6612,7 @@ extern "C" {
     /// @ref rtGeometryGroupGetChildCount
     /// @ref rtGeometryGroupSetChild
     ///
-    #[link_name = "\u{1}_rtGeometryGroupSetChildCount"]
+    
     pub fn rtGeometryGroupSetChildCount(
         geometrygroup: RTgeometrygroup,
         count: ::std::os::raw::c_uint,
@@ -6678,7 +6650,7 @@ extern "C" {
     /// @ref rtGeometryGroupGetChild,
     /// @ref rtGeometryGroupSetChildCount
     ///
-    #[link_name = "\u{1}_rtGeometryGroupGetChildCount"]
+    
     pub fn rtGeometryGroupGetChildCount(
         geometrygroup: RTgeometrygroup,
         count: *mut ::std::os::raw::c_uint,
@@ -6719,7 +6691,7 @@ extern "C" {
     /// @ref rtGeometryGroupGetChildCount,
     /// @ref rtGeometryGroupGetChild
     ///
-    #[link_name = "\u{1}_rtGeometryGroupSetChild"]
+    
     pub fn rtGeometryGroupSetChild(
         geometrygroup: RTgeometrygroup,
         index: ::std::os::raw::c_uint,
@@ -6761,7 +6733,7 @@ extern "C" {
     /// @ref rtGeometryGroupSetChildCount,
     /// @ref rtGeometryGroupGetChildCount,
     ///
-    #[link_name = "\u{1}_rtGeometryGroupGetChild"]
+    
     pub fn rtGeometryGroupGetChild(
         geometrygroup: RTgeometrygroup,
         index: ::std::os::raw::c_uint,
@@ -6815,7 +6787,7 @@ extern "C" {
     /// @ref rtGroupSetAcceleration,
     /// @ref rtGeometryGroupSetAcceleration
     ///
-    #[link_name = "\u{1}_rtAccelerationCreate"]
+    
     pub fn rtAccelerationCreate(
         context: RTcontext,
         acceleration: *mut RTacceleration,
@@ -6850,7 +6822,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtAccelerationCreate
     ///
-    #[link_name = "\u{1}_rtAccelerationDestroy"]
+    
     pub fn rtAccelerationDestroy(acceleration: RTacceleration) -> RtResult;
 }
 extern "C" {
@@ -6878,7 +6850,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtAccelerationCreate
     ///
-    #[link_name = "\u{1}_rtAccelerationValidate"]
+    
     pub fn rtAccelerationValidate(acceleration: RTacceleration) -> RtResult;
 }
 extern "C" {
@@ -6908,7 +6880,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtAccelerationCreate
     ///
-    #[link_name = "\u{1}_rtAccelerationGetContext"]
+    
     pub fn rtAccelerationGetContext(
         acceleration: RTacceleration,
         context: *mut RTcontext,
@@ -6985,7 +6957,7 @@ extern "C" {
     /// @ref rtAccelerationGetBuilder,
     /// @ref rtAccelerationSetProperty
     ///
-    #[link_name = "\u{1}_rtAccelerationSetBuilder"]
+    
     pub fn rtAccelerationSetBuilder(
         acceleration: RTacceleration,
         builder: *const ::std::os::raw::c_char,
@@ -7021,7 +6993,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtAccelerationSetBuilder
     ///
-    #[link_name = "\u{1}_rtAccelerationGetBuilder"]
+    
     pub fn rtAccelerationGetBuilder(
         acceleration: RTacceleration,
         return_string: *mut *const ::std::os::raw::c_char,
@@ -7031,7 +7003,7 @@ extern "C" {
     /// Deprecated in OptiX 4.0. Setting a traverser is no longer necessary and
     /// will be ignored.
     ///
-    #[link_name = "\u{1}_rtAccelerationSetTraverser"]
+    
     pub fn rtAccelerationSetTraverser(
         acceleration: RTacceleration,
         traverser: *const ::std::os::raw::c_char,
@@ -7040,7 +7012,7 @@ extern "C" {
 extern "C" {
     /// Deprecated in OptiX 4.0.
     ///
-    #[link_name = "\u{1}_rtAccelerationGetTraverser"]
+    
     pub fn rtAccelerationGetTraverser(
         acceleration: RTacceleration,
         return_string: *mut *const ::std::os::raw::c_char,
@@ -7142,7 +7114,7 @@ extern "C" {
     /// @ref rtAccelerationGetProperty,
     /// @ref rtAccelerationSetBuilder,
     ///
-    #[link_name = "\u{1}_rtAccelerationSetProperty"]
+    
     pub fn rtAccelerationSetProperty(
         acceleration: RTacceleration,
         name: *const ::std::os::raw::c_char,
@@ -7181,7 +7153,7 @@ extern "C" {
     /// @ref rtAccelerationSetProperty,
     /// @ref rtAccelerationSetBuilder,
     ///
-    #[link_name = "\u{1}_rtAccelerationGetProperty"]
+    
     pub fn rtAccelerationGetProperty(
         acceleration: RTacceleration,
         name: *const ::std::os::raw::c_char,
@@ -7191,7 +7163,7 @@ extern "C" {
 extern "C" {
     /// Deprecated in OptiX 4.0. Should not be called.
     ///
-    #[link_name = "\u{1}_rtAccelerationGetDataSize"]
+    
     pub fn rtAccelerationGetDataSize(
         acceleration: RTacceleration,
         size: *mut RTsize,
@@ -7200,7 +7172,7 @@ extern "C" {
 extern "C" {
     /// Deprecated in OptiX 4.0. Should not be called.
     ///
-    #[link_name = "\u{1}_rtAccelerationGetData"]
+    
     pub fn rtAccelerationGetData(
         acceleration: RTacceleration,
         data: *mut ::std::os::raw::c_void,
@@ -7209,7 +7181,7 @@ extern "C" {
 extern "C" {
     /// Deprecated in OptiX 4.0. Should not be called.
     ///
-    #[link_name = "\u{1}_rtAccelerationSetData"]
+    
     pub fn rtAccelerationSetData(
         acceleration: RTacceleration,
         data: *const ::std::os::raw::c_void,
@@ -7251,7 +7223,7 @@ extern "C" {
     /// @ref rtAccelerationIsDirty,
     /// @ref rtContextLaunch
     ///
-    #[link_name = "\u{1}_rtAccelerationMarkDirty"]
+    
     pub fn rtAccelerationMarkDirty(acceleration: RTacceleration) -> RtResult;
 }
 extern "C" {
@@ -7293,7 +7265,7 @@ extern "C" {
     /// @ref rtAccelerationMarkDirty,
     /// @ref rtContextLaunch
     ///
-    #[link_name = "\u{1}_rtAccelerationIsDirty"]
+    
     pub fn rtAccelerationIsDirty(
         acceleration: RTacceleration,
         dirty: *mut ::std::os::raw::c_int,
@@ -7336,7 +7308,7 @@ extern "C" {
     /// @ref rtGeometryInstanceDestroy,
     /// @ref rtGeometryInstanceGetContext
     ///
-    #[link_name = "\u{1}_rtGeometryInstanceCreate"]
+    
     pub fn rtGeometryInstanceCreate(
         context: RTcontext,
         geometryinstance: *mut RTgeometryinstance,
@@ -7376,7 +7348,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtGeometryInstanceCreate
     ///
-    #[link_name = "\u{1}_rtGeometryInstanceDestroy"]
+    
     pub fn rtGeometryInstanceDestroy(
         geometryinstance: RTgeometryinstance,
     ) -> RtResult;
@@ -7413,7 +7385,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtGeometryInstanceCreate
     ///
-    #[link_name = "\u{1}_rtGeometryInstanceValidate"]
+    
     pub fn rtGeometryInstanceValidate(
         geometryinstance: RTgeometryinstance,
     ) -> RtResult;
@@ -7449,7 +7421,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtGeometryInstanceGetContext
     ///
-    #[link_name = "\u{1}_rtGeometryInstanceGetContext"]
+    
     pub fn rtGeometryInstanceGetContext(
         geometryinstance: RTgeometryinstance,
         context: *mut RTcontext,
@@ -7486,7 +7458,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtGeometryInstanceGetGeometry
     ///
-    #[link_name = "\u{1}_rtGeometryInstanceSetGeometry"]
+    
     pub fn rtGeometryInstanceSetGeometry(
         geometryinstance: RTgeometryinstance,
         geometry: RTgeometry,
@@ -7526,7 +7498,7 @@ extern "C" {
     /// @ref rtGeometryInstanceValidate,
     /// @ref rtGeometryInstanceSetGeometry
     ///
-    #[link_name = "\u{1}_rtGeometryInstanceGetGeometry"]
+    
     pub fn rtGeometryInstanceGetGeometry(
         geometryinstance: RTgeometryinstance,
         geometry: *mut RTgeometry,
@@ -7566,7 +7538,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtGeometryInstanceGetMaterialCount
     ///
-    #[link_name = "\u{1}_rtGeometryInstanceSetMaterialCount"]
+    
     pub fn rtGeometryInstanceSetMaterialCount(
         geometryinstance: RTgeometryinstance,
         count: ::std::os::raw::c_uint,
@@ -7601,7 +7573,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtGeometryInstanceSetMaterialCount
     ///
-    #[link_name = "\u{1}_rtGeometryInstanceGetMaterialCount"]
+    
     pub fn rtGeometryInstanceGetMaterialCount(
         geometryinstance: RTgeometryinstance,
         count: *mut ::std::os::raw::c_uint,
@@ -7640,7 +7612,7 @@ extern "C" {
     /// @ref rtGeometryInstanceGetMaterialCount,
     /// @ref rtGeometryInstanceSetMaterialCount
     ///
-    #[link_name = "\u{1}_rtGeometryInstanceSetMaterial"]
+    
     pub fn rtGeometryInstanceSetMaterial(
         geometryinstance: RTgeometryinstance,
         index: ::std::os::raw::c_uint,
@@ -7679,7 +7651,7 @@ extern "C" {
     /// @ref rtGeometryInstanceGetMaterialCount,
     /// @ref rtGeometryInstanceSetMaterial
     ///
-    #[link_name = "\u{1}_rtGeometryInstanceGetMaterial"]
+    
     pub fn rtGeometryInstanceGetMaterial(
         geometryinstance: RTgeometryinstance,
         index: ::std::os::raw::c_uint,
@@ -7736,7 +7708,7 @@ extern "C" {
     /// @ref rtGeometryInstanceGetVariable,
     /// @ref rtGeometryInstanceRemoveVariable
     ///
-    #[link_name = "\u{1}_rtGeometryInstanceDeclareVariable"]
+    
     pub fn rtGeometryInstanceDeclareVariable(
         geometryinstance: RTgeometryinstance,
         name: *const ::std::os::raw::c_char,
@@ -7785,7 +7757,7 @@ extern "C" {
     /// @ref rtGeometryInstanceGetVariableCount,
     /// @ref rtGeometryInstanceGetVariable
     ///
-    #[link_name = "\u{1}_rtGeometryInstanceQueryVariable"]
+    
     pub fn rtGeometryInstanceQueryVariable(
         geometryinstance: RTgeometryinstance,
         name: *const ::std::os::raw::c_char,
@@ -7830,7 +7802,7 @@ extern "C" {
     /// @ref rtContextRemoveVariable,
     /// @ref rtGeometryInstanceDeclareVariable
     ///
-    #[link_name = "\u{1}_rtGeometryInstanceRemoveVariable"]
+    
     pub fn rtGeometryInstanceRemoveVariable(
         geometryinstance: RTgeometryinstance,
         v: RTvariable,
@@ -7873,7 +7845,7 @@ extern "C" {
     /// @ref rtGeometryInstanceDeclareVariable,
     /// @ref rtGeometryInstanceRemoveVariable
     ///
-    #[link_name = "\u{1}_rtGeometryInstanceGetVariableCount"]
+    
     pub fn rtGeometryInstanceGetVariableCount(
         geometryinstance: RTgeometryinstance,
         count: *mut ::std::os::raw::c_uint,
@@ -7924,7 +7896,7 @@ extern "C" {
     /// @ref rtGeometryRemoveVariable,
     /// @ref rtGeometryQueryVariable
     ///
-    #[link_name = "\u{1}_rtGeometryInstanceGetVariable"]
+    
     pub fn rtGeometryInstanceGetVariable(
         geometryinstance: RTgeometryinstance,
         index: ::std::os::raw::c_uint,
@@ -7965,7 +7937,7 @@ extern "C" {
     /// @ref rtGeometrySetBoundingBoxProgram,
     /// @ref rtGeometrySetIntersectionProgram
     ///
-    #[link_name = "\u{1}_rtGeometryCreate"]
+    
     pub fn rtGeometryCreate(
         context: RTcontext,
         geometry: *mut RTgeometry,
@@ -8004,7 +7976,7 @@ extern "C" {
     /// @ref rtGeometrySetPrimitiveCount,
     /// @ref rtGeometryGetPrimitiveCount
     ///
-    #[link_name = "\u{1}_rtGeometryDestroy"]
+    
     pub fn rtGeometryDestroy(geometry: RTgeometry) -> RtResult;
 }
 extern "C" {
@@ -8035,7 +8007,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextValidate
     ///
-    #[link_name = "\u{1}_rtGeometryValidate"]
+    
     pub fn rtGeometryValidate(geometry: RTgeometry) -> RtResult;
 }
 extern "C" {
@@ -8069,7 +8041,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtGeometryCreate
     ///
-    #[link_name = "\u{1}_rtGeometryGetContext"]
+    
     pub fn rtGeometryGetContext(
         geometry: RTgeometry,
         context: *mut RTcontext,
@@ -8104,7 +8076,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtGeometryGetPrimitiveCount
     ///
-    #[link_name = "\u{1}_rtGeometrySetPrimitiveCount"]
+    
     pub fn rtGeometrySetPrimitiveCount(
         geometry: RTgeometry,
         num_primitives: ::std::os::raw::c_uint,
@@ -8139,7 +8111,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtGeometrySetPrimitiveCount
     ///
-    #[link_name = "\u{1}_rtGeometryGetPrimitiveCount"]
+    
     pub fn rtGeometryGetPrimitiveCount(
         geometry: RTgeometry,
         num_primitives: *mut ::std::os::raw::c_uint,
@@ -8182,7 +8154,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtGeometryGetPrimitiveIndexOffset
     ///
-    #[link_name = "\u{1}_rtGeometrySetPrimitiveIndexOffset"]
+    
     pub fn rtGeometrySetPrimitiveIndexOffset(
         geometry: RTgeometry,
         index_offset: ::std::os::raw::c_uint,
@@ -8216,7 +8188,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtGeometrySetPrimitiveIndexOffset
     ///
-    #[link_name = "\u{1}_rtGeometryGetPrimitiveIndexOffset"]
+    
     pub fn rtGeometryGetPrimitiveIndexOffset(
         geometry: RTgeometry,
         index_offset: *mut ::std::os::raw::c_uint,
@@ -8256,7 +8228,7 @@ extern "C" {
     /// @ref rtGeometrySetMotionBorderMode
     /// @ref rtGeometrySetMotionSteps
     ///
-    #[link_name = "\u{1}_rtGeometrySetMotionRange"]
+    
     pub fn rtGeometrySetMotionRange(
         geometry: RTgeometry,
         timeBegin: f32,
@@ -8294,7 +8266,7 @@ extern "C" {
     /// @ref rtGeometryGetMotionBorderMode
     /// @ref rtGeometryGetMotionSteps
     ///
-    #[link_name = "\u{1}_rtGeometryGetMotionRange"]
+    
     pub fn rtGeometryGetMotionRange(
         geometry: RTgeometry,
         timeBegin: *mut f32,
@@ -8332,7 +8304,7 @@ extern "C" {
     /// @ref rtGeometrySetMotionRange
     /// @ref rtGeometrySetMotionSteps
     ///
-    #[link_name = "\u{1}_rtGeometrySetMotionBorderMode"]
+    
     pub fn rtGeometrySetMotionBorderMode(
         geometry: RTgeometry,
         beginMode: MotionBorderMode,
@@ -8368,7 +8340,7 @@ extern "C" {
     /// @ref rtGeometryGetMotionRange
     /// @ref rtGeometryGetMotionSteps
     ///
-    #[link_name = "\u{1}_rtGeometryGetMotionBorderMode"]
+    
     pub fn rtGeometryGetMotionBorderMode(
         geometry: RTgeometry,
         beginMode: *mut MotionBorderMode,
@@ -8410,7 +8382,7 @@ extern "C" {
     /// @ref rtGeometrySetMotionBorderMode
     /// @ref rtGeometrySetMotionRange
     ///
-    #[link_name = "\u{1}_rtGeometrySetMotionSteps"]
+    
     pub fn rtGeometrySetMotionSteps(
         geometry: RTgeometry,
         n: ::std::os::raw::c_uint,
@@ -8446,7 +8418,7 @@ extern "C" {
     /// @ref rtGeometrySetMotionBorderMode
     /// @ref rtGeometrySetMotionRange
     ///
-    #[link_name = "\u{1}_rtGeometryGetMotionSteps"]
+    
     pub fn rtGeometryGetMotionSteps(
         geometry: RTgeometry,
         n: *mut ::std::os::raw::c_uint,
@@ -8497,7 +8469,7 @@ extern "C" {
     /// @ref rtProgramCreateFromPTXFile,
     /// @ref rtProgramCreateFromPTXString
     ///
-    #[link_name = "\u{1}_rtGeometrySetBoundingBoxProgram"]
+    
     pub fn rtGeometrySetBoundingBoxProgram(
         geometry: RTgeometry,
         program: RTprogram,
@@ -8531,7 +8503,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtGeometrySetBoundingBoxProgram
     ///
-    #[link_name = "\u{1}_rtGeometryGetBoundingBoxProgram"]
+    
     pub fn rtGeometryGetBoundingBoxProgram(
         geometry: RTgeometry,
         program: *mut RTprogram,
@@ -8573,7 +8545,7 @@ extern "C" {
     /// @ref rtProgramCreateFromPTXFile,
     /// @ref rtProgramCreateFromPTXString
     ///
-    #[link_name = "\u{1}_rtGeometrySetIntersectionProgram"]
+    
     pub fn rtGeometrySetIntersectionProgram(
         geometry: RTgeometry,
         program: RTprogram,
@@ -8609,7 +8581,7 @@ extern "C" {
     /// @ref rtProgramCreateFromPTXFile,
     /// @ref rtProgramCreateFromPTXString
     ///
-    #[link_name = "\u{1}_rtGeometryGetIntersectionProgram"]
+    
     pub fn rtGeometryGetIntersectionProgram(
         geometry: RTgeometry,
         program: *mut RTprogram,
@@ -8618,13 +8590,13 @@ extern "C" {
 extern "C" {
     /// Deprecated in OptiX 4.0. Calling this function has no effect.
     ///
-    #[link_name = "\u{1}_rtGeometryMarkDirty"]
+    
     pub fn rtGeometryMarkDirty(geometry: RTgeometry) -> RtResult;
 }
 extern "C" {
     /// Deprecated in OptiX 4.0. Calling this function has no effect.
     ///
-    #[link_name = "\u{1}_rtGeometryIsDirty"]
+    
     pub fn rtGeometryIsDirty(
         geometry: RTgeometry,
         dirty: *mut ::std::os::raw::c_int,
@@ -8680,7 +8652,7 @@ extern "C" {
     /// @ref rtGeometryGetVariable,
     /// @ref rtGeometryRemoveVariable
     ///
-    #[link_name = "\u{1}_rtGeometryDeclareVariable"]
+    
     pub fn rtGeometryDeclareVariable(
         geometry: RTgeometry,
         name: *const ::std::os::raw::c_char,
@@ -8727,7 +8699,7 @@ extern "C" {
     /// @ref rtGeometryGetVariableCount,
     /// @ref rtGeometryGetVariable
     ///
-    #[link_name = "\u{1}_rtGeometryQueryVariable"]
+    
     pub fn rtGeometryQueryVariable(
         geometry: RTgeometry,
         name: *const ::std::os::raw::c_char,
@@ -8768,7 +8740,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextRemoveVariable
     ///
-    #[link_name = "\u{1}_rtGeometryRemoveVariable"]
+    
     pub fn rtGeometryRemoveVariable(
         geometry: RTgeometry,
         v: RTvariable,
@@ -8809,7 +8781,7 @@ extern "C" {
     /// @ref rtGeometryDeclareVariable,
     /// @ref rtGeometryRemoveVariable
     ///
-    #[link_name = "\u{1}_rtGeometryGetVariableCount"]
+    
     pub fn rtGeometryGetVariableCount(
         geometry: RTgeometry,
         count: *mut ::std::os::raw::c_uint,
@@ -8857,7 +8829,7 @@ extern "C" {
     /// @ref rtGeometryRemoveVariable,
     /// @ref rtGeometryQueryVariable
     ///
-    #[link_name = "\u{1}_rtGeometryGetVariable"]
+    
     pub fn rtGeometryGetVariable(
         geometry: RTgeometry,
         index: ::std::os::raw::c_uint,
@@ -8898,7 +8870,7 @@ extern "C" {
     /// @ref rtMaterialDestroy,
     /// @ref rtContextCreate
     ///
-    #[link_name = "\u{1}_rtMaterialCreate"]
+    
     pub fn rtMaterialCreate(
         context: RTcontext,
         material: *mut RTmaterial,
@@ -8934,7 +8906,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtMaterialCreate
     ///
-    #[link_name = "\u{1}_rtMaterialDestroy"]
+    
     pub fn rtMaterialDestroy(material: RTmaterial) -> RtResult;
 }
 extern "C" {
@@ -8965,7 +8937,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtMaterialCreate
     ///
-    #[link_name = "\u{1}_rtMaterialValidate"]
+    
     pub fn rtMaterialValidate(material: RTmaterial) -> RtResult;
 }
 extern "C" {
@@ -8999,7 +8971,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtMaterialCreate
     ///
-    #[link_name = "\u{1}_rtMaterialGetContext"]
+    
     pub fn rtMaterialGetContext(
         material: RTmaterial,
         context: *mut RTcontext,
@@ -9052,7 +9024,7 @@ extern "C" {
     /// @ref rtProgramCreateFromPTXString,
     /// @ref rtProgramCreateFromPTXFile
     ///
-    #[link_name = "\u{1}_rtMaterialSetClosestHitProgram"]
+    
     pub fn rtMaterialSetClosestHitProgram(
         material: RTmaterial,
         ray_type_index: ::std::os::raw::c_uint,
@@ -9100,7 +9072,7 @@ extern "C" {
     /// @ref rtMaterialCreate,
     /// @ref rtContextGetRayTypeCount
     ///
-    #[link_name = "\u{1}_rtMaterialGetClosestHitProgram"]
+    
     pub fn rtMaterialGetClosestHitProgram(
         material: RTmaterial,
         ray_type_index: ::std::os::raw::c_uint,
@@ -9153,7 +9125,7 @@ extern "C" {
     /// @ref rtProgramCreateFromPTXString,
     /// @ref rtProgramCreateFromPTXFile
     ///
-    #[link_name = "\u{1}_rtMaterialSetAnyHitProgram"]
+    
     pub fn rtMaterialSetAnyHitProgram(
         material: RTmaterial,
         ray_type_index: ::std::os::raw::c_uint,
@@ -9200,7 +9172,7 @@ extern "C" {
     /// @ref rtMaterialCreate,
     /// @ref rtContextGetRayTypeCount
     ///
-    #[link_name = "\u{1}_rtMaterialGetAnyHitProgram"]
+    
     pub fn rtMaterialGetAnyHitProgram(
         material: RTmaterial,
         ray_type_index: ::std::os::raw::c_uint,
@@ -9253,7 +9225,7 @@ extern "C" {
     /// @ref rtMaterialQueryVariable,
     /// @ref rtMaterialCreate
     ///
-    #[link_name = "\u{1}_rtMaterialDeclareVariable"]
+    
     pub fn rtMaterialDeclareVariable(
         material: RTmaterial,
         name: *const ::std::os::raw::c_char,
@@ -9296,7 +9268,7 @@ extern "C" {
     /// @ref rtMaterialGetVariable,
     /// @ref rtMaterialCreate
     ///
-    #[link_name = "\u{1}_rtMaterialQueryVariable"]
+    
     pub fn rtMaterialQueryVariable(
         material: RTmaterial,
         name: *const ::std::os::raw::c_char,
@@ -9344,7 +9316,7 @@ extern "C" {
     /// @ref rtMaterialDeclareVariable,
     /// @ref rtMaterialCreate
     ///
-    #[link_name = "\u{1}_rtMaterialRemoveVariable"]
+    
     pub fn rtMaterialRemoveVariable(
         material: RTmaterial,
         v: RTvariable,
@@ -9382,7 +9354,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtMaterialCreate
     ///
-    #[link_name = "\u{1}_rtMaterialGetVariableCount"]
+    
     pub fn rtMaterialGetVariableCount(
         material: RTmaterial,
         count: *mut ::std::os::raw::c_uint,
@@ -9430,7 +9402,7 @@ extern "C" {
     /// @ref rtMaterialGetVariableCount,
     /// @ref rtMaterialCreate
     ///
-    #[link_name = "\u{1}_rtMaterialGetVariable"]
+    
     pub fn rtMaterialGetVariable(
         material: RTmaterial,
         index: ::std::os::raw::c_uint,
@@ -9468,7 +9440,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerDestroy
     ///
-    #[link_name = "\u{1}_rtTextureSamplerCreate"]
+    
     pub fn rtTextureSamplerCreate(
         context: RTcontext,
         texturesampler: *mut RTtexturesampler,
@@ -9505,7 +9477,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerCreate
     ///
-    #[link_name = "\u{1}_rtTextureSamplerDestroy"]
+    
     pub fn rtTextureSamplerDestroy(
         texturesampler: RTtexturesampler,
     ) -> RtResult;
@@ -9542,7 +9514,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextValidate
     ///
-    #[link_name = "\u{1}_rtTextureSamplerValidate"]
+    
     pub fn rtTextureSamplerValidate(
         texturesampler: RTtexturesampler,
     ) -> RtResult;
@@ -9577,7 +9549,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextCreate
     ///
-    #[link_name = "\u{1}_rtTextureSamplerGetContext"]
+    
     pub fn rtTextureSamplerGetContext(
         texturesampler: RTtexturesampler,
         context: *mut RTcontext,
@@ -9586,7 +9558,7 @@ extern "C" {
 extern "C" {
     /// Deprecated in OptiX 3.9. Use @ref rtBufferSetMipLevelCount instead.
     ///
-    #[link_name = "\u{1}_rtTextureSamplerSetMipLevelCount"]
+    
     pub fn rtTextureSamplerSetMipLevelCount(
         texturesampler: RTtexturesampler,
         num_mip_levels: ::std::os::raw::c_uint,
@@ -9595,7 +9567,7 @@ extern "C" {
 extern "C" {
     /// Deprecated in OptiX 3.9. Use @ref rtBufferGetMipLevelCount instead.
     ///
-    #[link_name = "\u{1}_rtTextureSamplerGetMipLevelCount"]
+    
     pub fn rtTextureSamplerGetMipLevelCount(
         texturesampler: RTtexturesampler,
         num_mip_levels: *mut ::std::os::raw::c_uint,
@@ -9605,7 +9577,7 @@ extern "C" {
     /// Deprecated in OptiX 3.9. Use texture samplers with layered buffers
     /// instead. See @ref rtBufferCreate.
     ///
-    #[link_name = "\u{1}_rtTextureSamplerSetArraySize"]
+    
     pub fn rtTextureSamplerSetArraySize(
         texturesampler: RTtexturesampler,
         num_textures_in_array: ::std::os::raw::c_uint,
@@ -9615,7 +9587,7 @@ extern "C" {
     /// Deprecated in OptiX 3.9. Use texture samplers with layered buffers
     /// instead. See @ref rtBufferCreate.
     ///
-    #[link_name = "\u{1}_rtTextureSamplerGetArraySize"]
+    
     pub fn rtTextureSamplerGetArraySize(
         texturesampler: RTtexturesampler,
         num_textures_in_array: *mut ::std::os::raw::c_uint,
@@ -9662,7 +9634,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerGetWrapMode
     ///
-    #[link_name = "\u{1}_rtTextureSamplerSetWrapMode"]
+    
     pub fn rtTextureSamplerSetWrapMode(
         texturesampler: RTtexturesampler,
         dimension: ::std::os::raw::c_uint,
@@ -9700,7 +9672,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerSetWrapMode
     ///
-    #[link_name = "\u{1}_rtTextureSamplerGetWrapMode"]
+    
     pub fn rtTextureSamplerGetWrapMode(
         texturesampler: RTtexturesampler,
         dimension: ::std::os::raw::c_uint,
@@ -9752,7 +9724,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerGetFilteringModes
     ///
-    #[link_name = "\u{1}_rtTextureSamplerSetFilteringModes"]
+    
     pub fn rtTextureSamplerSetFilteringModes(
         texturesampler: RTtexturesampler,
         minification: FilterMode,
@@ -9800,7 +9772,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerSetFilteringModes
     ///
-    #[link_name = "\u{1}_rtTextureSamplerGetFilteringModes"]
+    
     pub fn rtTextureSamplerGetFilteringModes(
         texturesampler: RTtexturesampler,
         minification: *mut FilterMode,
@@ -9840,7 +9812,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerGetMaxAnisotropy
     ///
-    #[link_name = "\u{1}_rtTextureSamplerSetMaxAnisotropy"]
+    
     pub fn rtTextureSamplerSetMaxAnisotropy(
         texturesampler: RTtexturesampler,
         value: f32,
@@ -9874,7 +9846,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerSetMaxAnisotropy
     ///
-    #[link_name = "\u{1}_rtTextureSamplerGetMaxAnisotropy"]
+    
     pub fn rtTextureSamplerGetMaxAnisotropy(
         texturesampler: RTtexturesampler,
         value: *mut f32,
@@ -9910,7 +9882,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerGetMipLevelClamp
     ///
-    #[link_name = "\u{1}_rtTextureSamplerSetMipLevelClamp"]
+    
     pub fn rtTextureSamplerSetMipLevelClamp(
         texturesampler: RTtexturesampler,
         minLevel: f32,
@@ -9949,7 +9921,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerSetMipLevelClamp
     ///
-    #[link_name = "\u{1}_rtTextureSamplerGetMipLevelClamp"]
+    
     pub fn rtTextureSamplerGetMipLevelClamp(
         texturesampler: RTtexturesampler,
         minLevel: *mut f32,
@@ -9984,7 +9956,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerGetMipLevelBias
     ///
-    #[link_name = "\u{1}_rtTextureSamplerSetMipLevelBias"]
+    
     pub fn rtTextureSamplerSetMipLevelBias(
         texturesampler: RTtexturesampler,
         value: f32,
@@ -10018,7 +9990,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerSetMipLevelBias
     ///
-    #[link_name = "\u{1}_rtTextureSamplerGetMipLevelBias"]
+    
     pub fn rtTextureSamplerGetMipLevelBias(
         texturesampler: RTtexturesampler,
         value: *mut f32,
@@ -10080,7 +10052,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerGetReadMode
     ///
-    #[link_name = "\u{1}_rtTextureSamplerSetReadMode"]
+    
     pub fn rtTextureSamplerSetReadMode(
         texturesampler: RTtexturesampler,
         readmode: TextureReadMode,
@@ -10116,7 +10088,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerSetReadMode
     ///
-    #[link_name = "\u{1}_rtTextureSamplerGetReadMode"]
+    
     pub fn rtTextureSamplerGetReadMode(
         texturesampler: RTtexturesampler,
         readmode: *mut TextureReadMode,
@@ -10164,7 +10136,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerGetIndexingMode
     ///
-    #[link_name = "\u{1}_rtTextureSamplerSetIndexingMode"]
+    
     pub fn rtTextureSamplerSetIndexingMode(
         texturesampler: RTtexturesampler,
         indexmode: TextureIndexMode,
@@ -10200,7 +10172,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerSetIndexingMode
     ///
-    #[link_name = "\u{1}_rtTextureSamplerGetIndexingMode"]
+    
     pub fn rtTextureSamplerGetIndexingMode(
         texturesampler: RTtexturesampler,
         indexmode: *mut TextureIndexMode,
@@ -10236,7 +10208,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerGetBuffer
     ///
-    #[link_name = "\u{1}_rtTextureSamplerSetBuffer"]
+    
     pub fn rtTextureSamplerSetBuffer(
         texturesampler: RTtexturesampler,
         deprecated0: ::std::os::raw::c_uint,
@@ -10277,7 +10249,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerSetBuffer
     ///
-    #[link_name = "\u{1}_rtTextureSamplerGetBuffer"]
+    
     pub fn rtTextureSamplerGetBuffer(
         texturesampler: RTtexturesampler,
         deprecated0: ::std::os::raw::c_uint,
@@ -10315,7 +10287,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerCreate
     ///
-    #[link_name = "\u{1}_rtTextureSamplerGetId"]
+    
     pub fn rtTextureSamplerGetId(
         texturesampler: RTtexturesampler,
         texture_id: *mut ::std::os::raw::c_int,
@@ -10419,7 +10391,7 @@ extern "C" {
     /// @ref rtBufferMarkDirty
     /// @ref rtBufferBindProgressiveStream
     ///
-    #[link_name = "\u{1}_rtBufferCreate"]
+    
     pub fn rtBufferCreate(
         context: RTcontext,
         bufferdesc: ::std::os::raw::c_uint,
@@ -10457,7 +10429,7 @@ extern "C" {
     /// @ref rtBufferCreate,
     /// @ref rtBufferCreateFromGLBO
     ///
-    #[link_name = "\u{1}_rtBufferDestroy"]
+    
     pub fn rtBufferDestroy(buffer: RTbuffer) -> RtResult;
 }
 extern "C" {
@@ -10492,7 +10464,7 @@ extern "C" {
     /// @ref rtBufferCreateFromGLBO
     /// @ref rtContextValidate
     ///
-    #[link_name = "\u{1}_rtBufferValidate"]
+    
     pub fn rtBufferValidate(buffer: RTbuffer) -> RtResult;
 }
 extern "C" {
@@ -10524,7 +10496,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextCreate
     ///
-    #[link_name = "\u{1}_rtBufferGetContext"]
+    
     pub fn rtBufferGetContext(
         buffer: RTbuffer,
         context: *mut RTcontext,
@@ -10599,7 +10571,7 @@ extern "C" {
     /// @ref rtBufferGetElementSize,
     /// @ref rtBufferSetElementSize
     ///
-    #[link_name = "\u{1}_rtBufferSetFormat"]
+    
     pub fn rtBufferSetFormat(buffer: RTbuffer, format: Format) -> RtResult;
 }
 extern "C" {
@@ -10631,7 +10603,7 @@ extern "C" {
     /// @ref rtBufferSetFormat,
     /// @ref rtBufferGetFormat
     ///
-    #[link_name = "\u{1}_rtBufferGetFormat"]
+    
     pub fn rtBufferGetFormat(buffer: RTbuffer, format: *mut Format)
         -> RtResult;
 }
@@ -10678,7 +10650,7 @@ extern "C" {
     /// @ref rtBufferGetElementSize,
     /// @ref rtBufferCreate
     ///
-    #[link_name = "\u{1}_rtBufferSetElementSize"]
+    
     pub fn rtBufferSetElementSize(
         buffer: RTbuffer,
         size_of_element: RTsize,
@@ -10717,7 +10689,7 @@ extern "C" {
     /// @ref rtBufferSetElementSize,
     /// @ref rtBufferCreate
     ///
-    #[link_name = "\u{1}_rtBufferGetElementSize"]
+    
     pub fn rtBufferGetElementSize(
         buffer: RTbuffer,
         size_of_element: *mut RTsize,
@@ -10765,7 +10737,7 @@ extern "C" {
     /// @ref rtBufferGetSize3D,
     /// @ref rtBufferGetSizev
     ///
-    #[link_name = "\u{1}_rtBufferSetSize1D"]
+    
     pub fn rtBufferSetSize1D(buffer: RTbuffer, width: RTsize) -> RtResult;
 }
 extern "C" {
@@ -10806,7 +10778,7 @@ extern "C" {
     /// @ref rtBufferGetSize3D,
     /// @ref rtBufferGetSizev
     ///
-    #[link_name = "\u{1}_rtBufferGetSize1D"]
+    
     pub fn rtBufferGetSize1D(buffer: RTbuffer, width: *mut RTsize) -> RtResult;
 }
 extern "C" {
@@ -10853,7 +10825,7 @@ extern "C" {
     /// @ref rtBufferGetSize3D,
     /// @ref rtBufferGetSizev
     ///
-    #[link_name = "\u{1}_rtBufferSetSize2D"]
+    
     pub fn rtBufferSetSize2D(
         buffer: RTbuffer,
         width: RTsize,
@@ -10900,7 +10872,7 @@ extern "C" {
     /// @ref rtBufferGetSize3D,
     /// @ref rtBufferGetSizev
     ///
-    #[link_name = "\u{1}_rtBufferGetSize2D"]
+    
     pub fn rtBufferGetSize2D(
         buffer: RTbuffer,
         width: *mut RTsize,
@@ -10971,7 +10943,7 @@ extern "C" {
     /// @ref rtBufferGetSize3D,
     /// @ref rtBufferGetSizev
     ///
-    #[link_name = "\u{1}_rtBufferSetSize3D"]
+    
     pub fn rtBufferSetSize3D(
         buffer: RTbuffer,
         width: RTsize,
@@ -11024,7 +10996,7 @@ extern "C" {
     /// @ref rtBufferGetSize3D,
     /// @ref rtBufferGetSizev
     ///
-    #[link_name = "\u{1}_rtBufferSetMipLevelCount"]
+    
     pub fn rtBufferSetMipLevelCount(
         buffer: RTbuffer,
         levels: ::std::os::raw::c_uint,
@@ -11071,7 +11043,7 @@ extern "C" {
     /// @ref rtBufferGetSize2D,
     /// @ref rtBufferGetSizev
     ///
-    #[link_name = "\u{1}_rtBufferGetSize3D"]
+    
     pub fn rtBufferGetSize3D(
         buffer: RTbuffer,
         width: *mut RTsize,
@@ -11117,7 +11089,7 @@ extern "C" {
     /// @ref rtBufferGetSize3D,
     /// @ref rtBufferGetSizev
     ///
-    #[link_name = "\u{1}_rtBufferGetMipLevelSize1D"]
+    
     pub fn rtBufferGetMipLevelSize1D(
         buffer: RTbuffer,
         level: ::std::os::raw::c_uint,
@@ -11164,7 +11136,7 @@ extern "C" {
     /// @ref rtBufferGetSize3D,
     /// @ref rtBufferGetSizev
     ///
-    #[link_name = "\u{1}_rtBufferGetMipLevelSize2D"]
+    
     pub fn rtBufferGetMipLevelSize2D(
         buffer: RTbuffer,
         level: ::std::os::raw::c_uint,
@@ -11212,7 +11184,7 @@ extern "C" {
     /// @ref rtBufferGetSize3D,
     /// @ref rtBufferGetSizev
     ///
-    #[link_name = "\u{1}_rtBufferGetMipLevelSize3D"]
+    
     pub fn rtBufferGetMipLevelSize3D(
         buffer: RTbuffer,
         level: ::std::os::raw::c_uint,
@@ -11266,7 +11238,7 @@ extern "C" {
     /// @ref rtBufferGetSize3D,
     /// @ref rtBufferGetSizev
     ///
-    #[link_name = "\u{1}_rtBufferSetSizev"]
+    
     pub fn rtBufferSetSizev(
         buffer: RTbuffer,
         dimensionality: ::std::os::raw::c_uint,
@@ -11318,7 +11290,7 @@ extern "C" {
     /// @ref rtBufferGetSize2D,
     /// @ref rtBufferGetSize3D
     ///
-    #[link_name = "\u{1}_rtBufferGetSizev"]
+    
     pub fn rtBufferGetSizev(
         buffer: RTbuffer,
         dimensionality: ::std::os::raw::c_uint,
@@ -11355,7 +11327,7 @@ extern "C" {
     /// <B>See also</B>
     /// \a rtBufferSetSize{1-2-3}D
     ///
-    #[link_name = "\u{1}_rtBufferGetDimensionality"]
+    
     pub fn rtBufferGetDimensionality(
         buffer: RTbuffer,
         dimensionality: *mut ::std::os::raw::c_uint,
@@ -11401,7 +11373,7 @@ extern "C" {
     /// @ref rtBufferGetSize3D,
     /// @ref rtBufferGetSizev
     ///
-    #[link_name = "\u{1}_rtBufferGetMipLevelCount"]
+    
     pub fn rtBufferGetMipLevelCount(
         buffer: RTbuffer,
         level: *mut ::std::os::raw::c_uint,
@@ -11461,7 +11433,7 @@ extern "C" {
     /// @ref rtBufferMapEx,
     /// @ref rtBufferUnmapEx
     ///
-    #[link_name = "\u{1}_rtBufferMap"]
+    
     pub fn rtBufferMap(
         buffer: RTbuffer,
         user_pointer: *mut *mut ::std::os::raw::c_void,
@@ -11502,7 +11474,7 @@ extern "C" {
     /// @ref rtBufferMapEx,
     /// @ref rtBufferUnmapEx
     ///
-    #[link_name = "\u{1}_rtBufferUnmap"]
+    
     pub fn rtBufferUnmap(buffer: RTbuffer) -> RtResult;
 }
 extern "C" {
@@ -11557,7 +11529,7 @@ extern "C" {
     /// @ref rtBufferUnmap,
     /// @ref rtBufferUnmapEx
     ///
-    #[link_name = "\u{1}_rtBufferMapEx"]
+    
     pub fn rtBufferMapEx(
         buffer: RTbuffer,
         map_flags: ::std::os::raw::c_uint,
@@ -11604,7 +11576,7 @@ extern "C" {
     /// @ref rtBufferUnmap,
     /// @ref rtBufferMapEx
     ///
-    #[link_name = "\u{1}_rtBufferUnmapEx"]
+    
     pub fn rtBufferUnmapEx(
         buffer: RTbuffer,
         level: ::std::os::raw::c_uint,
@@ -11642,7 +11614,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextGetBufferFromId
     ///
-    #[link_name = "\u{1}_rtBufferGetId"]
+    
     pub fn rtBufferGetId(
         buffer: RTbuffer,
         buffer_id: *mut ::std::os::raw::c_int,
@@ -11679,7 +11651,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtBufferGetId
     ///
-    #[link_name = "\u{1}_rtContextGetBufferFromId"]
+    
     pub fn rtContextGetBufferFromId(
         context: RTcontext,
         buffer_id: ::std::os::raw::c_int,
@@ -11731,7 +11703,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextLaunchProgressive2D
     ///
-    #[link_name = "\u{1}_rtBufferGetProgressiveUpdateReady"]
+    
     pub fn rtBufferGetProgressiveUpdateReady(
         buffer: RTbuffer,
         ready: *mut ::std::os::raw::c_int,
@@ -11781,7 +11753,7 @@ extern "C" {
     /// @ref rtBufferSetAttribute
     /// @ref rtBufferGetAttribute
     ///
-    #[link_name = "\u{1}_rtBufferBindProgressiveStream"]
+    
     pub fn rtBufferBindProgressiveStream(
         stream: RTbuffer,
         source: RTbuffer,
@@ -11857,7 +11829,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtBufferGetAttribute
     ///
-    #[link_name = "\u{1}_rtBufferSetAttribute"]
+    
     pub fn rtBufferSetAttribute(
         buffer: RTbuffer,
         attrib: BufferAttribute,
@@ -11896,7 +11868,7 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtBufferSetAttribute
     ///
-    #[link_name = "\u{1}_rtBufferGetAttribute"]
+    
     pub fn rtBufferGetAttribute(
         buffer: RTbuffer,
         attrib: BufferAttribute,
@@ -11959,7 +11931,7 @@ extern "C" {
     /// @ref rtRemoteDeviceRelease
     /// @ref rtContextSetRemoteDevice
     ///
-    #[link_name = "\u{1}_rtRemoteDeviceCreate"]
+    
     pub fn rtRemoteDeviceCreate(
         url: *const ::std::os::raw::c_char,
         username: *const ::std::os::raw::c_char,
@@ -11996,7 +11968,7 @@ extern "C" {
     /// @ref rtRemoteDeviceRelease
     /// @ref rtContextSetRemoteDevice
     ///
-    #[link_name = "\u{1}_rtRemoteDeviceDestroy"]
+    
     pub fn rtRemoteDeviceDestroy(remote_dev: RTremotedevice) -> RtResult;
 }
 extern "C" {
@@ -12133,7 +12105,7 @@ extern "C" {
     /// @ref rtRemoteDeviceRelease
     /// @ref rtContextSetRemoteDevice
     ///
-    #[link_name = "\u{1}_rtRemoteDeviceGetAttribute"]
+    
     pub fn rtRemoteDeviceGetAttribute(
         remote_dev: RTremotedevice,
         attrib: RemoteDeviceAttribute,
@@ -12190,7 +12162,7 @@ extern "C" {
     /// @ref rtRemoteDeviceRelease
     /// @ref rtContextSetRemoteDevice
     ///
-    #[link_name = "\u{1}_rtRemoteDeviceReserve"]
+    
     pub fn rtRemoteDeviceReserve(
         remote_dev: RTremotedevice,
         num_nodes: ::std::os::raw::c_uint,
@@ -12230,7 +12202,7 @@ extern "C" {
     /// @ref rtRemoteDeviceReserve
     /// @ref rtContextSetRemoteDevice
     ///
-    #[link_name = "\u{1}_rtRemoteDeviceRelease"]
+    
     pub fn rtRemoteDeviceRelease(remote_dev: RTremotedevice) -> RtResult;
 }
 extern "C" {
@@ -12270,7 +12242,7 @@ extern "C" {
     /// @ref rtPostProcessingStageGetVariableCount
     /// @ref rtPostProcessingStageGetVariable
     ///
-    #[link_name = "\u{1}_rtPostProcessingStageCreateBuiltin"]
+    
     pub fn rtPostProcessingStageCreateBuiltin(
         context: RTcontext,
         builtin_name: *const ::std::os::raw::c_char,
@@ -12310,7 +12282,7 @@ extern "C" {
     /// @ref rtPostProcessingStageGetVariableCount
     /// @ref rtPostProcessingStageGetVariable
     ///
-    #[link_name = "\u{1}_rtPostProcessingStageDestroy"]
+    
     pub fn rtPostProcessingStageDestroy(
         stage: RTpostprocessingstage,
     ) -> RtResult;
@@ -12365,7 +12337,7 @@ extern "C" {
     /// @ref rtPostProcessingStageQueryVariable,
     /// @ref rtPostProcessingStageGetVariable
     ///
-    #[link_name = "\u{1}_rtPostProcessingStageDeclareVariable"]
+    
     pub fn rtPostProcessingStageDeclareVariable(
         stage: RTpostprocessingstage,
         name: *const ::std::os::raw::c_char,
@@ -12408,7 +12380,7 @@ extern "C" {
     /// @ref rtPostProcessingStageGetVariableCount
     /// @ref rtPostProcessingStageGetVariable
     ///
-    #[link_name = "\u{1}_rtPostProcessingStageGetContext"]
+    
     pub fn rtPostProcessingStageGetContext(
         stage: RTpostprocessingstage,
         context: *mut RTcontext,
@@ -12455,7 +12427,7 @@ extern "C" {
     /// @ref rtPostProcessingStageGetVariableCount
     /// @ref rtPostProcessingStageGetVariable
     ///
-    #[link_name = "\u{1}_rtPostProcessingStageQueryVariable"]
+    
     pub fn rtPostProcessingStageQueryVariable(
         stage: RTpostprocessingstage,
         name: *const ::std::os::raw::c_char,
@@ -12496,7 +12468,7 @@ extern "C" {
     /// @ref rtPostProcessingStageQueryVariable,
     /// @ref rtPostProcessingStageGetVariable
     ///
-    #[link_name = "\u{1}_rtPostProcessingStageGetVariableCount"]
+    
     pub fn rtPostProcessingStageGetVariableCount(
         stage: RTpostprocessingstage,
         count: *mut ::std::os::raw::c_uint,
@@ -12543,7 +12515,7 @@ extern "C" {
     /// @ref rtPostProcessingStageQueryVariable,
     /// @ref rtPostProcessingStageGetVariableCount
     ///
-    #[link_name = "\u{1}_rtPostProcessingStageGetVariable"]
+    
     pub fn rtPostProcessingStageGetVariable(
         stage: RTpostprocessingstage,
         index: ::std::os::raw::c_uint,
@@ -12599,7 +12571,7 @@ extern "C" {
     /// @ref rtCommandListFinalize,
     /// @ref rtCommandListExecute
     ///
-    #[link_name = "\u{1}_rtCommandListCreate"]
+    
     pub fn rtCommandListCreate(
         context: RTcontext,
         list: *mut RTcommandlist,
@@ -12636,7 +12608,7 @@ extern "C" {
     /// @ref rtCommandListFinalize,
     /// @ref rtCommandListExecute
     ///
-    #[link_name = "\u{1}_rtCommandListDestroy"]
+    
     pub fn rtCommandListDestroy(list: RTcommandlist) -> RtResult;
 }
 extern "C" {
@@ -12692,7 +12664,7 @@ extern "C" {
     /// @ref rtCommandListExecute
     /// @ref rtPostProcessingStageCreateBuiltin,
     ///
-    #[link_name = "\u{1}_rtCommandListAppendPostprocessingStage"]
+    
     pub fn rtCommandListAppendPostprocessingStage(
         list: RTcommandlist,
         stage: RTpostprocessingstage,
@@ -12734,7 +12706,7 @@ extern "C" {
     /// @ref rtCommandListFinalize,
     /// @ref rtCommandListExecute
     ///
-    #[link_name = "\u{1}_rtCommandListAppendLaunch2D"]
+    
     pub fn rtCommandListAppendLaunch2D(
         list: RTcommandlist,
         entry_point_index: ::std::os::raw::c_uint,
@@ -12780,7 +12752,7 @@ extern "C" {
     /// @ref rtCommandListAppendLaunch2D,
     /// @ref rtCommandListExecute
     ///
-    #[link_name = "\u{1}_rtCommandListFinalize"]
+    
     pub fn rtCommandListFinalize(list: RTcommandlist) -> RtResult;
 }
 extern "C" {
@@ -12819,7 +12791,7 @@ extern "C" {
     /// @ref rtCommandListAppendLaunch2D,
     /// @ref rtCommandListFinalize,
     ///
-    #[link_name = "\u{1}_rtCommandListExecute"]
+    
     pub fn rtCommandListExecute(list: RTcommandlist) -> RtResult;
 }
 extern "C" {
@@ -12854,7 +12826,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextDeclareVariable
     ///
-    #[link_name = "\u{1}_rtCommandListGetContext"]
     pub fn rtCommandListGetContext(
         list: RTcommandlist,
         context: *mut RTcontext,
