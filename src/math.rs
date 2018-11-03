@@ -4,6 +4,7 @@ pub type V2f32 = Vector2<f32>;
 pub type V3f32 = Vector3<f32>;
 pub type V4f32 = Vector4<f32>;
 pub type M4f32 = Matrix4<f32>;
+pub type M4f64 = Matrix4<f64>;
 
 // short constructors
 pub fn v2f(x: f32, y: f32) -> V2f32 {
