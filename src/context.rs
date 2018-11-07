@@ -762,7 +762,10 @@ mod tests {
         let mut mtl_camera_programs = HashMap::new();
         mtl_camera_programs.insert(
             raytype_camera,
-            MaterialProgram::ClosestHit(prg_material_constant_closest),
+            MaterialProgram {
+                closest: Some(prg_material_constant_closest),
+                any: None,
+            },
         );
         let mtl_constant = ctx.material_create(mtl_camera_programs)?;
 

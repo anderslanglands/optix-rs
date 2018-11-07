@@ -2,7 +2,7 @@ cargo-features=["edition"]
 
 [package]
 name = "optix"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["Anders Langlands <anderslanglands@gmail.com>"]
 edition = "2018"
 repository = "https://github.com/anderslanglands/optix-rs"

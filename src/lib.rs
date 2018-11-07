@@ -9,6 +9,8 @@ pub mod ginallocator;
 pub mod math;
 mod optix_bindings;
 pub mod search_path;
+mod nvrtc_bindings;
+pub mod nvrtc;
 
 pub use self::context::program::*;
 pub use self::context::geometry::*;
