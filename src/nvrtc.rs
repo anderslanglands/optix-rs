@@ -176,6 +176,7 @@ fn test_compile() {
     let cuda_root = settings_map.get("cuda_root")
         .expect("CUDA_ROOT not found. You must set CUDA_ROOT either as an environment variable, or in build-settings.toml to point to the root of your CUDA installation.");
 
+    // Create a vector of options to pass to the compiler
     let optix_inc = format!("-I{}/include", optix_root);
     let cuda_inc = format!("-I{}/include", cuda_root);
 
@@ -189,6 +190,8 @@ fn test_compile() {
         "--device-as-default-execution-space".to_owned(),
     ];
 
+    // The program object allows us to compile the cuda source and get ptx from 
+    // it if successful. 
     let mut prg = Program::new(
         "#include <optix.h>\n__device__ float myfun() { return 1.0f; }",
         "myfun",
