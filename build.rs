@@ -54,4 +54,5 @@ fn main() {
 
     println!("cargo:rustc-link-lib=dylib=optix");
     println!("cargo:rustc-link-search=native={}/lib64", optix_root);
+    println!("cargo:rustc-link-search=native={}/lib", cuda_root);
 }
