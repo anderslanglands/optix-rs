@@ -74,9 +74,10 @@ fn main() -> Result<(), String> {
             match rx_render.recv() {
                 Some(MsgMaster::StartRender(mut ctx, entry_point)) => {
                     let result_buffer = ctx
-                        .buffer_create_2d::<V4f32>(
+                        .buffer_create_2d(
                             width as usize,
                             height as usize,
+                            rt::Format::FLOAT4,
                             rt::BufferType::OUTPUT,
                             rt::BufferFlag::NONE,
                         ).expect("Could not create result buffer");
@@ -636,14 +637,16 @@ pub fn create_box(
         rt::BufferFlag::NONE,
     )?;
 
-    let buf_normal = ctx.buffer_create_1d::<V3f32>(
+    let buf_normal = ctx.buffer_create_1d(
         0,
+        rt::Format::FLOAT3,
         rt::BufferType::INPUT,
         rt::BufferFlag::NONE,
     )?;
 
-    let buf_texcoord = ctx.buffer_create_1d::<V2f32>(
+    let buf_texcoord = ctx.buffer_create_1d(
         0,
+        rt::Format::FLOAT2,
         rt::BufferType::INPUT,
         rt::BufferFlag::NONE,
     )?;
@@ -691,13 +694,15 @@ pub fn create_quad(
         rt::BufferType::INPUT,
         rt::BufferFlag::NONE,
     )?;
-    let buf_normal = ctx.buffer_create_1d::<V3f32>(
+    let buf_normal = ctx.buffer_create_1d(
         0,
+        rt::Format::FLOAT3,
         rt::BufferType::INPUT,
         rt::BufferFlag::NONE,
     )?;
-    let buf_texcoord = ctx.buffer_create_1d::<V2f32>(
+    let buf_texcoord = ctx.buffer_create_1d(
         0,
+        rt::Format::FLOAT2,
         rt::BufferType::INPUT,
         rt::BufferFlag::NONE,
     )?;

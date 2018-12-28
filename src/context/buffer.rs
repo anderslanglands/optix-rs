@@ -1,8 +1,8 @@
 use crate::context::*;
 use crate::ginallocator::*;
 use crate::math::*;
-use std::ops::{Index, IndexMut};
 use colorspace::rgb::{RGBAf32, RGBf32};
+use std::ops::{Index, IndexMut};
 
 #[derive(Default, Debug, Copy, Clone)]
 #[doc(hidden)]
@@ -279,9 +279,10 @@ impl<'a, T: BufferElement> Drop for ScopedBufMap2dMut<'a, T> {
 impl Context {
     /// Creates a new `Buffer1d` on this Context, returning a `Buffer1dHandle`
     /// that can be used to access it later.
-    pub fn buffer_create_1d<T: BufferElement>(
+    pub fn buffer_create_1d(
         &mut self,
         width: usize,
+        format: Format,
         buffer_type: BufferType,
         flags: BufferFlag,
     ) -> Result<Buffer1dHandle> {
@@ -294,7 +295,7 @@ impl Context {
             return Err(self.optix_error("rtBufferCreate", result));
         }
 
-        let result = unsafe { rtBufferSetFormat(buf, T::FORMAT) };
+        let result = unsafe { rtBufferSetFormat(buf, format) };
         if result != RtResult::SUCCESS {
             return Err(self.optix_error("rtBufferSetFormat", result));
         }
@@ -309,6 +310,30 @@ impl Context {
         Ok(hnd)
     }
 
+    /// Get the format of this buffer
+    pub fn buffer_get_format_1d(&self, buf: Buffer1dHandle) -> Result<Format> {
+        let buf = self.ga_buffer1d_obj.get(buf).unwrap();
+        let (format, result) = unsafe {
+            let mut format = Format::UNKNOWN;
+            let result = rtBufferGetFormat(*buf, &mut format as *mut Format);
+            (format, result)
+        };
+        if result != RtResult::SUCCESS {
+            return Err(self.optix_error("rtBufferGetFormat", result));
+        }
+        Ok(format)
+    }
+
+    /// Set the format of this buffer
+    pub fn buffer_set_format_1d(&mut self, buf: Buffer1dHandle, format: Format) -> Result<()> {
+        let buf = self.ga_buffer1d_obj.get(buf).unwrap();
+        let result = unsafe { rtBufferSetFormat(*buf, format) };
+        if result != RtResult::SUCCESS {
+            return Err(self.optix_error("rtBufferSetFormat", result));
+        }
+        Ok(())
+    }
+
     /// Create a new `Buffer1d` and fill it with the given data.
     pub fn buffer_create_from_slice_1d<T: BufferElement>(
         &mut self,
@@ -316,7 +341,7 @@ impl Context {
         buffer_type: BufferType,
         flags: BufferFlag,
     ) -> Result<Buffer1dHandle> {
-        let hnd = self.buffer_create_1d::<T>(data.len(), buffer_type, flags)?;
+        let hnd = self.buffer_create_1d(data.len(), T::FORMAT, buffer_type, flags)?;
         {
             let mut map = self.buffer_map_1d_mut::<T>(hnd).unwrap();
             map.as_slice_mut().clone_from_slice(data);
@@ -342,10 +367,11 @@ impl Context {
 
     /// Creates a new `Buffer2d` on this Context, returning a `Buffer2dHandle`
     /// that can be used to access it later.
-    pub fn buffer_create_2d<T: BufferElement>(
+    pub fn buffer_create_2d(
         &mut self,
         width: usize,
         height: usize,
+        format: Format,
         buffer_type: BufferType,
         flags: BufferFlag,
     ) -> Result<Buffer2dHandle> {
@@ -358,7 +384,7 @@ impl Context {
             return Err(self.optix_error("rtBufferCreate", result));
         }
 
-        let result = unsafe { rtBufferSetFormat(buf, T::FORMAT) };
+        let result = unsafe { rtBufferSetFormat(buf, format) };
         if result != RtResult::SUCCESS {
             return Err(self.optix_error("rtBufferSetFormat", result));
         }
@@ -376,8 +402,9 @@ impl Context {
     /// Creates an unsized `Buffer2d` on this Context, returning a `Buffer2dHandle`
     /// that can be used to access it later. The size of the buffer must be set
     /// before it is used
-    pub fn buffer_create_unsized_2d<T: BufferElement>(
+    pub fn buffer_create_unsized_2d(
         &mut self,
+        format: Format,
         buffer_type: BufferType,
         flags: BufferFlag,
     ) -> Result<Buffer2dHandle> {
@@ -390,7 +417,7 @@ impl Context {
             return Err(self.optix_error("rtBufferCreate", result));
         }
 
-        let result = unsafe { rtBufferSetFormat(buf, T::FORMAT) };
+        let result = unsafe { rtBufferSetFormat(buf, format) };
         if result != RtResult::SUCCESS {
             return Err(self.optix_error("rtBufferSetFormat", result));
         }
@@ -416,11 +443,40 @@ impl Context {
     }
 
     /// Set the size of this buffer.
-    pub fn buffer_set_size_2d(&mut self, buf: Buffer2dHandle, width: usize, height: usize) -> Result<()> {
+    pub fn buffer_set_size_2d(
+        &mut self,
+        buf: Buffer2dHandle,
+        width: usize,
+        height: usize,
+    ) -> Result<()> {
         let buf = self.ga_buffer2d_obj.get(buf).unwrap();
         let result = unsafe { rtBufferSetSize2D(*buf, width as u64, height as u64) };
         if result != RtResult::SUCCESS {
             return Err(self.optix_error("rtBufferSetSize2D", result));
+        }
+        Ok(())
+    }
+
+    /// Get the format of this buffer
+    pub fn buffer_get_format_2d(&self, buf: Buffer2dHandle) -> Result<Format> {
+        let buf = self.ga_buffer2d_obj.get(buf).unwrap();
+        let (format, result) = unsafe {
+            let mut format = Format::UNKNOWN;
+            let result = rtBufferGetFormat(*buf, &mut format as *mut Format);
+            (format, result)
+        };
+        if result != RtResult::SUCCESS {
+            return Err(self.optix_error("rtBufferGetFormat", result));
+        }
+        Ok(format)
+    }
+
+    /// Set the format of this buffer
+    pub fn buffer_set_format_2d(&mut self, buf: Buffer2dHandle, format: Format) -> Result<()> {
+        let buf = self.ga_buffer2d_obj.get(buf).unwrap();
+        let result = unsafe { rtBufferSetFormat(*buf, format) };
+        if result != RtResult::SUCCESS {
+            return Err(self.optix_error("rtBufferSetFormat", result));
         }
         Ok(())
     }
@@ -449,6 +505,15 @@ impl Context {
         &'a self,
         buffer_handle: Buffer1dHandle,
     ) -> Result<ScopedBufMap1d<'a, T>> {
+        // first check that the formats align
+        let format = self.buffer_get_format_1d(buffer_handle)?;
+        if format != T::FORMAT {
+            return Err(Error::IncompatibleBufferFormat {
+                given: T::FORMAT,
+                expected: format,
+            });
+        }
+
         match self.ga_buffer1d_obj.get(buffer_handle) {
             Some(buf) => {
                 let mut p: *const T = std::ptr::null();
@@ -486,6 +551,15 @@ impl Context {
         &'a mut self,
         buffer_handle: Buffer1dHandle,
     ) -> Result<ScopedBufMap1dMut<'a, T>> {
+        // first check that the formats align
+        let format = self.buffer_get_format_1d(buffer_handle)?;
+        if format != T::FORMAT {
+            return Err(Error::IncompatibleBufferFormat {
+                given: T::FORMAT,
+                expected: format,
+            });
+        }
+
         match self.ga_buffer1d_obj.get_mut(buffer_handle) {
             Some(buf) => {
                 let mut p: *mut T = std::ptr::null_mut();
@@ -523,6 +597,15 @@ impl Context {
         &'a self,
         buffer_handle: Buffer2dHandle,
     ) -> Result<ScopedBufMap2d<'a, T>> {
+        // first check that the formats align
+        let format = self.buffer_get_format_2d(buffer_handle)?;
+        if format != T::FORMAT {
+            return Err(Error::IncompatibleBufferFormat {
+                given: T::FORMAT,
+                expected: format,
+            });
+        }
+
         match self.ga_buffer2d_obj.get(buffer_handle) {
             Some(buf) => {
                 let mut p: *const T = std::ptr::null();
@@ -563,6 +646,15 @@ impl Context {
         &'a mut self,
         buffer_handle: Buffer2dHandle,
     ) -> Result<ScopedBufMap2dMut<'a, T>> {
+        // first check that the formats align
+        let format = self.buffer_get_format_2d(buffer_handle)?;
+        if format != T::FORMAT {
+            return Err(Error::IncompatibleBufferFormat {
+                given: T::FORMAT,
+                expected: format,
+            });
+        }
+
         match self.ga_buffer2d_obj.get_mut(buffer_handle) {
             Some(buf) => {
                 let mut p: *mut T = std::ptr::null_mut();

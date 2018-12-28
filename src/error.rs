@@ -1,6 +1,6 @@
-use std::{ffi, fmt, io, ptr, result};
 use crate::optix_bindings::*;
 use crate::search_path;
+use std::{ffi, fmt, io, ptr, result};
 
 #[derive(Debug)]
 pub enum Error {
@@ -11,6 +11,7 @@ pub enum Error {
     SearchPath(crate::search_path::Error),
     NulError(usize),
     HandleNotFoundError,
+    IncompatibleBufferFormat { given: Format, expected: Format },
 }
 
 impl From<io::Error> for Error {
@@ -34,23 +35,18 @@ impl From<std::ffi::NulError> for Error {
 impl fmt::Display for Error {
     fn fmt(&self, output: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Error::Optix(err) => {
-                write!(output, "[ERROR OptiX {:?}] {}", err.0, err.1)
-            }
+            Error::Optix(err) => write!(output, "[ERROR OptiX {:?}] {}", err.0, err.1),
             Error::Io(err) => write!(output, "[ERROR IO] {}", err),
             Error::Bounds => write!(output, "[ERROR out of bounds]"),
-            Error::IncompatibleBuilderType => {
-                write!(output, "[ERROR incompatible builder type]")
-            },
-            Error::SearchPath(err) => {
-                write!(output, "[ERROR SearchPath {}", err)
-            },
-            Error::HandleNotFoundError => {
-                write!(output, "[ERROR Hande Not Found]")
-            }
-            Error::NulError(pos) => {
-                write!(output, "[ERROR Nul byte at position {}]", pos)
-            }
+            Error::IncompatibleBuilderType => write!(output, "[ERROR incompatible builder type]"),
+            Error::SearchPath(err) => write!(output, "[ERROR SearchPath {}", err),
+            Error::HandleNotFoundError => write!(output, "[ERROR Hande Not Found]"),
+            Error::NulError(pos) => write!(output, "[ERROR Nul byte at position {}]", pos),
+            Error::IncompatibleBufferFormat { given, expected } => write!(
+                output,
+                "[ERROR Expected buffer format of {:?}, given {:?}",
+                given, expected
+            ),
         }
     }
 }
@@ -77,4 +73,3 @@ pub(crate) fn get_error_string(ctx: RTcontext, code: RtResult) -> String {
         ffi::CStr::from_ptr(tmp).to_string_lossy().into_owned()
     }
 }
-

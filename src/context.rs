@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use crate::ginallocator::{GinAllocator, GinAllocatorChild, Marker};
 pub use crate::math::*;
 use crate::optix_bindings::*;
-pub use crate::optix_bindings::{BufferFlag, BufferType};
+pub use crate::optix_bindings::{BufferFlag, BufferType, Format};
 pub use crate::search_path::SearchPath;
 
 pub mod program;
@@ -544,9 +544,10 @@ mod tests {
             ctx.add_entry_point(hprg_draw_solid_color, None).unwrap();
 
         let result_buffer = ctx
-            .buffer_create_2d::<V4f32>(
+            .buffer_create_2d(
                 256,
                 128,
+                Format::FLOAT4,
                 BufferType::OUTPUT,
                 BufferFlag::NONE,
             ).expect("Could not create result buffer");
@@ -604,9 +605,10 @@ mod tests {
             ctx.add_entry_point(hprg_draw_solid_color, None).unwrap();
 
         let result_buffer = ctx
-            .buffer_create_2d::<V4f32>(
+            .buffer_create_2d(
                 256,
                 128,
+                Format::FLOAT4,
                 BufferType::OUTPUT,
                 BufferFlag::NONE,
             ).expect("Could not create result buffer");
@@ -702,13 +704,15 @@ mod tests {
             BufferType::INPUT,
             BufferFlag::NONE,
         )?;
-        let buf_normal = ctx.buffer_create_1d::<V3f32>(
+        let buf_normal = ctx.buffer_create_1d(
             0,
+            Format::FLOAT3,
             BufferType::INPUT,
             BufferFlag::NONE,
         )?;
-        let buf_texcoord = ctx.buffer_create_1d::<V2f32>(
+        let buf_texcoord = ctx.buffer_create_1d(
             0,
+            Format::FLOAT2,
             BufferType::INPUT,
             BufferFlag::NONE,
         )?;
@@ -787,9 +791,10 @@ mod tests {
         let entry_point = ctx.add_entry_point(prg_cam_screen, None)?;
 
         let result_buffer = ctx
-            .buffer_create_2d::<V4f32>(
+            .buffer_create_2d(
                 256,
                 128,
+                Format::FLOAT4,
                 BufferType::OUTPUT,
                 BufferFlag::NONE,
             ).expect("Could not create result buffer");
