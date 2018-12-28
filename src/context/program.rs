@@ -47,8 +47,12 @@ impl Context {
         ptx_str: &str,
         entry_point_name: &str,
     ) -> Result<ProgramHandle> {
-        let c_ptx = CString::new(ptx_str).unwrap();
-        let c_entry_point_name = CString::new(entry_point_name).unwrap();
+        let c_ptx = CString::new(ptx_str);
+        if let Err(nerr) = c_ptx {
+            return Err(Error::NulError(nerr.nul_position()));
+        }
+        let c_ptx = c_ptx.unwrap();
+        let c_entry_point_name = CString::new(entry_point_name)?;
         let (prg, result) = unsafe {
             let mut prg: RTprogram = std::mem::zeroed();
             let result = rtProgramCreateFromPTXString(

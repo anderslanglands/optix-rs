@@ -9,6 +9,7 @@ pub enum Error {
     Bounds,
     IncompatibleBuilderType,
     SearchPath(crate::search_path::Error),
+    NulError(usize),
     HandleNotFoundError,
 }
 
@@ -21,6 +22,12 @@ impl From<io::Error> for Error {
 impl From<search_path::Error> for Error {
     fn from(err: search_path::Error) -> Error {
         Error::SearchPath(err)
+    }
+}
+
+impl From<std::ffi::NulError> for Error {
+    fn from(err: std::ffi::NulError) -> Error {
+        Error::NulError(err.nul_position())
     }
 }
 
@@ -41,7 +48,16 @@ impl fmt::Display for Error {
             Error::HandleNotFoundError => {
                 write!(output, "[ERROR Hande Not Found]")
             }
+            Error::NulError(pos) => {
+                write!(output, "[ERROR Nul byte at position {}]", pos)
+            }
         }
+    }
+}
+
+impl Error {
+    pub fn description(&self) -> String {
+        format!("{}", self)
     }
 }
 
