@@ -2,6 +2,7 @@ use crate::context::*;
 use crate::ginallocator::*;
 use crate::math::*;
 use std::ops::{Index, IndexMut};
+use colorspace::rgb::{RGBAf32, RGBf32};
 
 #[derive(Default, Debug, Copy, Clone)]
 #[doc(hidden)]
@@ -61,6 +62,14 @@ impl BufferElement for V3i32 {
 
 impl BufferElement for V4i32 {
     const FORMAT: Format = Format::INT4;
+}
+
+impl BufferElement for RGBf32 {
+    const FORMAT: Format = Format::FLOAT3;
+}
+
+impl BufferElement for RGBAf32 {
+    const FORMAT: Format = Format::FLOAT4;
 }
 
 /// A wrapper for a read-only mapping of a `Buffer1d` to host memory. The buffer
@@ -251,9 +260,7 @@ impl<'a, T: BufferElement> Index<(usize, usize)> for ScopedBufMap2dMut<'a, T> {
     }
 }
 
-impl<'a, T: BufferElement> IndexMut<(usize, usize)>
-    for ScopedBufMap2dMut<'a, T>
-{
+impl<'a, T: BufferElement> IndexMut<(usize, usize)> for ScopedBufMap2dMut<'a, T> {
     fn index_mut(&mut self, idx: (usize, usize)) -> &mut T {
         &mut self.data[idx.1 * self.width + idx.0]
     }
@@ -280,11 +287,7 @@ impl Context {
     ) -> Result<Buffer1dHandle> {
         let (buf, result) = unsafe {
             let mut buf: RTbuffer = std::mem::uninitialized();
-            let result = rtBufferCreate(
-                self.rt_ctx,
-                buffer_type as u32 | flags as u32,
-                &mut buf,
-            );
+            let result = rtBufferCreate(self.rt_ctx, buffer_type as u32 | flags as u32, &mut buf);
             (buf, result)
         };
         if result != RtResult::SUCCESS {
@@ -348,11 +351,7 @@ impl Context {
     ) -> Result<Buffer2dHandle> {
         let (buf, result) = unsafe {
             let mut buf: RTbuffer = std::mem::uninitialized();
-            let result = rtBufferCreate(
-                self.rt_ctx,
-                buffer_type as u32 | flags as u32,
-                &mut buf,
-            );
+            let result = rtBufferCreate(self.rt_ctx, buffer_type as u32 | flags as u32, &mut buf);
             (buf, result)
         };
         if result != RtResult::SUCCESS {
@@ -364,8 +363,7 @@ impl Context {
             return Err(self.optix_error("rtBufferSetFormat", result));
         }
 
-        let result =
-            unsafe { rtBufferSetSize2D(buf, width as u64, height as u64) };
+        let result = unsafe { rtBufferSetSize2D(buf, width as u64, height as u64) };
         if result != RtResult::SUCCESS {
             return Err(self.optix_error("rtBufferSetSize2D", result));
         }
@@ -373,6 +371,58 @@ impl Context {
         let hnd = self.ga_buffer2d_obj.insert(buf);
 
         Ok(hnd)
+    }
+
+    /// Creates an unsized `Buffer2d` on this Context, returning a `Buffer2dHandle`
+    /// that can be used to access it later. The size of the buffer must be set
+    /// before it is used
+    pub fn buffer_create_unsized_2d<T: BufferElement>(
+        &mut self,
+        buffer_type: BufferType,
+        flags: BufferFlag,
+    ) -> Result<Buffer2dHandle> {
+        let (buf, result) = unsafe {
+            let mut buf: RTbuffer = std::mem::uninitialized();
+            let result = rtBufferCreate(self.rt_ctx, buffer_type as u32 | flags as u32, &mut buf);
+            (buf, result)
+        };
+        if result != RtResult::SUCCESS {
+            return Err(self.optix_error("rtBufferCreate", result));
+        }
+
+        let result = unsafe { rtBufferSetFormat(buf, T::FORMAT) };
+        if result != RtResult::SUCCESS {
+            return Err(self.optix_error("rtBufferSetFormat", result));
+        }
+
+        let hnd = self.ga_buffer2d_obj.insert(buf);
+
+        Ok(hnd)
+    }
+
+    /// Get the size of this buffer.
+    pub fn buffer_get_size_2d(&self, buf: Buffer2dHandle) -> Result<(usize, usize)> {
+        let buf = self.ga_buffer2d_obj.get(buf).unwrap();
+        let (size, result) = unsafe {
+            let mut width = 0u64;
+            let mut height = 0u64;
+            let result = rtBufferGetSize2D(*buf, &mut width as *mut u64, &mut height as *mut u64);
+            ((width, height), result)
+        };
+        if result != RtResult::SUCCESS {
+            return Err(self.optix_error("rtBufferGetSize2D", result));
+        }
+        Ok((size.0 as usize, size.1 as usize))
+    }
+
+    /// Set the size of this buffer.
+    pub fn buffer_set_size_2d(&mut self, buf: Buffer2dHandle, width: usize, height: usize) -> Result<()> {
+        let buf = self.ga_buffer2d_obj.get(buf).unwrap();
+        let result = unsafe { rtBufferSetSize2D(*buf, width as u64, height as u64) };
+        if result != RtResult::SUCCESS {
+            return Err(self.optix_error("rtBufferSetSize2D", result));
+        }
+        Ok(())
     }
 
     /// Destroys this buffer. Not that the buffer will not actually be destroyed
@@ -403,10 +453,7 @@ impl Context {
             Some(buf) => {
                 let mut p: *const T = std::ptr::null();
                 let result = unsafe {
-                    rtBufferMap(
-                        *buf,
-                        (&mut p) as *mut _ as *mut *mut ::std::os::raw::c_void,
-                    )
+                    rtBufferMap(*buf, (&mut p) as *mut _ as *mut *mut ::std::os::raw::c_void)
                 };
                 if result != RtResult::SUCCESS {
                     Err(self.optix_error("rtBufferMap", result))
@@ -418,15 +465,11 @@ impl Context {
                     };
 
                     if result != RtResult::SUCCESS {
-                        return Err(
-                            self.optix_error("rtBufferGetSize1D", result)
-                        );
+                        return Err(self.optix_error("rtBufferGetSize1D", result));
                     }
 
                     Ok(ScopedBufMap1d {
-                        data: unsafe {
-                            std::slice::from_raw_parts(p, width as usize)
-                        },
+                        data: unsafe { std::slice::from_raw_parts(p, width as usize) },
                         buf,
                     })
                 }
@@ -447,10 +490,7 @@ impl Context {
             Some(buf) => {
                 let mut p: *mut T = std::ptr::null_mut();
                 let result = unsafe {
-                    rtBufferMap(
-                        *buf,
-                        (&mut p) as *mut _ as *mut *mut ::std::os::raw::c_void,
-                    )
+                    rtBufferMap(*buf, (&mut p) as *mut _ as *mut *mut ::std::os::raw::c_void)
                 };
                 if result != RtResult::SUCCESS {
                     Err(Error::Optix((result, "rtBufferMap".to_owned())))
@@ -462,16 +502,11 @@ impl Context {
                     };
 
                     if result != RtResult::SUCCESS {
-                        return Err(Error::Optix((
-                            result,
-                            "rtBufferGetSize1D".to_owned(),
-                        )));
+                        return Err(Error::Optix((result, "rtBufferGetSize1D".to_owned())));
                     }
 
                     Ok(ScopedBufMap1dMut {
-                        data: unsafe {
-                            std::slice::from_raw_parts_mut(p, width as usize)
-                        },
+                        data: unsafe { std::slice::from_raw_parts_mut(p, width as usize) },
                         buf,
                     })
                 }
@@ -492,10 +527,7 @@ impl Context {
             Some(buf) => {
                 let mut p: *const T = std::ptr::null();
                 let result = unsafe {
-                    rtBufferMap(
-                        *buf,
-                        (&mut p) as *mut _ as *mut *mut ::std::os::raw::c_void,
-                    )
+                    rtBufferMap(*buf, (&mut p) as *mut _ as *mut *mut ::std::os::raw::c_void)
                 };
                 if result != RtResult::SUCCESS {
                     Err(Error::Optix((result, "rtBufferMap".to_owned())))
@@ -503,25 +535,16 @@ impl Context {
                     let (width, height, result) = unsafe {
                         let mut width: RTsize = 0;
                         let mut height: RTsize = 0;
-                        let result =
-                            rtBufferGetSize2D(*buf, &mut width, &mut height);
+                        let result = rtBufferGetSize2D(*buf, &mut width, &mut height);
                         (width, height, result)
                     };
 
                     if result != RtResult::SUCCESS {
-                        return Err(Error::Optix((
-                            result,
-                            "rtBufferGetSize2D".to_owned(),
-                        )));
+                        return Err(Error::Optix((result, "rtBufferGetSize2D".to_owned())));
                     }
 
                     Ok(ScopedBufMap2d {
-                        data: unsafe {
-                            std::slice::from_raw_parts(
-                                p,
-                                (width * height) as usize,
-                            )
-                        },
+                        data: unsafe { std::slice::from_raw_parts(p, (width * height) as usize) },
                         buf,
                         width: width as usize,
                         height: height as usize,
@@ -544,10 +567,7 @@ impl Context {
             Some(buf) => {
                 let mut p: *mut T = std::ptr::null_mut();
                 let result = unsafe {
-                    rtBufferMap(
-                        *buf,
-                        (&mut p) as *mut _ as *mut *mut ::std::os::raw::c_void,
-                    )
+                    rtBufferMap(*buf, (&mut p) as *mut _ as *mut *mut ::std::os::raw::c_void)
                 };
                 if result != RtResult::SUCCESS {
                     Err(Error::Optix((result, "rtBufferMap".to_owned())))
@@ -555,24 +575,17 @@ impl Context {
                     let (width, height, result) = unsafe {
                         let mut width: RTsize = 0;
                         let mut height: RTsize = 0;
-                        let result =
-                            rtBufferGetSize2D(*buf, &mut width, &mut height);
+                        let result = rtBufferGetSize2D(*buf, &mut width, &mut height);
                         (width, height, result)
                     };
 
                     if result != RtResult::SUCCESS {
-                        return Err(Error::Optix((
-                            result,
-                            "rtBufferGetSize2D".to_owned(),
-                        )));
+                        return Err(Error::Optix((result, "rtBufferGetSize2D".to_owned())));
                     }
 
                     Ok(ScopedBufMap2dMut {
                         data: unsafe {
-                            std::slice::from_raw_parts_mut(
-                                p,
-                                (width * height) as usize,
-                            )
+                            std::slice::from_raw_parts_mut(p, (width * height) as usize)
                         },
                         buf,
                         width: width as usize,

@@ -1,5 +1,3 @@
-cargo-features=["edition"]
-
 [package]
 name = "optix"
 version = "0.2.0"
@@ -16,6 +14,7 @@ exclude = [
 [dependencies]
 config = "0.9"
 nalgebra = "0.16"
+colorspace = {path="../color-space-rs"}
 
 [build-dependencies]
 bindgen = "0.41"
