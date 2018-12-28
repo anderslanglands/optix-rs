@@ -45,7 +45,7 @@ pub trait Marker {
     const ID: &'static str;
 }
 
-#[derive(Debug, Default, Copy, Clone)]
+#[derive(Debug, Default, Copy, Clone, PartialEq)]
 pub struct Handle<M: Marker> {
     pub(crate) index: u32,
     pub(crate) generation: u32,
@@ -183,11 +183,6 @@ impl<T, M: Marker> GinAllocator<T, M> {
         let refcount = self.refcounts.get_mut(&handle.index).unwrap();
         *refcount += 1;
     }
-
-    // fn decref(&mut self, handle: Handle<M>) {
-    //     let refcount = self.refcounts.get_mut(&handle.index).unwrap();
-    //     *refcount -= 1;
-    // }
 
     /// "Destroys" the item referenced by `handle`. All this does is return the
     /// item to the allocator to be recycled.
