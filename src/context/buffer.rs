@@ -599,12 +599,26 @@ impl Context {
     ) -> Result<ScopedBufMap2d<'a, T>> {
         // first check that the formats align
         let format = self.buffer_get_format_2d(buffer_handle)?;
-        if format != T::FORMAT {
-            return Err(Error::IncompatibleBufferFormat {
-                given: T::FORMAT,
-                expected: format,
-            });
-        }
+        let num_channels = if format != T::FORMAT {
+            if T::FORMAT == Format::FLOAT {
+                match format {
+                    Format::FLOAT2 => Ok(2),
+                    Format::FLOAT3 => Ok(3),
+                    Format::FLOAT4 => Ok(4),
+                    _ => Err(Error::IncompatibleBufferFormat {
+                        given: T::FORMAT,
+                        expected: format,
+                    }),
+                }
+            } else {
+                Err(Error::IncompatibleBufferFormat {
+                    given: T::FORMAT,
+                    expected: format,
+                })
+            }
+        } else {
+            Ok(1)
+        }?;
 
         match self.ga_buffer2d_obj.get(buffer_handle) {
             Some(buf) => {
@@ -627,7 +641,9 @@ impl Context {
                     }
 
                     Ok(ScopedBufMap2d {
-                        data: unsafe { std::slice::from_raw_parts(p, (width * height) as usize) },
+                        data: unsafe {
+                            std::slice::from_raw_parts(p, (width * height) as usize * num_channels)
+                        },
                         buf,
                         width: width as usize,
                         height: height as usize,
@@ -647,13 +663,28 @@ impl Context {
         buffer_handle: Buffer2dHandle,
     ) -> Result<ScopedBufMap2dMut<'a, T>> {
         // first check that the formats align
+        // we support 'downcasting' a float tuple type to a float array
         let format = self.buffer_get_format_2d(buffer_handle)?;
-        if format != T::FORMAT {
-            return Err(Error::IncompatibleBufferFormat {
-                given: T::FORMAT,
-                expected: format,
-            });
-        }
+        let num_channels = if format != T::FORMAT {
+            if T::FORMAT == Format::FLOAT {
+                match format {
+                    Format::FLOAT2 => Ok(2),
+                    Format::FLOAT3 => Ok(3),
+                    Format::FLOAT4 => Ok(4),
+                    _ => Err(Error::IncompatibleBufferFormat {
+                        given: T::FORMAT,
+                        expected: format,
+                    }),
+                }
+            } else {
+                Err(Error::IncompatibleBufferFormat {
+                    given: T::FORMAT,
+                    expected: format,
+                })
+            }
+        } else {
+            Ok(1)
+        }?;
 
         match self.ga_buffer2d_obj.get_mut(buffer_handle) {
             Some(buf) => {
@@ -677,7 +708,10 @@ impl Context {
 
                     Ok(ScopedBufMap2dMut {
                         data: unsafe {
-                            std::slice::from_raw_parts_mut(p, (width * height) as usize)
+                            std::slice::from_raw_parts_mut(
+                                p,
+                                (width * height) as usize * num_channels,
+                            )
                         },
                         buf,
                         width: width as usize,
