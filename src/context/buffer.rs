@@ -1,5 +1,4 @@
 use crate::context::*;
-use colorspace::rgb::{RGBAf32, RGBf32};
 use std::ops::{Index, IndexMut};
 
 use slotmap::*;
@@ -42,14 +41,6 @@ impl BufferElement for V3i32 {
 
 impl BufferElement for V4i32 {
     const FORMAT: Format = Format::INT4;
-}
-
-impl BufferElement for RGBf32 {
-    const FORMAT: Format = Format::FLOAT3;
-}
-
-impl BufferElement for RGBAf32 {
-    const FORMAT: Format = Format::FLOAT4;
 }
 
 /// A wrapper for a read-only mapping of a `Buffer1d` to host memory. The buffer

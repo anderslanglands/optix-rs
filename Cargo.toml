@@ -13,8 +13,7 @@ exclude = [
 
 [dependencies]
 config = "0.9"
-nalgebra = {path = "../nalgebra", features=["compact-display"]}
-colorspace = {path="../color-space-rs"}
+nalgebra = "0.16"
 slotmap = "0.3"
 
 [build-dependencies]
