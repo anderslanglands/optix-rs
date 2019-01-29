@@ -5,7 +5,6 @@
 
 pub mod context;
 pub mod error;
-pub mod ginallocator;
 pub mod math;
 mod optix_bindings;
 pub mod search_path;

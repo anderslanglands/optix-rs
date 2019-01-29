@@ -1,5 +1,4 @@
 use crate::context::*;
-use crate::ginallocator::*;
 
 pub enum ObjectHandle {
     Buffer1d(Buffer1dHandle),
@@ -28,37 +27,22 @@ pub enum Variable {
 }
 
 pub trait VariableStorable {
-    fn set_optix_variable(
-        self,
-        ctx: &mut Context,
-        variable: RTvariable,
-    ) -> Result<Variable>;
+    fn set_optix_variable(self, ctx: &mut Context, variable: RTvariable) -> Result<Variable>;
 }
 
 impl VariableStorable for ObjectHandle {
-    fn set_optix_variable(
-        self,
-        ctx: &mut Context,
-        variable: RTvariable,
-    ) -> Result<Variable> {
+    fn set_optix_variable(self, ctx: &mut Context, variable: RTvariable) -> Result<Variable> {
         match self {
             ObjectHandle::Buffer1d(buffer_handle) => unsafe {
-                let buf =
-                    ctx.ga_buffer1d_obj.get(buffer_handle).expect(&format!(
-                        "Could not get buffer object for handle {}",
-                        buffer_handle
-                    ));
-                let result = rtVariableSetObject(
-                    variable,
-                    *buf as *mut ::std::os::raw::c_void,
-                );
+                let buf = ctx.ga_buffer1d_obj.get(buffer_handle).expect(&format!(
+                    "Could not get buffer object for handle {:?}",
+                    buffer_handle
+                ));
+                let result = rtVariableSetObject(variable, *buf as *mut ::std::os::raw::c_void);
                 if result != RtResult::SUCCESS {
-                    return Err(ctx.optix_error(
-                        &format!("rtVariableSetObject {}", buffer_handle),
-                        result,
-                    ));
+                    return Err(ctx
+                        .optix_error(&format!("rtVariableSetObject {:?}", buffer_handle), result));
                 } else {
-                    ctx.ga_buffer1d_obj.incref(buffer_handle);
                     return Ok(Variable::Object(VariableObject {
                         var: variable,
                         object_handle: self,
@@ -66,22 +50,15 @@ impl VariableStorable for ObjectHandle {
                 }
             },
             ObjectHandle::Buffer2d(buffer_handle) => unsafe {
-                let buf =
-                    ctx.ga_buffer2d_obj.get(buffer_handle).expect(&format!(
-                        "Could not get buffer object for handle {}",
-                        buffer_handle
-                    ));
-                let result = rtVariableSetObject(
-                    variable,
-                    *buf as *mut ::std::os::raw::c_void,
-                );
+                let buf = ctx.ga_buffer2d_obj.get(buffer_handle).expect(&format!(
+                    "Could not get buffer object for handle {:?}",
+                    buffer_handle
+                ));
+                let result = rtVariableSetObject(variable, *buf as *mut ::std::os::raw::c_void);
                 if result != RtResult::SUCCESS {
-                    return Err(ctx.optix_error(
-                        &format!("rtVariableSetObject {}", buffer_handle),
-                        result,
-                    ));
+                    return Err(ctx
+                        .optix_error(&format!("rtVariableSetObject {:?}", buffer_handle), result));
                 } else {
-                    ctx.ga_buffer2d_obj.incref(buffer_handle);
                     return Ok(Variable::Object(VariableObject {
                         var: variable,
                         object_handle: self,
@@ -89,27 +66,16 @@ impl VariableStorable for ObjectHandle {
                 }
             },
             ObjectHandle::Group(group_handle) => unsafe {
-                let rt_grp = ctx
-                    .ga_group_obj
-                    .get(group_handle)
-                    .expect(&format!(
-                        "Could not get group object for handle {}",
-                        group_handle
-                    ));
-                let result = rtVariableSetObject(
-                    variable,
-                    *rt_grp as *mut ::std::os::raw::c_void,
-                );
+                let rt_grp = ctx.ga_group_obj.get(group_handle).expect(&format!(
+                    "Could not get group object for handle {:?}",
+                    group_handle
+                ));
+                let result = rtVariableSetObject(variable, *rt_grp as *mut ::std::os::raw::c_void);
                 if result != RtResult::SUCCESS {
-                    return Err(ctx.optix_error(
-                        &format!(
-                            "rtVariableSetObject {}",
-                            group_handle
-                        ),
-                        result,
-                    ));
+                    return Err(
+                        ctx.optix_error(&format!("rtVariableSetObject {:?}", group_handle), result)
+                    );
                 } else {
-                    ctx.ga_group_obj.incref(group_handle);
                     return Ok(Variable::Object(VariableObject {
                         var: variable,
                         object_handle: self,
@@ -121,23 +87,16 @@ impl VariableStorable for ObjectHandle {
                     .ga_geometry_group_obj
                     .get(geometry_group_handle)
                     .expect(&format!(
-                        "Could not get geometry_group object for handle {}",
+                        "Could not get geometry_group object for handle {:?}",
                         geometry_group_handle
                     ));
-                let result = rtVariableSetObject(
-                    variable,
-                    *prg as *mut ::std::os::raw::c_void,
-                );
+                let result = rtVariableSetObject(variable, *prg as *mut ::std::os::raw::c_void);
                 if result != RtResult::SUCCESS {
                     return Err(ctx.optix_error(
-                        &format!(
-                            "rtVariableSetObject {}",
-                            geometry_group_handle
-                        ),
+                        &format!("rtVariableSetObject {:?}", geometry_group_handle),
                         result,
                     ));
                 } else {
-                    ctx.ga_geometry_group_obj.incref(geometry_group_handle);
                     return Ok(Variable::Object(VariableObject {
                         var: variable,
                         object_handle: self,
@@ -145,22 +104,15 @@ impl VariableStorable for ObjectHandle {
                 }
             },
             ObjectHandle::Program(program_handle) => unsafe {
-                let prg =
-                    ctx.ga_program_obj.get(program_handle).expect(&format!(
-                        "Could not get program object for handle {}",
-                        program_handle
-                    ));
-                let result = rtVariableSetObject(
-                    variable,
-                    *prg as *mut ::std::os::raw::c_void,
-                );
+                let prg = ctx.ga_program_obj.get(program_handle).expect(&format!(
+                    "Could not get program object for handle {:?}",
+                    program_handle
+                ));
+                let result = rtVariableSetObject(variable, *prg as *mut ::std::os::raw::c_void);
                 if result != RtResult::SUCCESS {
-                    return Err(ctx.optix_error(
-                        &format!("rtVariableSetObject {}", program_handle),
-                        result,
-                    ));
+                    return Err(ctx
+                        .optix_error(&format!("rtVariableSetObject {:?}", program_handle), result));
                 } else {
-                    ctx.ga_program_obj.incref(program_handle);
                     return Ok(Variable::Object(VariableObject {
                         var: variable,
                         object_handle: self,
@@ -168,23 +120,17 @@ impl VariableStorable for ObjectHandle {
                 }
             },
             ObjectHandle::Transform(transform_handle) => unsafe {
-                let prg = ctx.ga_transform_obj.get(transform_handle).expect(
-                    &format!(
-                        "Could not get transform object for handle {}",
-                        transform_handle
-                    ),
-                );
-                let result = rtVariableSetObject(
-                    variable,
-                    *prg as *mut ::std::os::raw::c_void,
-                );
+                let prg = ctx.ga_transform_obj.get(transform_handle).expect(&format!(
+                    "Could not get transform object for handle {:?}",
+                    transform_handle
+                ));
+                let result = rtVariableSetObject(variable, *prg as *mut ::std::os::raw::c_void);
                 if result != RtResult::SUCCESS {
                     return Err(ctx.optix_error(
-                        &format!("rtVariableSetObject {}", transform_handle),
+                        &format!("rtVariableSetObject {:?}", transform_handle),
                         result,
                     ));
                 } else {
-                    ctx.ga_transform_obj.incref(transform_handle);
                     return Ok(Variable::Object(VariableObject {
                         var: variable,
                         object_handle: self,
@@ -196,11 +142,7 @@ impl VariableStorable for ObjectHandle {
 }
 
 impl VariableStorable for u32 {
-    fn set_optix_variable(
-        self,
-        ctx: &mut Context,
-        variable: RTvariable,
-    ) -> Result<Variable> {
+    fn set_optix_variable(self, ctx: &mut Context, variable: RTvariable) -> Result<Variable> {
         let result = unsafe { rtVariableSet1ui(variable, self) };
         if result != RtResult::SUCCESS {
             Err(ctx.optix_error("rtVariableSet1ui", result))
@@ -211,11 +153,7 @@ impl VariableStorable for u32 {
 }
 
 impl VariableStorable for f32 {
-    fn set_optix_variable(
-        self,
-        ctx: &mut Context,
-        variable: RTvariable,
-    ) -> Result<Variable> {
+    fn set_optix_variable(self, ctx: &mut Context, variable: RTvariable) -> Result<Variable> {
         let result = unsafe { rtVariableSet1f(variable, self) };
         if result != RtResult::SUCCESS {
             Err(ctx.optix_error("rtVariableSet1f", result))
@@ -226,13 +164,8 @@ impl VariableStorable for f32 {
 }
 
 impl VariableStorable for V3f32 {
-    fn set_optix_variable(
-        self,
-        ctx: &mut Context,
-        variable: RTvariable,
-    ) -> Result<Variable> {
-        let result =
-            unsafe { rtVariableSet3f(variable, self.x, self.y, self.z) };
+    fn set_optix_variable(self, ctx: &mut Context, variable: RTvariable) -> Result<Variable> {
+        let result = unsafe { rtVariableSet3f(variable, self.x, self.y, self.z) };
         if result != RtResult::SUCCESS {
             Err(ctx.optix_error("rtVariableSet3f", result))
         } else {
@@ -242,25 +175,13 @@ impl VariableStorable for V3f32 {
 }
 
 impl VariableStorable for MatrixFormat {
-    fn set_optix_variable(
-        self,
-        ctx: &mut Context,
-        variable: RTvariable,
-    ) -> Result<Variable> {
+    fn set_optix_variable(self, ctx: &mut Context, variable: RTvariable) -> Result<Variable> {
         let result = match self {
             MatrixFormat::RowMajor(mtx) => unsafe {
-                rtVariableSetMatrix4x4fv(
-                    variable,
-                    0,
-                    &mtx as *const M4f32 as *const f32,
-                )
+                rtVariableSetMatrix4x4fv(variable, 0, &mtx as *const M4f32 as *const f32)
             },
             MatrixFormat::ColumnMajor(mtx) => unsafe {
-                rtVariableSetMatrix4x4fv(
-                    variable,
-                    1,
-                    &mtx as *const M4f32 as *const f32,
-                )
+                rtVariableSetMatrix4x4fv(variable, 1, &mtx as *const M4f32 as *const f32)
             },
         };
         if result != RtResult::SUCCESS {

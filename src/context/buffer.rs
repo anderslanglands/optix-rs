@@ -1,31 +1,12 @@
 use crate::context::*;
-use crate::ginallocator::*;
 use colorspace::rgb::{RGBAf32, RGBf32};
 use std::ops::{Index, IndexMut};
 
-#[derive(Default, Debug, Copy, Clone)]
-#[doc(hidden)]
-pub struct Buffer1dMarker;
-impl Marker for Buffer1dMarker {
-    const ID: &'static str = "Buffer1d";
-}
-pub type Buffer1dHandle = Handle<Buffer1dMarker>;
+use slotmap::*;
 
-#[derive(Default, Debug, Copy, Clone)]
-#[doc(hidden)]
-pub struct Buffer2dMarker;
-impl Marker for Buffer2dMarker {
-    const ID: &'static str = "Buffer2d";
-}
-pub type Buffer2dHandle = Handle<Buffer2dMarker>;
-
-#[derive(Default, Debug, Copy, Clone)]
-#[doc(hidden)]
-pub struct Buffer3dMarker;
-impl Marker for Buffer3dMarker {
-    const ID: &'static str = "Buffer3d";
-}
-pub type Buffer3dHandle = Handle<Buffer3dMarker>;
+new_key_type! { pub struct Buffer1dHandle; }
+new_key_type! { pub struct Buffer2dHandle; }
+new_key_type! { pub struct Buffer3dHandle; }
 
 pub trait BufferElement: Clone {
     const FORMAT: Format;
@@ -353,14 +334,9 @@ impl Context {
     /// # Panics
     /// If buf is not a valid Buffer1dHandle
     pub fn buffer_destroy_1d(&mut self, buf: Buffer1dHandle) {
-        let rt_buf = *self.ga_buffer1d_obj.get(buf).unwrap();
-        match self.ga_buffer1d_obj.destroy(buf) {
-            DestroyResult::StillAlive => (),
-            DestroyResult::ShouldDrop => {
-                if unsafe { rtBufferDestroy(rt_buf) } != RtResult::SUCCESS {
-                    panic!("Error destroying buffer {}", buf);
-                }
-            }
+        let rt_buf = self.ga_buffer1d_obj.remove(buf).unwrap();
+        if unsafe { rtBufferDestroy(rt_buf) } != RtResult::SUCCESS {
+            panic!("Error destroying buffer {:?}", buf);
         }
     }
 
@@ -485,14 +461,9 @@ impl Context {
     /// # Panics
     /// If buf is not a valid Buffer2dHandle
     pub fn buffer_destroy_2d(&mut self, buf: Buffer2dHandle) {
-        let rt_buf = *self.ga_buffer2d_obj.get(buf).unwrap();
-        match self.ga_buffer2d_obj.destroy(buf) {
-            DestroyResult::StillAlive => (),
-            DestroyResult::ShouldDrop => {
-                if unsafe { rtBufferDestroy(rt_buf) } != RtResult::SUCCESS {
-                    panic!("Error destroying program {}", buf);
-                }
-            }
+        let rt_buf = self.ga_buffer2d_obj.remove(buf).unwrap();
+        if unsafe { rtBufferDestroy(rt_buf) } != RtResult::SUCCESS {
+            panic!("Error destroying program {:?}", buf);
         }
     }
 

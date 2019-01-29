@@ -1,41 +1,29 @@
 use crate::context::*;
-use crate::ginallocator::*;
 use std::collections::HashMap;
 use std::ffi::CString;
 use std::io::Read;
 
-#[derive(Default, Debug, Copy, Clone)]
-pub struct ProgramMarker;
-impl Marker for ProgramMarker {
-    const ID: &'static str = "Program";
-}
-pub type ProgramHandle = Handle<ProgramMarker>;
+use slotmap::*;
+
+new_key_type! { pub struct ProgramHandle; }
 
 impl Context {
     /// Destroys the Program referred to by `prg` and all its attached objects.
     /// The underlying program will remain alive until all references to it
     /// have been destroyed.
     pub fn program_destroy(&mut self, prg: ProgramHandle) {
-        let cprg = self.ga_program_obj.check_handle(prg).unwrap();
-        let vars = self.gd_program_variables.remove(cprg);
-        self.destroy_variables(vars);
+        let vars = self.gd_program_variables.remove(prg);
 
-        let rt_prg = *self.ga_program_obj.get(prg).unwrap();
-        match self.ga_program_obj.destroy(prg) {
-            DestroyResult::StillAlive => (),
-            DestroyResult::ShouldDrop => {
-                if unsafe { rtProgramDestroy(rt_prg) } != RtResult::SUCCESS {
-                    panic!("Error destroying program {}", prg);
-                }
-            }
+        let rt_prg = self.ga_program_obj.remove(prg).unwrap();
+        if unsafe { rtProgramDestroy(rt_prg) } != RtResult::SUCCESS {
+            panic!("Error destroying program {:?}", prg);
         }
     }
 
     fn program_create_from_obj(&mut self, rt_prg: RTprogram) -> ProgramHandle {
         let vars = HashMap::<String, Variable>::new();
         let hnd = self.ga_program_obj.insert(rt_prg);
-        let chnd = self.ga_program_obj.check_handle(hnd).unwrap();
-        self.gd_program_variables.insert(&chnd, vars);
+        self.gd_program_variables.insert(hnd, vars);
 
         hnd
     }
@@ -89,7 +77,7 @@ impl Context {
     /// its attached objects are invalid, return an OptixError.
     pub fn program_validate(&mut self, handle: ProgramHandle) -> Result<()> {
         let rt_prg = self.ga_program_obj.get(handle).expect(&format!(
-            "Tried to validate an invalid handle: {}",
+            "Tried to validate an invalid handle: {:?}",
             handle
         ));
         unsafe {
@@ -110,40 +98,26 @@ impl Context {
         name: &str,
         data: T,
     ) -> Result<()> {
-        let cprg = self
-            .ga_program_obj
-            .check_handle(prg)
-            .expect("Tried to access an invalid program handle");
         let rt_prg = self.ga_program_obj.get(prg).unwrap();
 
-        if let Some(old_variable) =
-            self.gd_program_variables.get(cprg).get(name)
-        {
+        if let Some(old_variable) = self.gd_program_variables.get(prg).unwrap().get(name) {
             let var = match old_variable {
                 Variable::Pod(vp) => vp.var,
                 Variable::Object(vo) => vo.var,
             };
             let new_variable = data.set_optix_variable(self, var)?;
             // destroy any resources the existing variable holds
-            if let Some(old_variable) = self
-                .gd_program_variables
-                .get_mut(cprg)
-                .insert(name.to_owned(), new_variable)
-            {
-                self.destroy_variable(old_variable);
-            };
+            self.gd_program_variables
+                .get_mut(prg)
+                .unwrap()
+                .insert(name.to_owned(), new_variable);
 
             Ok(())
-
         } else {
             let (var, result) = unsafe {
                 let mut var: RTvariable = ::std::mem::uninitialized();
                 let c_name = std::ffi::CString::new(name).unwrap();
-                let result = rtProgramDeclareVariable(
-                    *rt_prg,
-                    c_name.as_ptr(),
-                    &mut var,
-                );
+                let result = rtProgramDeclareVariable(*rt_prg, c_name.as_ptr(), &mut var);
                 (var, result)
             };
             if result != RtResult::SUCCESS {
@@ -152,7 +126,8 @@ impl Context {
 
             let variable = data.set_optix_variable(self, var)?;
             self.gd_program_variables
-                .get_mut(cprg)
+                .get_mut(prg)
+                .unwrap()
                 .insert(name.to_owned(), variable);
 
             Ok(())

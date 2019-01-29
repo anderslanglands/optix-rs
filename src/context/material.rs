@@ -2,16 +2,11 @@
 //! intersection is found.
 
 use crate::context::*;
-use crate::ginallocator::*;
 use std::collections::HashMap;
 
-#[derive(Default, Copy, Clone)]
-#[doc(hidden)]
-pub struct MaterialMarker;
-impl Marker for MaterialMarker {
-    const ID: &'static str = "Material";
-}
-pub type MaterialHandle = Handle<MaterialMarker>;
+use slotmap::*;
+
+new_key_type! { pub struct MaterialHandle; }
 
 /// Struct to hold the Programs associated with a particular Material and
 /// RayType.
@@ -51,45 +46,26 @@ impl Context {
             for (raytype, program) in &programs {
                 if let Some(prg) = program.closest {
                     let rt_prg = self.ga_program_obj.get(prg).unwrap();
-                    let result = unsafe {
-                        rtMaterialSetClosestHitProgram(
-                            mat,
-                            raytype.ray_type,
-                            *rt_prg,
-                        )
-                    };
+                    let result =
+                        unsafe { rtMaterialSetClosestHitProgram(mat, raytype.ray_type, *rt_prg) };
                     if result != RtResult::SUCCESS {
-                        return Err(self.optix_error(
-                            "rtMaterialSetClosestHitProgram",
-                            result,
-                        ));
-                    } else {
-                        self.ga_program_obj.incref(prg);
+                        return Err(self.optix_error("rtMaterialSetClosestHitProgram", result));
                     }
                 }
                 if let Some(prg) = program.any {
                     let rt_prg = self.ga_program_obj.get(prg).unwrap();
-                    let result = unsafe {
-                        rtMaterialSetAnyHitProgram(
-                            mat,
-                            raytype.ray_type,
-                            *rt_prg,
-                        )
-                    };
+                    let result =
+                        unsafe { rtMaterialSetAnyHitProgram(mat, raytype.ray_type, *rt_prg) };
                     if result != RtResult::SUCCESS {
-                        return Err(self
-                            .optix_error("rtMaterialSetAnyHitProgram", result));
-                    } else {
-                        self.ga_program_obj.incref(prg);
+                        return Err(self.optix_error("rtMaterialSetAnyHitProgram", result));
                     }
                 }
             }
 
             let vars = HashMap::<String, Variable>::new();
             let hnd = self.ga_material_obj.insert(mat);
-            let chnd = self.ga_material_obj.check_handle(hnd).unwrap();
-            self.gd_material_variables.insert(&chnd, vars);
-            self.gd_material_programs.insert(&chnd, programs);
+            self.gd_material_variables.insert(hnd, vars);
+            self.gd_material_programs.insert(hnd, programs);
 
             Ok(hnd)
         }
@@ -101,33 +77,14 @@ impl Context {
     /// # Panics
     /// If mat is not a valid MaterialHandle
     pub fn material_destroy(&mut self, mat: MaterialHandle) {
-        if let Some(cmat) = self.ga_material_obj.check_handle(mat) {
-            let vars = self.gd_material_variables.remove(cmat);
-            self.destroy_variables(vars);
+        let vars = self.gd_material_variables.remove(mat);
 
-            // destroy material programs
-            let programs = self.gd_material_programs.remove(cmat);
-            for (_, program) in &programs {
-                if let Some(prg) = program.closest {
-                    self.program_destroy(prg)
-                };
-                if let Some(prg) = program.any {
-                    self.program_destroy(prg)
-                };
-            }
+        // destroy material programs
+        let programs = self.gd_material_programs.remove(mat);
 
-            let rt_mat = *self.ga_material_obj.get(mat).unwrap();
-            match self.ga_material_obj.destroy(mat) {
-                DestroyResult::StillAlive => (),
-                DestroyResult::ShouldDrop => {
-                    if unsafe { rtMaterialDestroy(rt_mat) } != RtResult::SUCCESS
-                    {
-                        panic!("Error destroying material {}", mat);
-                    }
-                }
-            }
-        } else {
-            panic!("Tried to destroy an invalid MaterialHandle: {}", mat);
+        let rt_mat = self.ga_material_obj.remove(mat).unwrap();
+        if unsafe { rtMaterialDestroy(rt_mat) } != RtResult::SUCCESS {
+            panic!("Error destroying material {:?}", mat);
         }
     }
 
@@ -159,68 +116,36 @@ impl Context {
         name: &str,
         data: T,
     ) -> Result<()> {
-        let cmat = self
-            .ga_material_obj
-            .check_handle(mat)
-            .expect("Tried to access an invalid material handle");
         let rt_mat = self.ga_material_obj.get(mat).unwrap();
 
-        if let Some(old_variable) =
-            self.gd_material_variables.get(cmat).get(name)
-        {
+        if let Some(old_variable) = self.gd_material_variables.get(mat).unwrap().get(name) {
             let var = match old_variable {
                 Variable::Pod(vp) => vp.var,
                 Variable::Object(vo) => vo.var,
             };
             let new_variable = data.set_optix_variable(self, var)?;
             // destroy any resources the existing variable holds
-            if let Some(old_variable) = self
-                .gd_material_variables
-                .get_mut(cmat)
-                .insert(name.to_owned(), new_variable)
-            {
-                match old_variable {
-                    Variable::Pod(_vp) => (),
-                    Variable::Object(vo) => match vo.object_handle {
-                        ObjectHandle::Buffer1d(bh) => {
-                            self.buffer_destroy_1d(bh)
-                        }
-                        ObjectHandle::Buffer2d(bh) => {
-                            self.buffer_destroy_2d(bh)
-                        }
-                        ObjectHandle::Group(ggh) => self.group_destroy(ggh),
-                        ObjectHandle::GeometryGroup(ggh) => {
-                            self.geometry_group_destroy(ggh)
-                        }
-                        ObjectHandle::Program(ph) => self.program_destroy(ph),
-                        ObjectHandle::Transform(th) => {
-                            self.transform_destroy(th)
-                        }
-                    },
-                };
-            };
+            self.gd_material_variables
+                .get_mut(mat)
+                .unwrap()
+                .insert(name.to_owned(), new_variable);
 
             Ok(())
         } else {
             let (var, result) = unsafe {
                 let mut var: RTvariable = ::std::mem::uninitialized();
                 let c_name = std::ffi::CString::new(name).unwrap();
-                let result = rtMaterialDeclareVariable(
-                    *rt_mat,
-                    c_name.as_ptr(),
-                    &mut var,
-                );
+                let result = rtMaterialDeclareVariable(*rt_mat, c_name.as_ptr(), &mut var);
                 (var, result)
             };
             if result != RtResult::SUCCESS {
-                return Err(
-                    self.optix_error("rtMaterialDeclareVariable", result)
-                );
+                return Err(self.optix_error("rtMaterialDeclareVariable", result));
             }
 
             let variable = data.set_optix_variable(self, var)?;
             self.gd_material_variables
-                .get_mut(cmat)
+                .get_mut(mat)
+                .unwrap()
                 .insert(name.to_owned(), variable);
 
             Ok(())
