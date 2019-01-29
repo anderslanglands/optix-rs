@@ -18,15 +18,15 @@ impl fmt::Display for Error {
 impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         None
-    } 
+    }
 }
 
 pub fn get_error_string(result: NvrtcResult) -> Error {
     unsafe {
         Error {
             error_string: std::ffi::CStr::from_ptr(nvrtcGetErrorString(result))
-            .to_string_lossy()
-            .into_owned()
+                .to_string_lossy()
+                .into_owned(),
         }
     }
 }
@@ -43,11 +43,7 @@ pub struct Header {
 pub type Result<T> = std::result::Result<T, Error>;
 
 impl Program {
-    pub fn new(
-        src: &str,
-        name: &str,
-        headers: Vec<Header>,
-    ) -> Result<Program> {
+    pub fn new(src: &str, name: &str, headers: Vec<Header>) -> Result<Program> {
         let src = CString::new(src).unwrap();
         let name = CString::new(name).unwrap();
         let mut header_names = Vec::new();
@@ -60,8 +56,7 @@ impl Program {
         let mut header_contents_arr = Vec::new();
         for i in 0..header_names.len() {
             header_names_arr.push(header_names[i].as_ptr() as *const c_char);
-            header_contents_arr
-                .push(header_contents[i].as_ptr() as *const c_char);
+            header_contents_arr.push(header_contents[i].as_ptr() as *const c_char);
         }
 
         let (prog, result) = unsafe {
@@ -84,10 +79,7 @@ impl Program {
         }
     }
 
-    pub fn compile_program(
-        &mut self,
-        options: Vec<String>,
-    ) -> Result<()> {
+    pub fn compile_program(&mut self, options: Vec<String>) -> Result<()> {
         let mut coptions = Vec::new();
         for o in options {
             let c = CString::new(o).unwrap();
@@ -126,9 +118,7 @@ impl Program {
 
         let buffer = create_whitespace_cstring(log_size);
 
-        let result = unsafe {
-            nvrtcGetProgramLog(self.prog, buffer.as_ptr() as *mut c_char)
-        };
+        let result = unsafe { nvrtcGetProgramLog(self.prog, buffer.as_ptr() as *mut c_char) };
 
         if result != NvrtcResult::NVRTC_SUCCESS {
             Err(get_error_string(result))
@@ -150,8 +140,7 @@ impl Program {
 
         let buffer = create_whitespace_cstring(ptx_size);
 
-        let result =
-            unsafe { nvrtcGetPTX(self.prog, buffer.as_ptr() as *mut c_char) };
+        let result = unsafe { nvrtcGetPTX(self.prog, buffer.as_ptr() as *mut c_char) };
 
         if result != NvrtcResult::NVRTC_SUCCESS {
             Err(get_error_string(result))
@@ -171,12 +160,14 @@ impl Drop for Program {
 
 fn create_whitespace_cstring(len: usize) -> CString {
     let mut buffer: Vec<u8> = Vec::with_capacity(len as usize);
-    buffer.extend([b' '].iter().cycle().take(len as usize-1));
+    buffer.extend([b' '].iter().cycle().take(len as usize - 1));
     unsafe { CString::from_vec_unchecked(buffer) }
 }
 
 #[test]
 fn test_compile() {
+    use config::Config;
+    use std::collections::HashMap;
     // Grab OPTIX_ROOT and CUDA_ROOT from build-settings.toml
     // or from the environment
     let mut settings = Config::default();
@@ -202,7 +193,7 @@ fn test_compile() {
     let cuda_inc = format!("-I{}/include", cuda_root);
 
     let options = vec![
-        optix_inc, 
+        optix_inc,
         cuda_inc,
         "-arch=compute_30".to_owned(),
         "-rdc=true".to_owned(),
@@ -211,13 +202,14 @@ fn test_compile() {
         "--device-as-default-execution-space".to_owned(),
     ];
 
-    // The program object allows us to compile the cuda source and get ptx from 
-    // it if successful. 
+    // The program object allows us to compile the cuda source and get ptx from
+    // it if successful.
     let mut prg = Program::new(
         "#include <optix.h>\n__device__ float myfun() { return 1.0f; }",
         "myfun",
         Vec::new(),
-    ).unwrap();
+    )
+    .unwrap();
 
     match prg.compile_program(options) {
         Err(code) => {
