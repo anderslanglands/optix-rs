@@ -4,7 +4,6 @@ use std::os::raw::c_char;
 
 use std::fmt;
 
-
 #[derive(Debug)]
 pub struct Error {
     error_string: String,
@@ -32,10 +31,14 @@ pub fn get_error_string(result: NvrtcResult) -> Error {
     }
 }
 
+/// A CUDA program object that can be compiled to generate PTX
 pub struct Program {
     pub prog: nvrtcProgram,
 }
 
+/// Represents a header file that can be included by a program. The `name` is
+/// the name by which the header will be referenced in the CUDA source. The
+/// `contents` is just the CUDA contents of the header.
 pub struct Header {
     pub name: String,
     pub contents: String,
@@ -44,6 +47,9 @@ pub struct Header {
 pub type Result<T> = std::result::Result<T, Error>;
 
 impl Program {
+    /// Create a new `Program` with the given `src`, using the entry point
+    /// `name` and with a list of `headers` to include. If there are no headers
+    /// to include, just pass an empty `Vec`.
     pub fn new(src: &str, name: &str, headers: Vec<Header>) -> Result<Program> {
         let src = CString::new(src).unwrap();
         let name = CString::new(name).unwrap();
@@ -80,6 +86,7 @@ impl Program {
         }
     }
 
+    /// Compile this program with the given `options`
     pub fn compile_program(&mut self, options: Vec<String>) -> Result<()> {
         let mut coptions = Vec::new();
         for o in options {
@@ -106,6 +113,7 @@ impl Program {
         }
     }
 
+    /// Get the program compilation log
     pub fn get_program_log(&self) -> Result<String> {
         let (log_size, result) = unsafe {
             let mut log_size: usize = 0;
@@ -128,6 +136,7 @@ impl Program {
         }
     }
 
+    /// Assuming a successful compilation, get the generated PTX as a `String`
     pub fn get_ptx(&self) -> Result<String> {
         let (ptx_size, result) = unsafe {
             let mut ptx_size: usize = 0;
