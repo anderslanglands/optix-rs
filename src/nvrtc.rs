@@ -1,14 +1,33 @@
-use config::Config;
 use crate::nvrtc_bindings::*;
 use std::ffi::CString;
 use std::os::raw::c_char;
-use std::collections::HashMap;
 
-pub fn get_error_string(result: NvrtcResult) -> String {
+use std::fmt;
+
+#[derive(Debug)]
+pub struct Error {
+    error_string: String,
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, output: &mut fmt::Formatter) -> fmt::Result {
+        write!(output, "nvrtc compilation error: {}", self.error_string)
+    }
+}
+
+impl std::error::Error for Error {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        None
+    } 
+}
+
+pub fn get_error_string(result: NvrtcResult) -> Error {
     unsafe {
-        std::ffi::CStr::from_ptr(nvrtcGetErrorString(result))
+        Error {
+            error_string: std::ffi::CStr::from_ptr(nvrtcGetErrorString(result))
             .to_string_lossy()
             .into_owned()
+        }
     }
 }
 
@@ -21,12 +40,14 @@ pub struct Header {
     pub contents: String,
 }
 
+pub type Result<T> = std::result::Result<T, Error>;
+
 impl Program {
     pub fn new(
         src: &str,
         name: &str,
         headers: Vec<Header>,
-    ) -> Result<Program, String> {
+    ) -> Result<Program> {
         let src = CString::new(src).unwrap();
         let name = CString::new(name).unwrap();
         let mut header_names = Vec::new();
@@ -66,7 +87,7 @@ impl Program {
     pub fn compile_program(
         &mut self,
         options: Vec<String>,
-    ) -> Result<(), String> {
+    ) -> Result<()> {
         let mut coptions = Vec::new();
         for o in options {
             let c = CString::new(o).unwrap();
@@ -92,7 +113,7 @@ impl Program {
         }
     }
 
-    pub fn get_program_log(&self) -> Result<String, String> {
+    pub fn get_program_log(&self) -> Result<String> {
         let (log_size, result) = unsafe {
             let mut log_size: usize = 0;
             let result = nvrtcGetProgramLogSize(self.prog, &mut log_size);
@@ -103,7 +124,7 @@ impl Program {
             return Err(get_error_string(result));
         }
 
-        let mut buffer = create_whitespace_cstring(log_size);
+        let buffer = create_whitespace_cstring(log_size);
 
         let result = unsafe {
             nvrtcGetProgramLog(self.prog, buffer.as_ptr() as *mut c_char)
@@ -116,7 +137,7 @@ impl Program {
         }
     }
 
-    pub fn get_ptx(&self) -> Result<String, String> {
+    pub fn get_ptx(&self) -> Result<String> {
         let (ptx_size, result) = unsafe {
             let mut ptx_size: usize = 0;
             let result = nvrtcGetPTXSize(self.prog, &mut ptx_size);
@@ -127,7 +148,7 @@ impl Program {
             return Err(get_error_string(result));
         }
 
-        let mut buffer = create_whitespace_cstring(ptx_size);
+        let buffer = create_whitespace_cstring(ptx_size);
 
         let result =
             unsafe { nvrtcGetPTX(self.prog, buffer.as_ptr() as *mut c_char) };

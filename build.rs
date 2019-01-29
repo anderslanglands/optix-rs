@@ -1,8 +1,6 @@
 use config::Config;
 use std::collections::HashMap;
 use std::io::prelude::*;
-use std::path::PathBuf;
-use std::env;
 
 fn main() {
     // Grab OPTIX_ROOT and CUDA_ROOT from build-settings.toml

@@ -1,6 +1,5 @@
 use crate::context::*;
 use crate::ginallocator::*;
-use crate::math::*;
 use colorspace::rgb::{RGBAf32, RGBf32};
 use std::ops::{Index, IndexMut};
 
@@ -589,7 +588,7 @@ impl Context {
         }
     }
 
-    /// Map the buffer so that i can be read by host memory. The returned struct
+    /// Map the buffer so that it can be read by host memory. The returned struct
     /// will automatically unmap the buffer when it drops.
     /// # Panics
     /// If buf is not a valid Buffer2dHandle

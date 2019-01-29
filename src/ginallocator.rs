@@ -1,7 +1,6 @@
 use std::collections::{HashMap, VecDeque};
 use std::fmt;
 use std::marker::PhantomData;
-use std::mem::replace;
 
 struct GinAllocatorItem<T> {
     item: T,
@@ -229,6 +228,13 @@ impl<T, M: Marker> GinAllocator<T, M> {
             None
         }
     }
+
+    pub fn iter(&self) -> GinAllocatorIter<T, M> {
+        GinAllocatorIter {
+            alloc: self,
+            curr: 0,
+        }
+    }
 }
 
 impl<T: Default, M: Marker> GinAllocatorChild<T, M> {
@@ -269,3 +275,29 @@ impl<T: Default, M: Marker> GinAllocatorChild<T, M> {
     }
 }
 
+pub struct GinAllocatorIter<'a, T, M> {
+    alloc: &'a GinAllocator<T, M>,
+    curr: u32,
+}
+
+pub struct GinAllocatorIterMut<'a, T, M> {
+    alloc: &'a mut GinAllocator<T, M>,
+    curr: u32,
+}
+
+impl<'a, T, M> Iterator for GinAllocatorIter<'a, T, M> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<&'a T> {
+        while self.alloc.freelist.contains(&self.curr) {
+            self.curr += 1;
+        }
+        if self.curr < self.alloc.items.len() as u32 {
+            let result = &self.alloc.items[self.curr as usize];
+            self.curr += 1;
+            Some(&result.item)
+        } else {
+            None
+        }
+    }
+}

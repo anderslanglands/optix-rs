@@ -51,10 +51,17 @@ impl fmt::Display for Error {
     }
 }
 
-impl Error {
-    pub fn description(&self) -> String {
-        format!("{}", self)
+impl std::error::Error for Error {
+    fn description(&self) -> &str {
+        "Optix Error"
     }
+
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Error::Io(e) => Some(e),
+            _ => None
+        }
+    } 
 }
 
 pub(crate) type Result<T> = result::Result<T, Error>;
