@@ -4,6 +4,7 @@ use std::os::raw::c_char;
 
 use std::fmt;
 
+
 #[derive(Debug)]
 pub struct Error {
     error_string: String,

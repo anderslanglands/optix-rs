@@ -1,7 +1,8 @@
 pub use crate::error::*;
 use std::collections::HashMap;
 
-use crate::ginallocator::{GinAllocator, GinAllocatorChild, Marker};
+use slotmap::*;
+
 pub use crate::math::*;
 use crate::optix_bindings::*;
 pub use crate::optix_bindings::{BufferFlag, BufferType, Format};
@@ -74,96 +75,78 @@ pub struct Context {
 
     context_variables: HashMap<String, Variable>,
 
-    ga_acceleration_obj: GinAllocator<RTacceleration, AccelerationMarker>,
+    ga_acceleration_obj: SlotMap<AccelerationHandle, RTacceleration>,
 
-    ga_buffer1d_obj: GinAllocator<RTbuffer, Buffer1dMarker>,
-    ga_buffer2d_obj: GinAllocator<RTbuffer, Buffer2dMarker>,
-    ga_buffer3d_obj: GinAllocator<RTbuffer, Buffer3dMarker>,
+    ga_buffer1d_obj: SlotMap<Buffer1dHandle, RTbuffer>,
+    ga_buffer2d_obj: SlotMap<Buffer2dHandle, RTbuffer>,
+    ga_buffer3d_obj: SlotMap<Buffer3dHandle, RTbuffer>,
 
-    ga_program_obj: GinAllocator<RTprogram, ProgramMarker>,
-    gd_program_variables:
-        GinAllocatorChild<HashMap<String, Variable>, ProgramMarker>,
+    ga_program_obj: SlotMap<ProgramHandle, RTprogram>,
+    gd_program_variables: SecondaryMap<ProgramHandle, HashMap<String, Variable>>,
 
-    ga_geometry_obj: GinAllocator<RTgeometry, GeometryMarker>,
-    gd_geometry_variables:
-        GinAllocatorChild<HashMap<String, Variable>, GeometryMarker>,
-    gd_geometry_bounding_box: GinAllocatorChild<ProgramHandle, GeometryMarker>,
-    gd_geometry_intersection: GinAllocatorChild<ProgramHandle, GeometryMarker>,
+    ga_geometry_obj: SlotMap<GeometryHandle, RTgeometry>,
+    gd_geometry_variables: SecondaryMap<GeometryHandle, HashMap<String, Variable>>,
+    gd_geometry_bounding_box: SecondaryMap<GeometryHandle, ProgramHandle>,
+    gd_geometry_intersection: SecondaryMap<GeometryHandle, ProgramHandle>,
 
-    ga_geometry_instance_obj:
-        GinAllocator<RTgeometryinstance, GeometryInstanceMarker>,
-    gd_geometry_instance_variables:
-        GinAllocatorChild<HashMap<String, Variable>, GeometryInstanceMarker>,
-    gd_geometry_instance_geometry:
-        GinAllocatorChild<GeometryType, GeometryInstanceMarker>,
-    gd_geometry_instance_materials:
-        GinAllocatorChild<Vec<MaterialHandle>, GeometryInstanceMarker>,
+    ga_geometry_instance_obj: SlotMap<GeometryInstanceHandle, RTgeometryinstance>,
+    gd_geometry_instance_variables: SecondaryMap<GeometryInstanceHandle, HashMap<String, Variable>>,
+    gd_geometry_instance_geometry: SecondaryMap<GeometryInstanceHandle, GeometryType>,
+    gd_geometry_instance_materials: SecondaryMap<GeometryInstanceHandle, Vec<MaterialHandle>>,
 
-    ga_geometry_group_obj: GinAllocator<RTgeometrygroup, GeometryGroupMarker>,
-    gd_geometry_group_acceleration:
-        GinAllocatorChild<AccelerationHandle, GeometryGroupMarker>,
-    gd_geometry_group_children:
-        GinAllocatorChild<Vec<GeometryInstanceHandle>, GeometryGroupMarker>,
+    ga_geometry_group_obj: SlotMap<GeometryGroupHandle, RTgeometrygroup>,
+    gd_geometry_group_acceleration: SecondaryMap<GeometryGroupHandle, AccelerationHandle>,
+    gd_geometry_group_children: SecondaryMap<GeometryGroupHandle, Vec<GeometryInstanceHandle>>,
 
-    ga_material_obj: GinAllocator<RTmaterial, MaterialMarker>,
-    gd_material_variables:
-        GinAllocatorChild<HashMap<String, Variable>, MaterialMarker>,
-    gd_material_programs:
-        GinAllocatorChild<HashMap<RayType, MaterialProgram>, MaterialMarker>,
+    ga_material_obj: SlotMap<MaterialHandle, RTmaterial>,
+    gd_material_variables: SecondaryMap<MaterialHandle, HashMap<String, Variable>>,
+    gd_material_programs: SecondaryMap<MaterialHandle, HashMap<RayType, MaterialProgram>>,
 
-    ga_transform_obj: GinAllocator<RTtransform, TransformMarker>,
-    gd_transform_child: GinAllocatorChild<TransformChild, TransformMarker>,
+    ga_transform_obj: SlotMap<TransformHandle, RTtransform>,
+    gd_transform_child: SecondaryMap<TransformHandle, TransformChild>,
 
-    ga_group_obj: GinAllocator<RTgroup, GroupMarker>,
-    gd_group_acceleration: GinAllocatorChild<AccelerationHandle, GroupMarker>,
-    gd_group_children: GinAllocatorChild<Vec<GroupChild>, GroupMarker>,
+    ga_group_obj: SlotMap<GroupHandle, RTgroup>,
+    gd_group_acceleration: SecondaryMap<GroupHandle, AccelerationHandle>,
+    gd_group_children: SecondaryMap<GroupHandle, Vec<GroupChild>>,
 }
 
 unsafe impl Send for Context {}
 
 impl Context {
     pub fn new() -> Context {
-        let ga_acceleration_obj =
-            GinAllocator::<RTacceleration, AccelerationMarker>::new();
+        let ga_acceleration_obj = SlotMap::with_key();
 
-        let ga_buffer1d_obj = GinAllocator::<RTbuffer, Buffer1dMarker>::new();
-        let ga_buffer2d_obj = GinAllocator::<RTbuffer, Buffer2dMarker>::new();
-        let ga_buffer3d_obj = GinAllocator::<RTbuffer, Buffer3dMarker>::new();
+        let ga_buffer1d_obj = SlotMap::with_key();
+        let ga_buffer2d_obj = SlotMap::with_key();
+        let ga_buffer3d_obj = SlotMap::with_key();
 
-        let ga_program_obj = GinAllocator::<RTprogram, ProgramMarker>::new();
-        let gd_program_variables = ga_program_obj.create_child();
+        let ga_program_obj = SlotMap::with_key();
+        let gd_program_variables = SecondaryMap::new();
 
-        let ga_geometry_obj = GinAllocator::<RTgeometry, GeometryMarker>::new();
-        let gd_geometry_variables = ga_geometry_obj.create_child();
-        let gd_geometry_bounding_box = ga_geometry_obj.create_child();
-        let gd_geometry_intersection = ga_geometry_obj.create_child();
+        let ga_geometry_obj = SlotMap::with_key();
+        let gd_geometry_variables = SecondaryMap::new();
+        let gd_geometry_bounding_box = SecondaryMap::new();
+        let gd_geometry_intersection = SecondaryMap::new();
 
-        let ga_geometry_instance_obj =
-            GinAllocator::<RTgeometryinstance, GeometryInstanceMarker>::new();
-        let gd_geometry_instance_variables =
-            ga_geometry_instance_obj.create_child();
-        let gd_geometry_instance_geometry =
-            ga_geometry_instance_obj.create_child();
-        let gd_geometry_instance_materials =
-            ga_geometry_instance_obj.create_child();
+        let ga_geometry_instance_obj = SlotMap::with_key();
+        let gd_geometry_instance_variables = SecondaryMap::new();
+        let gd_geometry_instance_geometry = SecondaryMap::new();
+        let gd_geometry_instance_materials = SecondaryMap::new();
 
-        let ga_geometry_group_obj =
-            GinAllocator::<RTgeometrygroup, GeometryGroupMarker>::new();
-        let gd_geometry_group_acceleration =
-            ga_geometry_group_obj.create_child();
-        let gd_geometry_group_children = ga_geometry_group_obj.create_child();
+        let ga_geometry_group_obj = SlotMap::with_key();
+        let gd_geometry_group_acceleration = SecondaryMap::new();
+        let gd_geometry_group_children = SecondaryMap::new();
 
-        let ga_material_obj = GinAllocator::<RTmaterial, MaterialMarker>::new();
-        let gd_material_variables = ga_material_obj.create_child();
-        let gd_material_programs = ga_material_obj.create_child();
+        let ga_material_obj = SlotMap::with_key();
+        let gd_material_variables = SecondaryMap::new();
+        let gd_material_programs = SecondaryMap::new();
 
-        let ga_transform_obj =
-            GinAllocator::<RTtransform, TransformMarker>::new();
-        let gd_transform_child = ga_transform_obj.create_child();
+        let ga_transform_obj = SlotMap::with_key();
+        let gd_transform_child = SecondaryMap::new();
 
-        let ga_group_obj = GinAllocator::<RTgroup, GroupMarker>::new();
-        let gd_group_acceleration = ga_group_obj.create_child();
-        let gd_group_children = ga_group_obj.create_child();
+        let ga_group_obj = SlotMap::with_key();
+        let gd_group_acceleration = SecondaryMap::new();
+        let gd_group_children = SecondaryMap::new();
 
         let (rt_ctx, result) = unsafe {
             let mut rt_ctx: RTcontext = std::mem::uninitialized();
@@ -231,9 +214,7 @@ impl Context {
     pub fn set_ray_type(&mut self, index: u32, name: &str) -> Result<RayType> {
         if index >= self.max_ray_type {
             self.max_ray_type = index + 1;
-            let result = unsafe {
-                rtContextSetRayTypeCount(self.rt_ctx, self.max_ray_type)
-            };
+            let result = unsafe { rtContextSetRayTypeCount(self.rt_ctx, self.max_ray_type) };
             if result != RtResult::SUCCESS {
                 return Err(self.optix_error("rtContextSetRayTypeCount", result));
             }
@@ -247,26 +228,15 @@ impl Context {
 
     /// Sets the `Program` that handles what happens when the given `RayType`
     /// does not hit any `Geometry`.
-    pub fn set_miss_program(
-        &mut self,
-        ray_type: RayType,
-        prg: ProgramHandle,
-    ) -> Result<()> {
+    pub fn set_miss_program(&mut self, ray_type: RayType, prg: ProgramHandle) -> Result<()> {
         self.program_validate(prg)?;
 
         let rt_prg = self.ga_program_obj.get(prg).unwrap();
-        let result = unsafe {
-            rtContextSetMissProgram(self.rt_ctx, ray_type.ray_type, *rt_prg)
-        };
+        let result = unsafe { rtContextSetMissProgram(self.rt_ctx, ray_type.ray_type, *rt_prg) };
         if result != RtResult::SUCCESS {
             Err(self.optix_error("rtContextSetMissProgram", result))
         } else {
-            self.ga_program_obj.incref(prg);
-            // If we had a program set for this ray type previously, then
-            // destroy it
-            if let Some(old_prg) = self.miss_programs.insert(ray_type, prg) {
-                self.program_destroy(old_prg);
-            }
+            self.miss_programs.insert(ray_type, prg);
 
             Ok(())
         }
@@ -300,12 +270,8 @@ impl Context {
             self.program_validate(ep)?;
         }
 
-        let result = unsafe {
-            rtContextSetEntryPointCount(
-                self.rt_ctx,
-                self.entry_points.len() as u32 + 1,
-            )
-        };
+        let result =
+            unsafe { rtContextSetEntryPointCount(self.rt_ctx, self.entry_points.len() as u32 + 1) };
         if result != RtResult::SUCCESS {
             return Err(self.optix_error("rtContextSetEntryPointCount", result));
         }
@@ -316,29 +282,23 @@ impl Context {
             .ga_program_obj
             .get(ray_generation_program)
             .expect(&format!(
-                "Could not get RTprogram object from handle: {}",
+                "Could not get RTprogram object from handle: {:?}",
                 ray_generation_program
             ));
-        let result = unsafe {
-            rtContextSetRayGenerationProgram(self.rt_ctx, index, *rt_prg_raygen)
-        };
+        let result =
+            unsafe { rtContextSetRayGenerationProgram(self.rt_ctx, index, *rt_prg_raygen) };
         if result != RtResult::SUCCESS {
-            return Err(
-                self.optix_error("rtContextSetRayGenerationProgram", result)
-            );
+            return Err(self.optix_error("rtContextSetRayGenerationProgram", result));
         }
         if let Some(ep) = exception_program {
             let rt_prg_except = self.ga_program_obj.get(ep).expect(&format!(
-                "Could not get RTprogram object from handle: {}",
+                "Could not get RTprogram object from handle: {:?}",
                 ep
             ));
-            let result = unsafe {
-                rtContextSetExceptionProgram(self.rt_ctx, index, *rt_prg_except)
-            };
+            let result =
+                unsafe { rtContextSetExceptionProgram(self.rt_ctx, index, *rt_prg_except) };
             if result != RtResult::SUCCESS {
-                return Err(
-                    self.optix_error("rtContextSetExceptionProgram", result)
-                );
+                return Err(self.optix_error("rtContextSetExceptionProgram", result));
             }
         }
 
@@ -366,11 +326,7 @@ impl Context {
 
     /// Set the Variable referred to by `name` to the given `data`. Any objects
     /// previously assigned to the variable will be destroyed.
-    pub fn set_variable<T: VariableStorable>(
-        &mut self,
-        name: &str,
-        data: T,
-    ) -> Result<()> {
+    pub fn set_variable<T: VariableStorable>(&mut self, name: &str, data: T) -> Result<()> {
         // check if the variable exists first
         if let Some(old_variable) = self.context_variables.get(name) {
             let var = match old_variable {
@@ -379,8 +335,7 @@ impl Context {
             };
             let new_variable = data.set_optix_variable(self, var)?;
             // destroy any resources the existing variable holds
-            if let Some(old_variable) =
-                self.context_variables.insert(name.to_owned(), new_variable)
+            if let Some(old_variable) = self.context_variables.insert(name.to_owned(), new_variable)
             {
                 self.destroy_variable(old_variable);
             };
@@ -390,11 +345,7 @@ impl Context {
             let (var, result) = unsafe {
                 let mut var: RTvariable = ::std::mem::uninitialized();
                 let c_name = std::ffi::CString::new(name).unwrap();
-                let result = rtContextDeclareVariable(
-                    self.rt_ctx,
-                    c_name.as_ptr(),
-                    &mut var,
-                );
+                let result = rtContextDeclareVariable(self.rt_ctx, c_name.as_ptr(), &mut var);
                 (var, result)
             };
             if result != RtResult::SUCCESS {
@@ -471,14 +422,8 @@ impl Context {
         Ok(())
     }
 
-    pub fn set_print_launch_index(
-        &mut self,
-        x: i32,
-        y: i32,
-        z: i32,
-    ) -> Result<()> {
-        let result =
-            unsafe { rtContextSetPrintLaunchIndex(self.rt_ctx, x, y, z) };
+    pub fn set_print_launch_index(&mut self, x: i32, y: i32, z: i32) -> Result<()> {
+        let result = unsafe { rtContextSetPrintLaunchIndex(self.rt_ctx, x, y, z) };
         if result != RtResult::SUCCESS {
             return Err(self.optix_error("rtContextSetPrintLaunchIndex", result));
         }
@@ -513,10 +458,7 @@ mod tests {
         result
     }
 
-    fn write_scoped_buf_map_v4f(
-        filename: &str,
-        buf: &ScopedBufMap2d<V4f32>,
-    ) -> Result<()> {
+    fn write_scoped_buf_map_v4f(filename: &str, buf: &ScopedBufMap2d<V4f32>) -> Result<()> {
         use image::{save_buffer, ColorType};
         let buf_u8 = v4f_buffer_to_u8(&buf);
         Ok(save_buffer(
@@ -532,16 +474,13 @@ mod tests {
     #[test]
     fn draw_solid_color() -> Result<()> {
         let mut ctx = Context::new();
-        ctx.set_search_path(SearchPath::from_config_file(
-            "ptx_path", "ptx_path",
-        ));
+        ctx.set_search_path(SearchPath::from_config_file("ptx_path", "ptx_path"));
 
         let hprg_draw_solid_color = ctx
             .program_create_from_ptx_file("draw_color.ptx", "draw_solid_color")
             .expect("Failed to load draw_solid_color from draw_color.ptx");
 
-        let entry_point =
-            ctx.add_entry_point(hprg_draw_solid_color, None).unwrap();
+        let entry_point = ctx.add_entry_point(hprg_draw_solid_color, None).unwrap();
 
         let result_buffer = ctx
             .buffer_create_2d(
@@ -550,20 +489,15 @@ mod tests {
                 Format::FLOAT4,
                 BufferType::OUTPUT,
                 BufferFlag::NONE,
-            ).expect("Could not create result buffer");
+            )
+            .expect("Could not create result buffer");
 
-        ctx.set_variable(
-            "result_buffer",
-            ObjectHandle::Buffer2d(result_buffer),
-        ).expect("Setting buffer2d variable failed");
+        ctx.set_variable("result_buffer", ObjectHandle::Buffer2d(result_buffer))
+            .expect("Setting buffer2d variable failed");
 
         ctx.validate().expect("Context validation failed");
 
         ctx.launch_2d(entry_point, 256, 128)?;
-
-        // try destroying the buffer... the refcounting should allow the
-        // buffer to survive and the map and write to succeed without error
-        ctx.buffer_destroy_2d(result_buffer);
 
         {
             let buffer_map = ctx
@@ -593,16 +527,13 @@ mod tests {
         use std::thread;
 
         let mut ctx = Context::new();
-        ctx.set_search_path(SearchPath::from_config_file(
-            "ptx_path", "ptx_path",
-        ));
+        ctx.set_search_path(SearchPath::from_config_file("ptx_path", "ptx_path"));
 
         let hprg_draw_solid_color = ctx
             .program_create_from_ptx_file("draw_color.ptx", "draw_solid_color")
             .expect("Failed to load draw_solid_color from draw_color.ptx");
 
-        let entry_point =
-            ctx.add_entry_point(hprg_draw_solid_color, None).unwrap();
+        let entry_point = ctx.add_entry_point(hprg_draw_solid_color, None).unwrap();
 
         let result_buffer = ctx
             .buffer_create_2d(
@@ -611,12 +542,11 @@ mod tests {
                 Format::FLOAT4,
                 BufferType::OUTPUT,
                 BufferFlag::NONE,
-            ).expect("Could not create result buffer");
+            )
+            .expect("Could not create result buffer");
 
-        ctx.set_variable(
-            "result_buffer",
-            ObjectHandle::Buffer2d(result_buffer),
-        ).expect("Setting buffer2d variable failed");
+        ctx.set_variable("result_buffer", ObjectHandle::Buffer2d(result_buffer))
+            .expect("Setting buffer2d variable failed");
 
         ctx.validate().expect("Context validation failed");
 
@@ -628,18 +558,10 @@ mod tests {
             tx.send(Message::Done(ctx)).unwrap();
         });
 
-        // The compiler will stop us from trying to edit the scene while a
-        // launcher is active...
-        // ctx.buffer_destroy_2d(result_buffer); <- Error: borrow of moved value
-
         let thread_result = rx.recv().unwrap();
         let mut ctx = match thread_result {
             Message::Done(ctx) => ctx,
         };
-
-        // try destroying the buffer... the refcounting should allow the
-        // buffer to survive and the map and write to succeed without error
-        ctx.buffer_destroy_2d(result_buffer);
 
         {
             let buffer_map = ctx
@@ -664,22 +586,15 @@ mod tests {
         use std::thread;
 
         let mut ctx = Context::new();
-        ctx.set_search_path(SearchPath::from_config_file(
-            "ptx_path", "ptx_path",
-        ));
+        ctx.set_search_path(SearchPath::from_config_file("ptx_path", "ptx_path"));
 
-        let prg_cam_screen =
-            ctx.program_create_from_ptx_file("cam_screen.ptx", "generate_ray")?;
-        let prg_miss =
-            ctx.program_create_from_ptx_file("cam_screen.ptx", "miss")?;
-        let prg_mesh_intersect = ctx.program_create_from_ptx_file(
-            "triangle_mesh.ptx",
-            "mesh_intersect_refine",
-        )?;
-        let prg_mesh_bound =
-            ctx.program_create_from_ptx_file("triangle_mesh.ptx", "bound")?;
-        let prg_material_constant_closest = ctx
-            .program_create_from_ptx_file("mtl_constant.ptx", "closest_hit")?;
+        let prg_cam_screen = ctx.program_create_from_ptx_file("cam_screen.ptx", "generate_ray")?;
+        let prg_miss = ctx.program_create_from_ptx_file("cam_screen.ptx", "miss")?;
+        let prg_mesh_intersect =
+            ctx.program_create_from_ptx_file("triangle_mesh.ptx", "mesh_intersect_refine")?;
+        let prg_mesh_bound = ctx.program_create_from_ptx_file("triangle_mesh.ptx", "bound")?;
+        let prg_material_constant_closest =
+            ctx.program_create_from_ptx_file("mtl_constant.ptx", "closest_hit")?;
         let prg_material_constant_any =
             ctx.program_create_from_ptx_file("mtl_constant.ptx", "any_hit")?;
 
@@ -699,25 +614,13 @@ mod tests {
             BufferType::INPUT,
             BufferFlag::NONE,
         )?;
-        let buf_indices = ctx.buffer_create_from_slice_1d(
-            &[v3i(0, 1, 2)],
-            BufferType::INPUT,
-            BufferFlag::NONE,
-        )?;
-        let buf_normal = ctx.buffer_create_1d(
-            0,
-            Format::FLOAT3,
-            BufferType::INPUT,
-            BufferFlag::NONE,
-        )?;
-        let buf_texcoord = ctx.buffer_create_1d(
-            0,
-            Format::FLOAT2,
-            BufferType::INPUT,
-            BufferFlag::NONE,
-        )?;
-        let geo_triangle =
-            ctx.geometry_create(prg_mesh_bound, prg_mesh_intersect)?;
+        let buf_indices =
+            ctx.buffer_create_from_slice_1d(&[v3i(0, 1, 2)], BufferType::INPUT, BufferFlag::NONE)?;
+        let buf_normal =
+            ctx.buffer_create_1d(0, Format::FLOAT3, BufferType::INPUT, BufferFlag::NONE)?;
+        let buf_texcoord =
+            ctx.buffer_create_1d(0, Format::FLOAT2, BufferType::INPUT, BufferFlag::NONE)?;
+        let geo_triangle = ctx.geometry_create(prg_mesh_bound, prg_mesh_intersect)?;
         ctx.geometry_set_primitive_count(geo_triangle, 1)?;
         ctx.geometry_set_variable(
             geo_triangle,
@@ -740,11 +643,8 @@ mod tests {
             ObjectHandle::Buffer1d(buf_texcoord),
         )?;
         let materials = vec![0];
-        let buf_material = ctx.buffer_create_from_slice_1d(
-            &materials,
-            BufferType::INPUT,
-            BufferFlag::NONE,
-        )?;
+        let buf_material =
+            ctx.buffer_create_from_slice_1d(&materials, BufferType::INPUT, BufferFlag::NONE)?;
         ctx.geometry_set_variable(
             geo_triangle,
             "material_buffer",
@@ -773,10 +673,8 @@ mod tests {
         );
         let mtl_constant = ctx.material_create(mtl_camera_programs)?;
 
-        let geo_inst = ctx.geometry_instance_create(
-            GeometryType::Geometry(geo_triangle),
-            vec![mtl_constant],
-        )?;
+        let geo_inst =
+            ctx.geometry_instance_create(GeometryType::Geometry(geo_triangle), vec![mtl_constant])?;
 
         let acc = ctx.acceleration_create(Builder::Trbvh)?;
 
@@ -797,12 +695,11 @@ mod tests {
                 Format::FLOAT4,
                 BufferType::OUTPUT,
                 BufferFlag::NONE,
-            ).expect("Could not create result buffer");
+            )
+            .expect("Could not create result buffer");
 
-        ctx.set_variable(
-            "result_buffer",
-            ObjectHandle::Buffer2d(result_buffer),
-        ).expect("Setting buffer2d variable failed");
+        ctx.set_variable("result_buffer", ObjectHandle::Buffer2d(result_buffer))
+            .expect("Setting buffer2d variable failed");
 
         ctx.validate().expect("Context validation failed");
 
@@ -817,10 +714,6 @@ mod tests {
         let mut ctx = match thread_result {
             Message::Done(ctx) => ctx,
         };
-
-        // try destroying the buffer... the refcounting should allow the
-        // buffer to survive and the map and write to succeed without error
-        ctx.buffer_destroy_2d(result_buffer);
 
         {
             let buffer_map = ctx

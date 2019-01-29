@@ -1,14 +1,9 @@
 use crate::context::*;
-use crate::ginallocator::*;
 use std::ffi::CString;
 
-#[derive(Default, Debug, Copy, Clone)]
-#[doc(hidden)]
-pub struct AccelerationMarker;
-impl Marker for AccelerationMarker {
-    const ID: &'static str = "Acceleration";
-}
-pub type AccelerationHandle = Handle<AccelerationMarker>;
+use slotmap::*;
+
+new_key_type! { pub struct AccelerationHandle; }
 
 /// Selects the BVH building algorithm to be used by an `Accelerator`
 #[derive(Copy, Clone)]
@@ -20,12 +15,9 @@ pub enum Builder {
 }
 
 impl Context {
-    /// Creates a new `Acceleration` on this `Context` with the specified 
+    /// Creates a new `Acceleration` on this `Context` with the specified
     /// `Builder` returning a handle that can be used to access it later.
-    pub fn acceleration_create(
-        &mut self,
-        builder: Builder,
-    ) -> Result<AccelerationHandle> {
+    pub fn acceleration_create(&mut self, builder: Builder) -> Result<AccelerationHandle> {
         let (rt_acc, result) = unsafe {
             let mut rt_acc: RTacceleration = std::mem::zeroed();
             let result = rtAccelerationCreate(self.rt_ctx, &mut rt_acc);
@@ -40,7 +32,8 @@ impl Context {
             Builder::Bvh => CString::new("Bvh"),
             Builder::Sbvh => CString::new("Sbvh"),
             Builder::Trbvh => CString::new("Trbvh"),
-        }.unwrap();
+        }
+        .unwrap();
         let result = unsafe { rtAccelerationSetBuilder(rt_acc, str.as_ptr()) };
         if result != RtResult::SUCCESS {
             Err(self.optix_error("rtAccelerationCreate", result))
@@ -56,15 +49,9 @@ impl Context {
     /// # Panics
     /// If mat is not a valid AccelerationHandle
     pub fn acceleration_destroy(&mut self, acc: AccelerationHandle) {
-        let rt_acc = *self.ga_acceleration_obj.get(acc).unwrap();
-        match self.ga_acceleration_obj.destroy(acc) {
-            DestroyResult::StillAlive => (),
-            DestroyResult::ShouldDrop => {
-                if unsafe { rtAccelerationDestroy(rt_acc) } != RtResult::SUCCESS
-                {
-                    panic!("Error destroying acceleration: {}", acc);
-                }
-            }
+        let rt_acc = self.ga_acceleration_obj.remove(acc).unwrap();
+        if unsafe { rtAccelerationDestroy(rt_acc) } != RtResult::SUCCESS {
+            panic!("Error destroying acceleration: {:?}", acc);
         }
     }
 
