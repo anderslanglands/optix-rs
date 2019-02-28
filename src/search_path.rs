@@ -72,16 +72,22 @@ impl SearchPath {
     }
 
     pub fn open(&self, filename: &str) -> Result<std::fs::File, Error> {
+
+        if let Ok(f) = std::fs::File::open(filename) {
+            return Ok(f);
+        } else {
+            // do nothing
+        }
+
         for p in &self.paths {
             let mut pb = p.clone();
             pb.push(filename);
             match std::fs::File::open(pb) {
                 Ok(f) => return Ok(f),
-                Err(err) => {
-                    println!("Error: {}", err);
-                },
+                Err(_) => (),
             }
         }
+
         Err(Error::FileNotFound(filename.to_owned()))
     }
 
