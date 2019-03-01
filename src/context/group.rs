@@ -1,7 +1,5 @@
 use crate::context::*;
 
-use slotmap::*;
-
 new_key_type! { pub struct GroupHandle; }
 
 pub enum GroupChild {
@@ -85,12 +83,59 @@ impl Context {
         Ok(grp)
     }
 
+    pub fn group_add_child(&mut self, grp: GroupHandle, child: GroupChild) -> Result<()> {
+        match child {
+            GroupChild::GeometryGroup(h) => self.geometry_group_validate(h)?,
+            GroupChild::Group(h) => self.group_validate(h)?,
+            GroupChild::Transform(h) => self.transform_validate(h)?,
+            GroupChild::None => unreachable!(),
+        }
+
+        let rt_grp = *self.ga_group_obj.get(grp).unwrap();
+        let children = self.gd_group_children.get_mut(grp).unwrap();
+        let index = children.len() as u32;
+
+        let result = unsafe { rtGroupSetChildCount(rt_grp, index + 1) };
+        if result != RtResult::SUCCESS {
+            return Err(self.optix_error("rtGroupSetChildCount", result));
+        }
+
+        match child {
+            GroupChild::GeometryGroup(h) => {
+                let c_rt_geogrp = *self.ga_geometry_group_obj.get(h).unwrap();
+                let result = unsafe { rtGroupSetChild(rt_grp, index, c_rt_geogrp as RTobject) };
+                if result != RtResult::SUCCESS {
+                    return Err(self.optix_error("rtGroupSetChild", result));
+                }
+            }
+            GroupChild::Group(h) => {
+                let c_rt_grp = *self.ga_group_obj.get(h).unwrap();
+                let result = unsafe { rtGroupSetChild(rt_grp, index, c_rt_grp as RTobject) };
+                if result != RtResult::SUCCESS {
+                    return Err(self.optix_error("rtGroupSetChild", result));
+                }
+            }
+            GroupChild::Transform(h) => {
+                let c_rt_xform = *self.ga_transform_obj.get(h).unwrap();
+                let result = unsafe { rtGroupSetChild(rt_grp, index, c_rt_xform as RTobject) };
+                if result != RtResult::SUCCESS {
+                    return Err(self.optix_error("rtGroupSetChild", result));
+                }
+            }
+            GroupChild::None => unreachable!(),
+        }
+
+        children.push(child);
+
+        Ok(())
+    }
+
     pub fn group_destroy(&mut self, grp: GroupHandle) {
         let rt_grp = self.ga_group_obj.remove(grp).unwrap();
 
-        let acc = self.gd_group_acceleration.remove(grp);
+        let _acc = self.gd_group_acceleration.remove(grp);
 
-        let children = self.gd_group_children.remove(grp);
+        let _children = self.gd_group_children.remove(grp);
 
         if unsafe { rtGroupDestroy(rt_grp) } != RtResult::SUCCESS {
             panic!("Error destroying group {:?}", grp);

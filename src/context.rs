@@ -385,12 +385,6 @@ impl Context {
         }
     }
 
-    fn destroy_variables(&mut self, vars: HashMap<String, Variable>) {
-        for (_, var) in vars {
-            self.destroy_variable(var);
-        }
-    }
-
     pub fn launch_2d(
         &self,
         entry_point: EntryPointHandle,
@@ -559,7 +553,7 @@ mod tests {
         });
 
         let thread_result = rx.recv().unwrap();
-        let mut ctx = match thread_result {
+        let ctx = match thread_result {
             Message::Done(ctx) => ctx,
         };
 
@@ -595,8 +589,6 @@ mod tests {
         let prg_mesh_bound = ctx.program_create_from_ptx_file("triangle_mesh.ptx", "bound")?;
         let prg_material_constant_closest =
             ctx.program_create_from_ptx_file("mtl_constant.ptx", "closest_hit")?;
-        let prg_material_constant_any =
-            ctx.program_create_from_ptx_file("mtl_constant.ptx", "any_hit")?;
 
         ctx.program_set_variable(
             prg_material_constant_closest,
@@ -711,7 +703,7 @@ mod tests {
         });
 
         let thread_result = rx.recv().unwrap();
-        let mut ctx = match thread_result {
+        let ctx = match thread_result {
             Message::Done(ctx) => ctx,
         };
 

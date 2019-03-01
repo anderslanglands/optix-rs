@@ -1,8 +1,5 @@
 use crate::context::*;
 use std::collections::HashMap;
-use std::marker::PhantomData;
-
-use slotmap::*;
 
 new_key_type! { pub struct GeometryHandle; }
 
@@ -52,10 +49,10 @@ impl Context {
     }
 
     pub fn geometry_destroy(&mut self, geo: GeometryHandle) {
-        let vars = self.gd_geometry_variables.remove(geo);
+        let _vars = self.gd_geometry_variables.remove(geo);
 
-        let prg_bounding_box = self.gd_geometry_bounding_box.remove(geo);
-        let prg_intersection = self.gd_geometry_intersection.remove(geo);
+        let _prg_bounding_box = self.gd_geometry_bounding_box.remove(geo);
+        let _prg_intersection = self.gd_geometry_intersection.remove(geo);
 
         let rt_geo = self.ga_geometry_obj.remove(geo).unwrap();
         if unsafe { rtGeometryDestroy(rt_geo) } != RtResult::SUCCESS {

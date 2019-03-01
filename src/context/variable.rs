@@ -1,5 +1,8 @@
 use crate::context::*;
 
+#[cfg(feature = "colorspace_support")]
+use colorspace::rgb::RGBf32;
+
 pub enum ObjectHandle {
     Buffer1d(Buffer1dHandle),
     Buffer2d(Buffer2dHandle),
@@ -166,6 +169,18 @@ impl VariableStorable for f32 {
 impl VariableStorable for V3f32 {
     fn set_optix_variable(self, ctx: &mut Context, variable: RTvariable) -> Result<Variable> {
         let result = unsafe { rtVariableSet3f(variable, self.x, self.y, self.z) };
+        if result != RtResult::SUCCESS {
+            Err(ctx.optix_error("rtVariableSet3f", result))
+        } else {
+            Ok(Variable::Pod(VariablePod { var: variable }))
+        }
+    }
+}
+
+#[cfg(feature = "colorspace")]
+impl VariableStorable for RGBf32 {
+    fn set_optix_variable(self, ctx: &mut Context, variable: RTvariable) -> Result<Variable> {
+        let result = unsafe { rtVariableSet3f(variable, self.r, self.g, self.b) };
         if result != RtResult::SUCCESS {
             Err(ctx.optix_error("rtVariableSet3f", result))
         } else {

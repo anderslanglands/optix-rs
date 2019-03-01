@@ -4,8 +4,6 @@
 use crate::context::*;
 use std::collections::HashMap;
 
-use slotmap::*;
-
 new_key_type! { pub struct MaterialHandle; }
 
 /// Struct to hold the Programs associated with a particular Material and
@@ -77,10 +75,10 @@ impl Context {
     /// # Panics
     /// If mat is not a valid MaterialHandle
     pub fn material_destroy(&mut self, mat: MaterialHandle) {
-        let vars = self.gd_material_variables.remove(mat);
+        let _vars = self.gd_material_variables.remove(mat);
 
         // destroy material programs
-        let programs = self.gd_material_programs.remove(mat);
+        let _programs = self.gd_material_programs.remove(mat);
 
         let rt_mat = self.ga_material_obj.remove(mat).unwrap();
         if unsafe { rtMaterialDestroy(rt_mat) } != RtResult::SUCCESS {

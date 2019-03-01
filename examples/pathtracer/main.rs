@@ -1,5 +1,5 @@
 // This example shows how to use the crate to generate a simple, progressive,
-// Cornell box. 
+// Cornell box.
 use crossbeam_channel as channel;
 use glfw::{Action, Context, Key};
 use std::collections::HashMap;
@@ -30,7 +30,8 @@ fn main() -> Result<(), String> {
             height,
             "path tracer example",
             glfw::WindowMode::Windowed,
-        ).expect("failed to create glfw window");
+        )
+        .expect("failed to create glfw window");
 
     window.set_key_polling(true);
     window.make_current();
@@ -39,9 +40,7 @@ fn main() -> Result<(), String> {
     // which we need to use for the viewport
     let (fb_width, fb_height) = window.get_framebuffer_size();
 
-    let gl = gl::load_with(|s| {
-        glfw.get_proc_address_raw(s) as *const std::os::raw::c_void
-    });
+    let _gl = gl::load_with(|s| glfw.get_proc_address_raw(s) as *const std::os::raw::c_void);
 
     let fsq = FullscreenQuad::new(width, height)?;
 
@@ -54,7 +53,7 @@ fn main() -> Result<(), String> {
     let (ctx, entry_point) = create_context(width, height).unwrap();
 
     // We'll create a second, render thread and pass messages to it in order to
-    // control rendering, sharing an image buffer for the rendered frames and 
+    // control rendering, sharing an image buffer for the rendered frames and
     // using an atomic counter to signal when the context has finished each
     // render progression.
     let (tx_render, rx_render) = channel::unbounded();
@@ -80,12 +79,11 @@ fn main() -> Result<(), String> {
                             rt::Format::FLOAT4,
                             rt::BufferType::OUTPUT,
                             rt::BufferFlag::NONE,
-                        ).expect("Could not create result buffer");
+                        )
+                        .expect("Could not create result buffer");
 
-                    ctx.set_variable(
-                        "result_buffer",
-                        rt::ObjectHandle::Buffer2d(result_buffer),
-                    ).expect("Setting buffer2d variable failed");
+                    ctx.set_variable("result_buffer", rt::ObjectHandle::Buffer2d(result_buffer))
+                        .expect("Setting buffer2d variable failed");
 
                     let mut progression = 0u32;
 
@@ -93,9 +91,7 @@ fn main() -> Result<(), String> {
                         let now = std::time::Instant::now();
                         match rx_render.try_recv() {
                             Some(MsgMaster::StartRender(_, _)) => {
-                                println!(
-                                    "ERROR: request to start an in-progress render"
-                                );
+                                println!("ERROR: request to start an in-progress render");
                                 break 'outer;
                             }
                             Some(MsgMaster::StopRender) => {
@@ -123,11 +119,7 @@ fn main() -> Result<(), String> {
                         ctx.set_variable("progression", progression).unwrap();
                         progression += 1;
 
-                        match ctx.launch_2d(
-                            entry_point,
-                            width as usize,
-                            height as usize,
-                        ) {
+                        match ctx.launch_2d(entry_point, width as usize, height as usize) {
                             Ok(()) => (),
                             Err(rt::Error::Optix(e)) => {
                                 println!("[Optix ERROR]: {}", e.1);
@@ -139,11 +131,8 @@ fn main() -> Result<(), String> {
 
                         // update the shared buffer
                         {
-                            let buffer_map = ctx
-                                .buffer_map_2d::<V4f32>(result_buffer)
-                                .unwrap();
-                            let mut output =
-                                mtx_image_data_render.lock().unwrap();
+                            let buffer_map = ctx.buffer_map_2d::<V4f32>(result_buffer).unwrap();
+                            let mut output = mtx_image_data_render.lock().unwrap();
 
                             // output.clone_from_slice(buffer_map.as_slice());
                             for i in 0..output.len() {
@@ -152,8 +141,7 @@ fn main() -> Result<(), String> {
                         }
                         // let the ui thread know there's new image data to
                         // display
-                        render_progression_counter
-                            .fetch_add(1, Ordering::SeqCst);
+                        render_progression_counter.fetch_add(1, Ordering::SeqCst);
 
                         let duration = now.elapsed();
                         if duration < time_min {
@@ -182,8 +170,7 @@ fn main() -> Result<(), String> {
 
         // If the render thread has progressed since we last updated our display,
         // synchronize and update the display
-        let current_progression =
-            main_progression_counter.load(Ordering::SeqCst);
+        let current_progression = main_progression_counter.load(Ordering::SeqCst);
         if current_progression > last_progression {
             last_progression = current_progression;
             {
@@ -220,14 +207,10 @@ fn create_context(
     // The search path is used for finding ptx files. In this case the path to
     // the generated ptx is known by the build script, which outputs a config
     // file for us so we know where to look...
-    ctx.set_search_path(rt::SearchPath::from_config_file(
-        "ptx_path", "ptx_path",
-    ));
+    ctx.set_search_path(rt::SearchPath::from_config_file("ptx_path", "ptx_path"));
 
-    let prg_cam_screen =
-        ctx.program_create_from_ptx_file("pathtracer.ptx", "generate_ray")?;
-    let prg_miss =
-        ctx.program_create_from_ptx_file("pathtracer.ptx", "miss")?;
+    let prg_cam_screen = ctx.program_create_from_ptx_file("pathtracer.ptx", "generate_ray")?;
+    let prg_miss = ctx.program_create_from_ptx_file("pathtracer.ptx", "miss")?;
 
     // generate camera matrices
     let swn = v2f(-1.0, -1.0);
@@ -259,8 +242,7 @@ fn create_context(
 
     let prg_mesh_intersect =
         ctx.program_create_from_ptx_file("pathtracer.ptx", "mesh_intersect")?;
-    let prg_mesh_bound =
-        ctx.program_create_from_ptx_file("pathtracer.ptx", "bound")?;
+    let prg_mesh_bound = ctx.program_create_from_ptx_file("pathtracer.ptx", "bound")?;
     let prg_material_constant_closest =
         ctx.program_create_from_ptx_file("pathtracer.ptx", "mtl_ch_diffuse")?;
     let prg_material_constant_any =
@@ -309,11 +291,8 @@ fn create_context(
     let mtl_emission = ctx.material_create(map_mtl_emission)?;
 
     let materials = vec![0];
-    let buf_material = ctx.buffer_create_from_slice_1d(
-        &materials,
-        rt::BufferType::INPUT,
-        rt::BufferFlag::NONE,
-    )?;
+    let buf_material =
+        ctx.buffer_create_from_slice_1d(&materials, rt::BufferType::INPUT, rt::BufferFlag::NONE)?;
 
     let geo_floor = create_quad(
         &mut ctx,
@@ -444,14 +423,10 @@ fn create_context(
         rt::ObjectHandle::Buffer1d(buf_material),
     )?;
 
-    let geo_inst_floor = ctx.geometry_instance_create(
-        rt::GeometryType::Geometry(geo_floor),
-        vec![mtl_constant],
-    )?;
-    let geo_inst_ceiling = ctx.geometry_instance_create(
-        rt::GeometryType::Geometry(geo_ceiling),
-        vec![mtl_constant],
-    )?;
+    let geo_inst_floor =
+        ctx.geometry_instance_create(rt::GeometryType::Geometry(geo_floor), vec![mtl_constant])?;
+    let geo_inst_ceiling =
+        ctx.geometry_instance_create(rt::GeometryType::Geometry(geo_ceiling), vec![mtl_constant])?;
     let geo_inst_wall_back = ctx.geometry_instance_create(
         rt::GeometryType::Geometry(geo_wall_back),
         vec![mtl_constant],
@@ -464,59 +439,27 @@ fn create_context(
         rt::GeometryType::Geometry(geo_wall_right),
         vec![mtl_constant],
     )?;
-    let geo_inst_tall_box = ctx.geometry_instance_create(
-        rt::GeometryType::Geometry(geo_tall_box),
-        vec![mtl_constant],
-    )?;
+    let geo_inst_tall_box =
+        ctx.geometry_instance_create(rt::GeometryType::Geometry(geo_tall_box), vec![mtl_constant])?;
     let geo_inst_short_box = ctx.geometry_instance_create(
         rt::GeometryType::Geometry(geo_short_box),
         vec![mtl_constant],
     )?;
 
-    let geo_inst_light = ctx.geometry_instance_create(
-        rt::GeometryType::Geometry(geo_light),
-        vec![mtl_emission],
-    )?;
+    let geo_inst_light =
+        ctx.geometry_instance_create(rt::GeometryType::Geometry(geo_light), vec![mtl_emission])?;
 
     let col_white = v3f(0.76, 0.75, 0.5);
     let col_red = v3f(0.63, 0.06, 0.04);
     let col_green = v3f(0.15, 0.48, 0.09);
 
-    ctx.geometry_instance_set_variable(
-        geo_inst_floor,
-        "in_diffuse_albedo",
-        col_white,
-    )?;
-    ctx.geometry_instance_set_variable(
-        geo_inst_ceiling,
-        "in_diffuse_albedo",
-        col_white,
-    )?;
-    ctx.geometry_instance_set_variable(
-        geo_inst_wall_back,
-        "in_diffuse_albedo",
-        col_white,
-    )?;
-    ctx.geometry_instance_set_variable(
-        geo_inst_wall_left,
-        "in_diffuse_albedo",
-        col_red,
-    )?;
-    ctx.geometry_instance_set_variable(
-        geo_inst_wall_right,
-        "in_diffuse_albedo",
-        col_green,
-    )?;
-    ctx.geometry_instance_set_variable(
-        geo_inst_tall_box,
-        "in_diffuse_albedo",
-        col_white,
-    )?;
-    ctx.geometry_instance_set_variable(
-        geo_inst_short_box,
-        "in_diffuse_albedo",
-        col_white,
-    )?;
+    ctx.geometry_instance_set_variable(geo_inst_floor, "in_diffuse_albedo", col_white)?;
+    ctx.geometry_instance_set_variable(geo_inst_ceiling, "in_diffuse_albedo", col_white)?;
+    ctx.geometry_instance_set_variable(geo_inst_wall_back, "in_diffuse_albedo", col_white)?;
+    ctx.geometry_instance_set_variable(geo_inst_wall_left, "in_diffuse_albedo", col_red)?;
+    ctx.geometry_instance_set_variable(geo_inst_wall_right, "in_diffuse_albedo", col_green)?;
+    ctx.geometry_instance_set_variable(geo_inst_tall_box, "in_diffuse_albedo", col_white)?;
+    ctx.geometry_instance_set_variable(geo_inst_short_box, "in_diffuse_albedo", col_white)?;
 
     let acc_main_box = ctx.acceleration_create(rt::Builder::Trbvh)?;
 
@@ -533,17 +476,15 @@ fn create_context(
     )?;
 
     let acc_tb = ctx.acceleration_create(rt::Builder::NoAccel)?;
-    let geo_group_tall_box =
-        ctx.geometry_group_create(acc_tb, vec![geo_inst_tall_box])?;
+    let geo_group_tall_box = ctx.geometry_group_create(acc_tb, vec![geo_inst_tall_box])?;
 
     let acc_sb = ctx.acceleration_create(rt::Builder::NoAccel)?;
-    let geo_group_short_box =
-        ctx.geometry_group_create(acc_sb, vec![geo_inst_short_box])?;
+    let geo_group_short_box = ctx.geometry_group_create(acc_sb, vec![geo_inst_short_box])?;
 
-    let mtx_tall_box = m4f_translation(70.0, 0.0, -385.0)
-        * m4f_rotation(v3f(0.0, 1.0, 0.0), 0.3925);
-    let mtx_short_box = m4f_translation(320.0, 0.0, -255.0)
-        * m4f_rotation(v3f(0.0, 1.0, 0.0), -0.314);
+    let mtx_tall_box =
+        m4f_translation(70.0, 0.0, -385.0) * m4f_rotation(v3f(0.0, 1.0, 0.0), 0.3925);
+    let mtx_short_box =
+        m4f_translation(320.0, 0.0, -255.0) * m4f_rotation(v3f(0.0, 1.0, 0.0), -0.314);
 
     let xform_tall_box = ctx.transform_create(
         rt::MatrixFormat::ColumnMajor(mtx_tall_box),
@@ -631,11 +572,8 @@ pub fn create_box(
         v3i(0, 1, 4),
     ];
 
-    let buf_indices = ctx.buffer_create_from_slice_1d(
-        &indices,
-        rt::BufferType::INPUT,
-        rt::BufferFlag::NONE,
-    )?;
+    let buf_indices =
+        ctx.buffer_create_from_slice_1d(&indices, rt::BufferType::INPUT, rt::BufferFlag::NONE)?;
 
     let buf_normal = ctx.buffer_create_1d(
         0,
@@ -683,17 +621,11 @@ pub fn create_quad(
     prg_mesh_bound: rt::ProgramHandle,
     prg_mesh_intersect: rt::ProgramHandle,
 ) -> Result<rt::GeometryHandle, rt::Error> {
-    let buf_vertex = ctx.buffer_create_from_slice_1d(
-        &vertices,
-        rt::BufferType::INPUT,
-        rt::BufferFlag::NONE,
-    )?;
+    let buf_vertex =
+        ctx.buffer_create_from_slice_1d(&vertices, rt::BufferType::INPUT, rt::BufferFlag::NONE)?;
     let indices = [v3i(0, 1, 2), v3i(0, 2, 3)];
-    let buf_indices = ctx.buffer_create_from_slice_1d(
-        &indices,
-        rt::BufferType::INPUT,
-        rt::BufferFlag::NONE,
-    )?;
+    let buf_indices =
+        ctx.buffer_create_from_slice_1d(&indices, rt::BufferType::INPUT, rt::BufferFlag::NONE)?;
     let buf_normal = ctx.buffer_create_1d(
         0,
         rt::Format::FLOAT3,
@@ -706,8 +638,7 @@ pub fn create_quad(
         rt::BufferType::INPUT,
         rt::BufferFlag::NONE,
     )?;
-    let geo_triangle =
-        ctx.geometry_create(prg_mesh_bound, prg_mesh_intersect)?;
+    let geo_triangle = ctx.geometry_create(prg_mesh_bound, prg_mesh_intersect)?;
     ctx.geometry_set_primitive_count(geo_triangle, indices.len() as u32)?;
     ctx.geometry_set_variable(
         geo_triangle,
@@ -735,9 +666,7 @@ pub fn create_quad(
 
 fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent) {
     match event {
-        glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
-            window.set_should_close(true)
-        }
+        glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => window.set_should_close(true),
         _ => {}
     }
 }

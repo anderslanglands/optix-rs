@@ -11,10 +11,14 @@ exclude = [
     "rustfmt.toml",
 ]
 
+[features]
+colorspace_support = ["colorspace"]
+
 [dependencies]
 config = "0.9"
 nalgebra = "0.16"
 slotmap = "0.3"
+colorspace = {path="../color-space-rs", optional = true}
 
 [build-dependencies]
 bindgen = "0.41"

@@ -3,8 +3,6 @@ use std::collections::HashMap;
 use std::ffi::CString;
 use std::io::Read;
 
-use slotmap::*;
-
 new_key_type! { pub struct ProgramHandle; }
 
 impl Context {
@@ -12,7 +10,7 @@ impl Context {
     /// The underlying program will remain alive until all references to it
     /// have been destroyed.
     pub fn program_destroy(&mut self, prg: ProgramHandle) {
-        let vars = self.gd_program_variables.remove(prg);
+        let _vars = self.gd_program_variables.remove(prg);
 
         let rt_prg = self.ga_program_obj.remove(prg).unwrap();
         if unsafe { rtProgramDestroy(rt_prg) } != RtResult::SUCCESS {

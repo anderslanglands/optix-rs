@@ -7,10 +7,7 @@ pub struct Shader {
 }
 
 impl Shader {
-    pub fn from_source(
-        source: &CStr,
-        shader_type: GLenum,
-    ) -> Result<Shader, String> {
+    pub fn from_source(source: &CStr, shader_type: GLenum) -> Result<Shader, String> {
         let id = unsafe { gl::CreateShader(shader_type) };
 
         unsafe {
@@ -30,12 +27,7 @@ impl Shader {
             }
             let error = create_whitespace_cstring(len as usize);
             unsafe {
-                gl::GetShaderInfoLog(
-                    id,
-                    len,
-                    std::ptr::null_mut(),
-                    error.as_ptr() as *mut GLchar,
-                );
+                gl::GetShaderInfoLog(id, len, std::ptr::null_mut(), error.as_ptr() as *mut GLchar);
             }
             Err(error.to_string_lossy().into_owned())
         } else {
@@ -88,12 +80,7 @@ impl Program {
             }
             let error = create_whitespace_cstring(len as usize);
             unsafe {
-                gl::GetProgramInfoLog(
-                    id,
-                    len,
-                    std::ptr::null_mut(),
-                    error.as_ptr() as *mut GLchar,
-                );
+                gl::GetProgramInfoLog(id, len, std::ptr::null_mut(), error.as_ptr() as *mut GLchar);
             }
             return Err(error.to_string_lossy().into_owned());
         }
@@ -117,11 +104,9 @@ impl Program {
 
     pub fn get_location(&self, name: &str) -> Result<GLint, String> {
         let cname = CString::new(name).unwrap();
-        let loc = unsafe {
-            gl::GetUniformLocation(self.id, cname.as_ptr() as *mut GLchar)
-        };
+        let loc = unsafe { gl::GetUniformLocation(self.id, cname.as_ptr() as *mut GLchar) };
 
-        if loc != 0 {
+        if loc != -1 {
             Ok(loc)
         } else {
             Err("Could not get location".to_owned())
@@ -129,7 +114,9 @@ impl Program {
     }
 
     pub fn set_uniform(&self, loc: GLint, v: i32) {
-        unsafe {gl::ProgramUniform1i(self.id, loc, v);}
+        unsafe {
+            gl::ProgramUniform1i(self.id, loc, v);
+        }
     }
 }
 
@@ -355,12 +342,7 @@ impl Vertex {
 
         // and configure the vertex array
         unsafe {
-            Vertex::vertex_attrib_pointer(
-                f32x3::num_components(),
-                stride,
-                location,
-                offset,
-            );
+            Vertex::vertex_attrib_pointer(f32x3::num_components(), stride, location, offset);
         }
 
         let location = location + 1;
@@ -368,12 +350,7 @@ impl Vertex {
 
         // and configure the st array
         unsafe {
-            Vertex::vertex_attrib_pointer(
-                f32x2::num_components(),
-                stride,
-                location,
-                offset,
-            );
+            Vertex::vertex_attrib_pointer(f32x2::num_components(), stride, location, offset);
         }
     }
 }
@@ -381,7 +358,6 @@ impl Vertex {
 pub struct FullscreenQuad {
     width: u32,
     height: u32,
-    vertex_buffer: Buffer<Vertex>,
     vertex_array: VertexArray,
     program: Program,
     texture_id: GLuint,
@@ -402,7 +378,8 @@ impl FullscreenQuad {
                 st = _st;
             }
         \0",
-            ).unwrap(),
+            )
+            .unwrap(),
         )?;
 
         let frag_shader = Shader::fragment_from_source(
@@ -423,7 +400,8 @@ impl FullscreenQuad {
                 Color = col;
             }
         \0",
-            ).unwrap(),
+            )
+            .unwrap(),
         )?;
 
         let program = Program::from_shaders(&[vert_shader, frag_shader])?;
@@ -516,7 +494,6 @@ impl FullscreenQuad {
         Ok(FullscreenQuad {
             width,
             height,
-            vertex_buffer,
             vertex_array,
             program,
             texture_id,

@@ -1,7 +1,8 @@
 use crate::context::*;
 use std::ops::{Index, IndexMut};
 
-use slotmap::*;
+#[cfg(feature = "colorspace")]
+use colorspace::rgb::RGBf32;
 
 new_key_type! { pub struct Buffer1dHandle; }
 new_key_type! { pub struct Buffer2dHandle; }
@@ -20,6 +21,11 @@ impl BufferElement for V2f32 {
 }
 
 impl BufferElement for V3f32 {
+    const FORMAT: Format = Format::FLOAT3;
+}
+
+#[cfg(feature = "colorspace")]
+impl BufferElement for RGBf32 {
     const FORMAT: Format = Format::FLOAT3;
 }
 

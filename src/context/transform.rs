@@ -1,7 +1,4 @@
 use crate::context::*;
-use crate::math::*;
-
-use slotmap::*;
 
 new_key_type! { pub struct TransformHandle; }
 
@@ -110,7 +107,7 @@ impl Context {
 
     pub fn transform_destroy(&mut self, xform: TransformHandle) {
         let rt_xform = self.ga_transform_obj.remove(xform).unwrap();
-        let child = self.gd_transform_child.remove(xform);
+        let _child = self.gd_transform_child.remove(xform);
         if unsafe { rtTransformDestroy(rt_xform) } != RtResult::SUCCESS {
             panic!("Error destroying transform {:?}", xform);
         }

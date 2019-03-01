@@ -1,8 +1,6 @@
 use crate::context::*;
 use std::collections::HashMap;
 
-use slotmap::*;
-
 new_key_type! { pub struct GeometryInstanceHandle; }
 
 impl Context {
@@ -119,9 +117,9 @@ impl Context {
 
     pub fn geometry_instance_destroy(&mut self, geoinst: GeometryInstanceHandle) {
         let rt_geoinst = self.ga_geometry_instance_obj.remove(geoinst).unwrap();
-        let vars = self.gd_geometry_instance_variables.remove(geoinst);
-        let geo_type = self.gd_geometry_instance_geometry.remove(geoinst);
-        let materials = self.gd_geometry_instance_materials.remove(geoinst);
+        let _vars = self.gd_geometry_instance_variables.remove(geoinst);
+        let _geo_type = self.gd_geometry_instance_geometry.remove(geoinst);
+        let _materials = self.gd_geometry_instance_materials.remove(geoinst);
 
         if unsafe { rtGeometryInstanceDestroy(rt_geoinst) } != RtResult::SUCCESS {
             panic!("Error destroying program {:?}", geoinst);

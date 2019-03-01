@@ -1,8 +1,6 @@
 use crate::context::*;
 use std::ffi::CString;
 
-use slotmap::*;
-
 new_key_type! { pub struct AccelerationHandle; }
 
 /// Selects the BVH building algorithm to be used by an `Accelerator`

@@ -1,7 +1,5 @@
 use crate::context::*;
 
-use slotmap::*;
-
 new_key_type! { pub struct GeometryGroupHandle; }
 
 impl Context {
@@ -54,7 +52,7 @@ impl Context {
     pub fn geometry_group_destroy(&mut self, geogrp: GeometryGroupHandle) {
         let rt_geogrp = self.ga_geometry_group_obj.remove(geogrp).unwrap();
         // acceleration will just dangle here
-        let acc = self.gd_geometry_group_acceleration.remove(geogrp).unwrap();
+        let _acc = self.gd_geometry_group_acceleration.remove(geogrp).unwrap();
         let children = self.gd_geometry_group_children.remove(geogrp).unwrap();
         for child in children {
             self.geometry_instance_destroy(child);
