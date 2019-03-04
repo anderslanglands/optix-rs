@@ -423,6 +423,26 @@ impl Context {
         }
         Ok(())
     }
+
+    pub fn set_usage_report_callback(
+        &mut self,
+        callback: extern "C" fn(
+            i32,
+            *const std::os::raw::c_char,
+            *const std::os::raw::c_char,
+            *mut std::os::raw::c_void,
+        ),
+    ) -> Result<()> {
+        let result = unsafe {
+            rtContextSetUsageReportCallback(self.rt_ctx, Some(callback), 3, std::ptr::null_mut())
+        };
+
+        if result != RtResult::SUCCESS {
+            return Err(self.optix_error("rtContextSetUsageReportCallback", result));
+        }
+
+        Ok(())
+    }
 }
 
 impl Drop for Context {
@@ -574,6 +594,19 @@ mod tests {
 
         Ok(())
     }
+
+    extern "C" fn usage_callback(
+        verbosity: i32,
+        tag: *const std::os::raw::c_char,
+        msg: *const std::os::raw::c_char,
+        cbdata: *mut std::os::raw::c_void,
+    ) {
+        let tag = unsafe { std::ffi::CStr::from_ptr(tag).to_string_lossy().into_owned() };
+        let msg = unsafe { std::ffi::CStr::from_ptr(msg).to_string_lossy().into_owned() };
+
+        print!("{} {:>16} {}", verbosity, tag, msg);
+    }
+
     #[test]
     fn single_triangle_mt() -> Result<()> {
         use std::sync::mpsc;
@@ -581,6 +614,8 @@ mod tests {
 
         let mut ctx = Context::new();
         ctx.set_search_path(SearchPath::from_config_file("ptx_path", "ptx_path"));
+
+        ctx.set_usage_report_callback(usage_callback)?;
 
         let prg_cam_screen = ctx.program_create_from_ptx_file("cam_screen.ptx", "generate_ray")?;
         let prg_miss = ctx.program_create_from_ptx_file("cam_screen.ptx", "miss")?;
@@ -698,6 +733,10 @@ mod tests {
         let (tx, rx) = mpsc::channel();
 
         thread::spawn(move || {
+            ctx.launch_2d(entry_point, 256, 128).unwrap();
+            ctx.launch_2d(entry_point, 256, 128).unwrap();
+            ctx.launch_2d(entry_point, 256, 128).unwrap();
+            ctx.launch_2d(entry_point, 256, 128).unwrap();
             ctx.launch_2d(entry_point, 256, 128).unwrap();
             tx.send(Message::Done(ctx)).unwrap();
         });
