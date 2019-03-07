@@ -4,6 +4,8 @@ use std::ops::{Index, IndexMut};
 #[cfg(feature = "colorspace")]
 use colorspace::rgb::RGBf32;
 
+pub struct BufferId(pub(crate) i32);
+
 new_key_type! { pub struct Buffer1dHandle; }
 new_key_type! { pub struct Buffer2dHandle; }
 new_key_type! { pub struct Buffer3dHandle; }
@@ -33,8 +35,20 @@ impl BufferElement for V4f32 {
     const FORMAT: Format = Format::FLOAT4;
 }
 
+impl BufferElement for i16 {
+    const FORMAT: Format = Format::SHORT;
+}
+
+impl BufferElement for u16 {
+    const FORMAT: Format = Format::UNSIGNED_SHORT;
+}
+
 impl BufferElement for i32 {
     const FORMAT: Format = Format::INT;
+}
+
+impl BufferElement for u32 {
+    const FORMAT: Format = Format::UNSIGNED_INT;
 }
 
 impl BufferElement for V2i32 {
@@ -687,6 +701,28 @@ impl Context {
                 }
             }
             None => Err(Error::HandleNotFoundError),
+        }
+    }
+
+    pub fn buffer_get_id_1d(&mut self, buffer_handle: Buffer1dHandle) -> Result<BufferId> {
+        let buf = self.ga_buffer1d_obj.get(buffer_handle).unwrap();
+        let mut id = 0i32;
+        let result = unsafe { rtBufferGetId(*buf, &mut id) };
+        if result != RtResult::SUCCESS {
+            return Err(Error::Optix((result, "rtBufferGetId".to_owned())));
+        } else {
+            Ok(BufferId(id))
+        }
+    }
+
+    pub fn buffer_get_id_2d(&mut self, buffer_handle: Buffer2dHandle) -> Result<BufferId> {
+        let buf = self.ga_buffer2d_obj.get(buffer_handle).unwrap();
+        let mut id = 0i32;
+        let result = unsafe { rtBufferGetId(*buf, &mut id) };
+        if result != RtResult::SUCCESS {
+            return Err(Error::Optix((result, "rtBufferGetId".to_owned())));
+        } else {
+            Ok(BufferId(id))
         }
     }
 }

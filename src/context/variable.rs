@@ -4,6 +4,7 @@ use crate::context::*;
 use colorspace::rgb::RGBf32;
 
 pub enum ObjectHandle {
+    BufferId(BufferId),
     Buffer1d(Buffer1dHandle),
     Buffer2d(Buffer2dHandle),
     // Buffer3d(Buffer3dHandle),
@@ -36,6 +37,24 @@ pub trait VariableStorable {
 impl VariableStorable for ObjectHandle {
     fn set_optix_variable(self, ctx: &mut Context, variable: RTvariable) -> Result<Variable> {
         match self {
+            ObjectHandle::BufferId(ref buf_id) => unsafe {
+                let result = rtVariableSetUserData(
+                    variable,
+                    std::mem::size_of::<i32>() as RTsize,
+                    &buf_id.0 as *const i32 as *const std::ffi::c_void,
+                );
+                if result != RtResult::SUCCESS {
+                    return Err(ctx.optix_error(
+                        &format!("rtVariableSetUserData<BufferId>  {:?}", buf_id.0),
+                        result,
+                    ));
+                } else {
+                    return Ok(Variable::Object(VariableObject {
+                        var: variable,
+                        object_handle: self,
+                    }));
+                }
+            },
             ObjectHandle::Buffer1d(buffer_handle) => unsafe {
                 let buf = ctx.ga_buffer1d_obj.get(buffer_handle).expect(&format!(
                     "Could not get buffer object for handle {:?}",

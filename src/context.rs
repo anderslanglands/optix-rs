@@ -363,6 +363,7 @@ impl Context {
         match var {
             Variable::Pod(_) => (),
             Variable::Object(vo) => match vo.object_handle {
+                ObjectHandle::BufferId(_) => (),
                 ObjectHandle::Buffer1d(h) => {
                     self.buffer_destroy_1d(h);
                 }
@@ -432,9 +433,15 @@ impl Context {
             *const std::os::raw::c_char,
             *mut std::os::raw::c_void,
         ),
+        verbosity: i32,
     ) -> Result<()> {
         let result = unsafe {
-            rtContextSetUsageReportCallback(self.rt_ctx, Some(callback), 3, std::ptr::null_mut())
+            rtContextSetUsageReportCallback(
+                self.rt_ctx,
+                Some(callback),
+                verbosity,
+                std::ptr::null_mut(),
+            )
         };
 
         if result != RtResult::SUCCESS {
