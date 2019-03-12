@@ -2,6 +2,7 @@ use crate::context::*;
 use std::collections::HashMap;
 use std::ffi::CString;
 use std::io::Read;
+use crate::nvrtc;
 
 new_key_type! { pub struct ProgramHandle; }
 
@@ -68,6 +69,26 @@ impl Context {
         self.search_path
             .open(ptx_file)?
             .read_to_string(&mut ptx_str)?;
+        self.program_create_from_ptx_string(&ptx_str, entry_point_name)
+    }
+
+    /// Create a new Program by loading the given `cuda_file` and compiling it
+    /// with nvrtc
+    pub fn program_create_from_cuda_file(
+        &mut self,
+        cuda_file: &str,
+        entry_point_name: &str,
+        compile_options: &Vec<String>,
+    ) -> Result<ProgramHandle> {
+        let mut cuda_str = String::new();
+        self.search_path
+            .open(cuda_file)?
+            .read_to_string(&mut cuda_str)?;
+
+        let mut prg = nvrtc::Program::new(&cuda_str, entry_point_name, vec![])?;
+        prg.compile_program(compile_options)?;
+        let ptx_str = prg.get_ptx()?;
+
         self.program_create_from_ptx_string(&ptx_str, entry_point_name)
     }
 

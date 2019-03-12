@@ -1,4 +1,5 @@
 use crate::optix_bindings::*;
+use crate::nvrtc;
 use crate::search_path;
 use std::{ffi, fmt, io, ptr, result};
 
@@ -12,6 +13,7 @@ pub enum Error {
     NulError(usize),
     HandleNotFoundError,
     IncompatibleBufferFormat { given: Format, expected: Format },
+    NvrtcError(String),
 }
 
 impl From<io::Error> for Error {
@@ -23,6 +25,12 @@ impl From<io::Error> for Error {
 impl From<search_path::Error> for Error {
     fn from(err: search_path::Error) -> Error {
         Error::SearchPath(err)
+    }
+}
+
+impl From<nvrtc::Error> for Error {
+    fn from(err: nvrtc::Error) -> Error {
+        Error::NvrtcError(format!("{}", err))
     }
 }
 
@@ -47,6 +55,7 @@ impl fmt::Display for Error {
                 "[ERROR Expected buffer format of {:?}, given {:?}",
                 given, expected
             ),
+            Error::NvrtcError(s) => write!(output, "[Error nvrtc] {}", s),
         }
     }
 }

@@ -87,10 +87,10 @@ impl Program {
     }
 
     /// Compile this program with the given `options`
-    pub fn compile_program(&mut self, options: Vec<String>) -> Result<()> {
+    pub fn compile_program(&mut self, options: &Vec<String>) -> Result<()> {
         let mut coptions = Vec::new();
         for o in options {
-            let c = CString::new(o).unwrap();
+            let c = CString::new(o.clone()).unwrap();
             coptions.push(c);
         }
 
@@ -107,7 +107,11 @@ impl Program {
             )
         };
         if result != NvrtcResult::NVRTC_SUCCESS {
-            Err(get_error_string(result))
+            Err(
+                Error{
+                    error_string: format!("{}\n{}", get_error_string(result).error_string, self.get_program_log().unwrap()) 
+                }
+            )
         } else {
             Ok(())
         }
