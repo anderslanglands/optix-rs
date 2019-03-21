@@ -28,6 +28,8 @@ pub mod transform;
 use self::transform::*;
 pub mod group;
 use self::group::*;
+pub mod texture_sampler;
+use self::texture_sampler::*;
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct RayType {
@@ -108,6 +110,9 @@ pub struct Context {
     ga_group_obj: SlotMap<GroupHandle, RTgroup>,
     gd_group_acceleration: SecondaryMap<GroupHandle, AccelerationHandle>,
     gd_group_children: SecondaryMap<GroupHandle, Vec<GroupChild>>,
+
+    ga_texture_sampler_obj: SlotMap<TextureSamplerHandle, RTtexturesampler>,
+    gd_texture_sampler_buffer: SecondaryMap<TextureSamplerHandle, BufferHandle>,
 }
 
 unsafe impl Send for Context {}
@@ -200,6 +205,9 @@ impl Context {
             ga_group_obj,
             gd_group_acceleration,
             gd_group_children,
+
+            ga_texture_sampler_obj: SlotMap::with_key(),
+            gd_texture_sampler_buffer: SecondaryMap::new(),
         }
     }
 
@@ -381,6 +389,9 @@ impl Context {
                 }
                 ObjectHandle::Transform(h) => {
                     self.transform_destroy(h);
+                }
+                ObjectHandle::TextureSampler(h) => {
+                    self.texture_sampler_destroy(h);
                 }
             },
         }
@@ -622,7 +633,7 @@ mod tests {
         let mut ctx = Context::new();
         ctx.set_search_path(SearchPath::from_config_file("ptx_path", "ptx_path"));
 
-        ctx.set_usage_report_callback(usage_callback)?;
+        ctx.set_usage_report_callback(usage_callback, 1)?;
 
         let prg_cam_screen = ctx.program_create_from_ptx_file("cam_screen.ptx", "generate_ray")?;
         let prg_miss = ctx.program_create_from_ptx_file("cam_screen.ptx", "miss")?;

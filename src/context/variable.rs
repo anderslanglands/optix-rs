@@ -12,7 +12,7 @@ pub enum ObjectHandle {
     Group(GroupHandle),
     Program(ProgramHandle),
     // Selector(SelectorHandle),
-    // TextureSampler(TextureSamplerHandle),
+    TextureSampler(TextureSamplerHandle),
     Transform(TransformHandle),
 }
 
@@ -152,6 +152,23 @@ impl VariableStorable for ObjectHandle {
                         &format!("rtVariableSetObject {:?}", transform_handle),
                         result,
                     ));
+                } else {
+                    return Ok(Variable::Object(VariableObject {
+                        var: variable,
+                        object_handle: self,
+                    }));
+                }
+            },
+            ObjectHandle::TextureSampler(ts_handle) => unsafe {
+                let ts = ctx.ga_texture_sampler_obj.get(ts_handle).expect(&format!(
+                    "Could not get texture sampler for handle {:?}",
+                    ts_handle
+                ));
+                let result = rtVariableSetObject(variable, *ts as *mut ::std::os::raw::c_void);
+                if result != RtResult::SUCCESS {
+                    return Err(
+                        ctx.optix_error(&format!("rtVariableSetObject {:?}", ts_handle), result)
+                    );
                 } else {
                     return Ok(Variable::Object(VariableObject {
                         var: variable,

@@ -107,11 +107,13 @@ impl Program {
             )
         };
         if result != NvrtcResult::NVRTC_SUCCESS {
-            Err(
-                Error{
-                    error_string: format!("{}\n{}", get_error_string(result).error_string, self.get_program_log().unwrap()) 
-                }
-            )
+            Err(Error {
+                error_string: format!(
+                    "{}\n{}",
+                    get_error_string(result).error_string,
+                    self.get_program_log().unwrap()
+                ),
+            })
         } else {
             Ok(())
         }
@@ -225,7 +227,7 @@ fn test_compile() {
     )
     .unwrap();
 
-    match prg.compile_program(options) {
+    match prg.compile_program(&options) {
         Err(code) => {
             panic!("{}: {}", code, prg.get_program_log().unwrap());
         }

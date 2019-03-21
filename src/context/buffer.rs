@@ -725,4 +725,24 @@ impl Context {
             Ok(BufferId(id))
         }
     }
+
+    pub fn buffer_validate_1d(&self, buf: Buffer1dHandle) -> Result<()> {
+        let rt_buf = self.ga_buffer1d_obj.get(buf).unwrap();
+        let result = unsafe { rtBufferValidate(*rt_buf) };
+        if result == RtResult::SUCCESS {
+            Ok(())
+        } else {
+            Err(self.optix_error("rtBufferValidate 1d", result))
+        }
+    }
+
+    pub fn buffer_validate_2d(&self, buf: Buffer2dHandle) -> Result<()> {
+        let rt_buf = self.ga_buffer2d_obj.get(buf).unwrap();
+        let result = unsafe { rtBufferValidate(*rt_buf) };
+        if result == RtResult::SUCCESS {
+            Ok(())
+        } else {
+            Err(self.optix_error("rtBufferValidate 2d", result))
+        }
+    }
 }
