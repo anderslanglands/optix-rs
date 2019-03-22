@@ -44,7 +44,7 @@ fn main() -> Result<(), String> {
 
     let fsq = FullscreenQuad::new(width, height)?;
 
-    let image_data = vec![v4f(0.0, 0.0, 0.0, 0.0); (width * height) as usize];
+    let image_data = vec![v4f32(0.0, 0.0, 0.0, 0.0); (width * height) as usize];
 
     unsafe {
         gl::Viewport(0, 0, fb_width, fb_height);
@@ -213,11 +213,11 @@ fn create_context(
     let prg_miss = ctx.program_create_from_ptx_file("pathtracer.ptx", "miss")?;
 
     // generate camera matrices
-    let swn = v2f(-1.0, -1.0);
-    let swx = v2f(1.0, 1.0);
-    let mtx_screen_to_raster = m4f_scaling(width as f32, height as f32, 1.0)
-        * m4f_scaling(1.0 / (swx.x - swn.x), 1.0 / (swx.y - swn.y), 1.0)
-        * m4f_translation(-swn.x, -swn.y, 0.0);
+    let swn = v2f32(-1.0, -1.0);
+    let swx = v2f32(1.0, 1.0);
+    let mtx_screen_to_raster = m4f32_scaling(width as f32, height as f32, 1.0)
+        * m4f32_scaling(1.0 / (swx.x - swn.x), 1.0 / (swx.y - swn.y), 1.0)
+        * m4f32_translation(-swn.x, -swn.y, 0.0);
     let mtx_raster_to_screen = mtx_screen_to_raster.try_inverse().unwrap();
     let mtx_camera_to_screen = M4f32::new_perspective(
         (width as f32) / (height as f32),
@@ -226,7 +226,7 @@ fn create_context(
         1.0e7,
     );
     let mtx_screen_to_camera = mtx_camera_to_screen.try_inverse().unwrap();
-    let mtx_camera_to_world = m4f_translation(275.0, 275.0, 900.0);
+    let mtx_camera_to_world = m4f32_translation(275.0, 275.0, 900.0);
     let mtx_raster_to_camera = mtx_screen_to_camera * mtx_raster_to_screen;
     ctx.program_set_variable(
         prg_cam_screen,
@@ -297,10 +297,10 @@ fn create_context(
     let geo_floor = create_quad(
         &mut ctx,
         [
-            v3f(0.0, 0.0, 0.0),
-            v3f(555.0, 0.0, 0.0),
-            v3f(555.0, 0.0, -555.0),
-            v3f(0.0, 0.0, -555.0),
+            v3f32(0.0, 0.0, 0.0),
+            v3f32(555.0, 0.0, 0.0),
+            v3f32(555.0, 0.0, -555.0),
+            v3f32(0.0, 0.0, -555.0),
         ],
         prg_mesh_bound,
         prg_mesh_intersect,
@@ -308,10 +308,10 @@ fn create_context(
     let geo_ceiling = create_quad(
         &mut ctx,
         [
-            v3f(0.0, 555.0, -555.0),
-            v3f(555.0, 555.0, -555.0),
-            v3f(555.0, 555.0, 0.0),
-            v3f(0.0, 555.0, 0.0),
+            v3f32(0.0, 555.0, -555.0),
+            v3f32(555.0, 555.0, -555.0),
+            v3f32(555.0, 555.0, 0.0),
+            v3f32(0.0, 555.0, 0.0),
         ],
         prg_mesh_bound,
         prg_mesh_intersect,
@@ -319,10 +319,10 @@ fn create_context(
     let geo_wall_back = create_quad(
         &mut ctx,
         [
-            v3f(0.0, 0.0, -555.0),
-            v3f(555.0, 0.0, -555.0),
-            v3f(555.0, 555.0, -555.0),
-            v3f(0.0, 555.0, -555.0),
+            v3f32(0.0, 0.0, -555.0),
+            v3f32(555.0, 0.0, -555.0),
+            v3f32(555.0, 555.0, -555.0),
+            v3f32(0.0, 555.0, -555.0),
         ],
         prg_mesh_bound,
         prg_mesh_intersect,
@@ -330,10 +330,10 @@ fn create_context(
     let geo_wall_left = create_quad(
         &mut ctx,
         [
-            v3f(0.0, 0.0, 0.0),
-            v3f(0.0, 0.0, -555.0),
-            v3f(0.0, 555.0, -555.0),
-            v3f(0.0, 555.0, 0.0),
+            v3f32(0.0, 0.0, 0.0),
+            v3f32(0.0, 0.0, -555.0),
+            v3f32(0.0, 555.0, -555.0),
+            v3f32(0.0, 555.0, 0.0),
         ],
         prg_mesh_bound,
         prg_mesh_intersect,
@@ -341,26 +341,26 @@ fn create_context(
     let geo_wall_right = create_quad(
         &mut ctx,
         [
-            v3f(555.0, 0.0, -555.0),
-            v3f(555.0, 0.0, 0.0),
-            v3f(555.0, 555.0, 0.0),
-            v3f(555.0, 555.0, -555.0),
+            v3f32(555.0, 0.0, -555.0),
+            v3f32(555.0, 0.0, 0.0),
+            v3f32(555.0, 555.0, 0.0),
+            v3f32(555.0, 555.0, -555.0),
         ],
         prg_mesh_bound,
         prg_mesh_intersect,
     )?;
 
-    let light_center = v3f(277.5, 554.0, -277.5);
-    let light_dim = v3f(100.0, 0.0, 100.0);
+    let light_center = v3f32(277.5, 554.0, -277.5);
+    let light_dim = v3f32(100.0, 0.0, 100.0);
     let light_min = light_center - light_dim / 2.0f32;
     let light_max = light_min + light_dim;
     let geo_light = create_quad(
         &mut ctx,
         [
-            v3f(light_min.x, light_min.y, light_min.z),
-            v3f(light_max.x, light_min.y, light_min.z),
-            v3f(light_max.x, light_min.y, light_max.z),
-            v3f(light_min.x, light_min.y, light_max.z),
+            v3f32(light_min.x, light_min.y, light_min.z),
+            v3f32(light_max.x, light_min.y, light_min.z),
+            v3f32(light_max.x, light_min.y, light_max.z),
+            v3f32(light_min.x, light_min.y, light_max.z),
         ],
         prg_mesh_bound,
         prg_mesh_intersect,
@@ -368,15 +368,15 @@ fn create_context(
 
     let geo_tall_box = create_box(
         &mut ctx,
-        v3f(0.0, 0.0, 0.0),
-        v3f(165.0, 330.0, 165.0),
+        v3f32(0.0, 0.0, 0.0),
+        v3f32(165.0, 330.0, 165.0),
         prg_mesh_bound,
         prg_mesh_intersect,
     )?;
     let geo_short_box = create_box(
         &mut ctx,
-        v3f(0.0, 0.0, 0.0),
-        v3f(165.0, 165.0, 165.0),
+        v3f32(0.0, 0.0, 0.0),
+        v3f32(165.0, 165.0, 165.0),
         prg_mesh_bound,
         prg_mesh_intersect,
     )?;
@@ -449,9 +449,9 @@ fn create_context(
     let geo_inst_light =
         ctx.geometry_instance_create(rt::GeometryType::Geometry(geo_light), vec![mtl_emission])?;
 
-    let col_white = v3f(0.76, 0.75, 0.5);
-    let col_red = v3f(0.63, 0.06, 0.04);
-    let col_green = v3f(0.15, 0.48, 0.09);
+    let col_white = v3f32(0.76, 0.75, 0.5);
+    let col_red = v3f32(0.63, 0.06, 0.04);
+    let col_green = v3f32(0.15, 0.48, 0.09);
 
     ctx.geometry_instance_set_variable(geo_inst_floor, "in_diffuse_albedo", col_white)?;
     ctx.geometry_instance_set_variable(geo_inst_ceiling, "in_diffuse_albedo", col_white)?;
@@ -482,9 +482,9 @@ fn create_context(
     let geo_group_short_box = ctx.geometry_group_create(acc_sb, vec![geo_inst_short_box])?;
 
     let mtx_tall_box =
-        m4f_translation(70.0, 0.0, -385.0) * m4f_rotation(v3f(0.0, 1.0, 0.0), 0.3925);
+        m4f32_translation(70.0, 0.0, -385.0) * m4f32_rotation(v3f32(0.0, 1.0, 0.0), 0.3925);
     let mtx_short_box =
-        m4f_translation(320.0, 0.0, -255.0) * m4f_rotation(v3f(0.0, 1.0, 0.0), -0.314);
+        m4f32_translation(320.0, 0.0, -255.0) * m4f32_rotation(v3f32(0.0, 1.0, 0.0), -0.314);
 
     let xform_tall_box = ctx.transform_create(
         rt::MatrixFormat::ColumnMajor(mtx_tall_box),
@@ -531,21 +531,21 @@ pub fn create_box(
     let buf_vertex = ctx.buffer_create_from_slice_1d(
         &[
             // BLF - 0
-            v3f(min.x, min.y, min.z),
+            v3f32(min.x, min.y, min.z),
             // BRF - 1
-            v3f(max.x, min.y, min.z),
+            v3f32(max.x, min.y, min.z),
             // TRF - 2
-            v3f(max.x, max.y, min.z),
+            v3f32(max.x, max.y, min.z),
             // TLF - 3
-            v3f(min.x, max.y, min.z),
+            v3f32(min.x, max.y, min.z),
             // BLB - 4
-            v3f(min.x, min.y, max.z),
+            v3f32(min.x, min.y, max.z),
             // BRB - 5
-            v3f(max.x, min.y, max.z),
+            v3f32(max.x, min.y, max.z),
             // TRB - 6
-            v3f(max.x, max.y, max.z),
+            v3f32(max.x, max.y, max.z),
             // TLB - 7
-            v3f(min.x, max.y, max.z),
+            v3f32(min.x, max.y, max.z),
         ],
         rt::BufferType::INPUT,
         rt::BufferFlag::NONE,
@@ -553,23 +553,23 @@ pub fn create_box(
 
     let indices = [
         // FRONT
-        v3i(2, 1, 0),
-        v3i(3, 2, 0),
+        v3i32(2, 1, 0),
+        v3i32(3, 2, 0),
         // BACK
-        v3i(4, 5, 6),
-        v3i(4, 6, 7),
+        v3i32(4, 5, 6),
+        v3i32(4, 6, 7),
         // LEFT
-        v3i(0, 4, 7),
-        v3i(0, 7, 3),
+        v3i32(0, 4, 7),
+        v3i32(0, 7, 3),
         // RIGHT
-        v3i(5, 1, 2),
-        v3i(5, 2, 6),
+        v3i32(5, 1, 2),
+        v3i32(5, 2, 6),
         // TOP
-        v3i(6, 2, 3),
-        v3i(7, 6, 3),
+        v3i32(6, 2, 3),
+        v3i32(7, 6, 3),
         // BOTTOM
-        v3i(1, 5, 4),
-        v3i(0, 1, 4),
+        v3i32(1, 5, 4),
+        v3i32(0, 1, 4),
     ];
 
     let buf_indices =
@@ -623,7 +623,7 @@ pub fn create_quad(
 ) -> Result<rt::GeometryHandle, rt::Error> {
     let buf_vertex =
         ctx.buffer_create_from_slice_1d(&vertices, rt::BufferType::INPUT, rt::BufferFlag::NONE)?;
-    let indices = [v3i(0, 1, 2), v3i(0, 2, 3)];
+    let indices = [v3i32(0, 1, 2), v3i32(0, 2, 3)];
     let buf_indices =
         ctx.buffer_create_from_slice_1d(&indices, rt::BufferType::INPUT, rt::BufferFlag::NONE)?;
     let buf_normal = ctx.buffer_create_1d(

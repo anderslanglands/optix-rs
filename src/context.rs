@@ -81,7 +81,7 @@ pub struct Context {
 
     ga_buffer1d_obj: SlotMap<Buffer1dHandle, RTbuffer>,
     ga_buffer2d_obj: SlotMap<Buffer2dHandle, RTbuffer>,
-    ga_buffer3d_obj: SlotMap<Buffer3dHandle, RTbuffer>,
+    _ga_buffer3d_obj: SlotMap<Buffer3dHandle, RTbuffer>,
 
     ga_program_obj: SlotMap<ProgramHandle, RTprogram>,
     gd_program_variables: SecondaryMap<ProgramHandle, HashMap<String, Variable>>,
@@ -123,7 +123,7 @@ impl Context {
 
         let ga_buffer1d_obj = SlotMap::with_key();
         let ga_buffer2d_obj = SlotMap::with_key();
-        let ga_buffer3d_obj = SlotMap::with_key();
+        let _ga_buffer3d_obj = SlotMap::with_key();
 
         let ga_program_obj = SlotMap::with_key();
         let gd_program_variables = SecondaryMap::new();
@@ -176,7 +176,7 @@ impl Context {
 
             ga_buffer1d_obj,
             ga_buffer2d_obj,
-            ga_buffer3d_obj,
+            _ga_buffer3d_obj,
 
             ga_program_obj,
             gd_program_variables,
@@ -475,7 +475,7 @@ impl Drop for Context {
 
 #[cfg(test)]
 mod tests {
-    fn v4f_buffer_to_u8(buf: &ScopedBufMap2d<V4f32>) -> Vec<u8> {
+    fn v4f32_buffer_to_u8(buf: &ScopedBufMap2d<V4f32>) -> Vec<u8> {
         let mut result: Vec<u8> = Vec::with_capacity(buf.len() * 4);
         for yi in (0..buf.height()).rev() {
             for x in 0..buf.width() {
@@ -490,9 +490,9 @@ mod tests {
         result
     }
 
-    fn write_scoped_buf_map_v4f(filename: &str, buf: &ScopedBufMap2d<V4f32>) -> Result<()> {
+    fn write_scoped_buf_map_v4f32(filename: &str, buf: &ScopedBufMap2d<V4f32>) -> Result<()> {
         use image::{save_buffer, ColorType};
-        let buf_u8 = v4f_buffer_to_u8(&buf);
+        let buf_u8 = v4f32_buffer_to_u8(&buf);
         Ok(save_buffer(
             std::path::Path::new(filename),
             &buf_u8,
@@ -536,14 +536,14 @@ mod tests {
                 .buffer_map_2d::<V4f32>(result_buffer)
                 .expect("Buffer map failed");
 
-            assert_eq!(buffer_map[(0, 0)], v4f(0., 0., 0., 0.));
+            assert_eq!(buffer_map[(0, 0)], v4f32(0., 0., 0., 0.));
             assert_eq!(buffer_map.width(), 256);
             assert_eq!(buffer_map.height(), 128);
             assert_eq!(
                 buffer_map[(255, 127)],
                 V4f32::new(255f32 / 256f32, 127f32 / 128f32, 0f32, 0f32)
             );
-            write_scoped_buf_map_v4f("solid_color.png", &buffer_map)?;
+            write_scoped_buf_map_v4f32("solid_color.png", &buffer_map)?;
         }
 
         Ok(())
@@ -600,14 +600,14 @@ mod tests {
                 .buffer_map_2d::<V4f32>(result_buffer)
                 .expect("Buffer map failed");
 
-            assert_eq!(buffer_map[(0, 0)], v4f(0., 0., 0., 0.));
+            assert_eq!(buffer_map[(0, 0)], v4f32(0., 0., 0., 0.));
             assert_eq!(buffer_map.width(), 256);
             assert_eq!(buffer_map.height(), 128);
             assert_eq!(
                 buffer_map[(255, 127)],
                 V4f32::new(255f32 / 256f32, 127f32 / 128f32, 0f32, 0f32)
             );
-            write_scoped_buf_map_v4f("solid_color_mt.png", &buffer_map)?;
+            write_scoped_buf_map_v4f32("solid_color_mt.png", &buffer_map)?;
         }
 
         Ok(())
@@ -617,7 +617,7 @@ mod tests {
         verbosity: i32,
         tag: *const std::os::raw::c_char,
         msg: *const std::os::raw::c_char,
-        cbdata: *mut std::os::raw::c_void,
+        _cbdata: *mut std::os::raw::c_void,
     ) {
         let tag = unsafe { std::ffi::CStr::from_ptr(tag).to_string_lossy().into_owned() };
         let msg = unsafe { std::ffi::CStr::from_ptr(msg).to_string_lossy().into_owned() };
@@ -646,21 +646,24 @@ mod tests {
         ctx.program_set_variable(
             prg_material_constant_closest,
             "in_diffuse_albedo",
-            v3f(0.2, 0.2, 0.8),
+            v3f32(0.2, 0.2, 0.8),
         )?;
 
         // Create mesh data
         let buf_vertex = ctx.buffer_create_from_slice_1d(
             &[
-                v3f(0.2, 0.2, -10.),
-                v3f(0.8, 0.2, -10.),
-                v3f(0.5, 0.8, -10.),
+                v3f32(0.2, 0.2, -10.),
+                v3f32(0.8, 0.2, -10.),
+                v3f32(0.5, 0.8, -10.),
             ],
             BufferType::INPUT,
             BufferFlag::NONE,
         )?;
-        let buf_indices =
-            ctx.buffer_create_from_slice_1d(&[v3i(0, 1, 2)], BufferType::INPUT, BufferFlag::NONE)?;
+        let buf_indices = ctx.buffer_create_from_slice_1d(
+            &[v3i32(0, 1, 2)],
+            BufferType::INPUT,
+            BufferFlag::NONE,
+        )?;
         let buf_normal =
             ctx.buffer_create_1d(0, Format::FLOAT3, BufferType::INPUT, BufferFlag::NONE)?;
         let buf_texcoord =
@@ -768,7 +771,7 @@ mod tests {
             let buffer_map = ctx
                 .buffer_map_2d::<V4f32>(result_buffer)
                 .expect("Buffer map failed");
-            write_scoped_buf_map_v4f("single_triangle_mt.png", &buffer_map)?;
+            write_scoped_buf_map_v4f32("single_triangle_mt.png", &buffer_map)?;
         }
 
         Ok(())
