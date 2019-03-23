@@ -57,8 +57,11 @@ pub fn m4f32_translation(x: f32, y: f32, z: f32) -> M4f32 {
 }
 
 pub fn m4f32_rotation(axis: V3f32, angle: f32) -> M4f32 {
-    nalgebra::Rotation3::from_axis_angle(&nalgebra::Unit::new_normalize(axis), angle)
-        .to_homogeneous()
+    nalgebra::Rotation3::from_axis_angle(
+        &nalgebra::Unit::new_normalize(axis),
+        angle,
+    )
+    .to_homogeneous()
 }
 
 pub fn m4f32_scaling(x: f32, y: f32, z: f32) -> M4f32 {
@@ -70,8 +73,11 @@ pub fn m4f64_translation(x: f64, y: f64, z: f64) -> M4f64 {
 }
 
 pub fn m4f64_rotation(axis: V3f64, angle: f64) -> M4f64 {
-    nalgebra::Rotation3::from_axis_angle(&nalgebra::Unit::new_normalize(axis), angle)
-        .to_homogeneous()
+    nalgebra::Rotation3::from_axis_angle(
+        &nalgebra::Unit::new_normalize(axis),
+        angle,
+    )
+    .to_homogeneous()
 }
 
 pub fn m4f64_scaling(x: f64, y: f64, z: f64) -> M4f64 {
@@ -80,6 +86,14 @@ pub fn m4f64_scaling(x: f64, y: f64, z: f64) -> M4f64 {
 
 pub fn m4f64_look_at_rh(eye: &V3f64, look: &V3f64, up: &V3f64) -> M4f64 {
     M4f64::look_at_rh(
+        &nalgebra::geometry::Point3::new(eye.x, eye.y, eye.z),
+        &nalgebra::geometry::Point3::new(look.x, look.y, look.z),
+        up,
+    )
+}
+
+pub fn m4f64_look_at_lh(eye: &V3f64, look: &V3f64, up: &V3f64) -> M4f64 {
+    M4f64::look_at_lh(
         &nalgebra::geometry::Point3::new(eye.x, eye.y, eye.z),
         &nalgebra::geometry::Point3::new(look.x, look.y, look.z),
         up,

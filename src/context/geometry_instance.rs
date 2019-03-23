@@ -19,7 +19,8 @@ impl Context {
 
                 let (geoinst, result) = unsafe {
                     let mut geoinst: RTgeometryinstance = std::mem::zeroed();
-                    let result = rtGeometryInstanceCreate(self.rt_ctx, &mut geoinst);
+                    let result =
+                        rtGeometryInstanceCreate(self.rt_ctx, &mut geoinst);
                     (geoinst, result)
                 };
                 if result != RtResult::SUCCESS {
@@ -28,26 +29,43 @@ impl Context {
                     let hnd = self.ga_geometry_instance_obj.insert(geoinst);
 
                     let rt_geo = self.ga_geometry_obj.get(geo).unwrap();
-                    let result = unsafe { rtGeometryInstanceSetGeometry(geoinst, *rt_geo) };
+                    let result = unsafe {
+                        rtGeometryInstanceSetGeometry(geoinst, *rt_geo)
+                    };
                     if result != RtResult::SUCCESS {
-                        return Err(self.optix_error("rtGeometryInstanceSetGeometry", result));
+                        return Err(self.optix_error(
+                            "rtGeometryInstanceSetGeometry",
+                            result,
+                        ));
                     } else {
                         self.gd_geometry_instance_geometry
                             .insert(hnd, GeometryType::Geometry(geo));
                     }
 
                     let result = unsafe {
-                        rtGeometryInstanceSetMaterialCount(geoinst, materials.len() as u32)
+                        rtGeometryInstanceSetMaterialCount(
+                            geoinst,
+                            materials.len() as u32,
+                        )
                     };
                     if result != RtResult::SUCCESS {
-                        return Err(self.optix_error("rtGeometryInstanceSetMaterialCount", result));
+                        return Err(self.optix_error(
+                            "rtGeometryInstanceSetMaterialCount",
+                            result,
+                        ));
                     };
                     for (i, mat) in materials.iter().enumerate() {
                         let rt_mat = self.ga_material_obj.get(*mat).unwrap();
-                        let result =
-                            unsafe { rtGeometryInstanceSetMaterial(geoinst, i as u32, *rt_mat) };
+                        let result = unsafe {
+                            rtGeometryInstanceSetMaterial(
+                                geoinst, i as u32, *rt_mat,
+                            )
+                        };
                         if result != RtResult::SUCCESS {
-                            return Err(self.optix_error("rtGeometryInstanceSetMaterial", result));
+                            return Err(self.optix_error(
+                                "rtGeometryInstanceSetMaterial",
+                                result,
+                            ));
                         }
                     }
 
@@ -97,12 +115,16 @@ impl Context {
             let (var, result) = unsafe {
                 let mut var: RTvariable = ::std::mem::uninitialized();
                 let c_name = std::ffi::CString::new(name).unwrap();
-                let result =
-                    rtGeometryInstanceDeclareVariable(*rt_geoinst, c_name.as_ptr(), &mut var);
+                let result = rtGeometryInstanceDeclareVariable(
+                    *rt_geoinst,
+                    c_name.as_ptr(),
+                    &mut var,
+                );
                 (var, result)
             };
             if result != RtResult::SUCCESS {
-                return Err(self.optix_error("rtGeometryInstanceDeclareVariable", result));
+                return Err(self
+                    .optix_error("rtGeometryInstanceDeclareVariable", result));
             }
 
             let variable = data.set_optix_variable(self, var)?;
@@ -115,18 +137,25 @@ impl Context {
         }
     }
 
-    pub fn geometry_instance_destroy(&mut self, geoinst: GeometryInstanceHandle) {
+    pub fn geometry_instance_destroy(
+        &mut self,
+        geoinst: GeometryInstanceHandle,
+    ) {
         let rt_geoinst = self.ga_geometry_instance_obj.remove(geoinst).unwrap();
         let _vars = self.gd_geometry_instance_variables.remove(geoinst);
         let _geo_type = self.gd_geometry_instance_geometry.remove(geoinst);
         let _materials = self.gd_geometry_instance_materials.remove(geoinst);
 
-        if unsafe { rtGeometryInstanceDestroy(rt_geoinst) } != RtResult::SUCCESS {
+        if unsafe { rtGeometryInstanceDestroy(rt_geoinst) } != RtResult::SUCCESS
+        {
             panic!("Error destroying program {:?}", geoinst);
         }
     }
 
-    pub fn geometry_instance_validate(&self, geoinst: GeometryInstanceHandle) -> Result<()> {
+    pub fn geometry_instance_validate(
+        &self,
+        geoinst: GeometryInstanceHandle,
+    ) -> Result<()> {
         let rt_geoinst = self.ga_geometry_instance_obj.get(geoinst).unwrap();
         let result = unsafe { rtGeometryInstanceValidate(*rt_geoinst) };
         if result != RtResult::SUCCESS {

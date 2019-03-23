@@ -717,7 +717,7 @@ pub type RTusagereportcallback = ::std::option::Option<
     ),
 >;
 
-#[link(name="optix", kind="dylib")]
+#[link(name = "optix", kind = "dylib")]
 extern "C" {
     /// @brief Returns the current OptiX version
     ///
@@ -1156,7 +1156,6 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable to be modified
     /// @param[in]   transpose  Specifies row-major or column-major order
     /// @param[in]   m          Array of float values to set the matrix to
-    
     pub fn rtVariableSetMatrix2x4fv(
         v: RTvariable,
         transpose: ::std::os::raw::c_int,
@@ -1167,7 +1166,6 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable to be modified
     /// @param[in]   transpose  Specifies row-major or column-major order
     /// @param[in]   m          Array of float values to set the matrix to
-    
     pub fn rtVariableSetMatrix3x2fv(
         v: RTvariable,
         transpose: ::std::os::raw::c_int,
@@ -1178,7 +1176,6 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable to be modified
     /// @param[in]   transpose  Specifies row-major or column-major order
     /// @param[in]   m          Array of float values to set the matrix to
-    
     pub fn rtVariableSetMatrix3x3fv(
         v: RTvariable,
         transpose: ::std::os::raw::c_int,
@@ -1189,7 +1186,6 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable to be modified
     /// @param[in]   transpose  Specifies row-major or column-major order
     /// @param[in]   m          Array of float values to set the matrix to
-    
     pub fn rtVariableSetMatrix3x4fv(
         v: RTvariable,
         transpose: ::std::os::raw::c_int,
@@ -1200,7 +1196,6 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable to be modified
     /// @param[in]   transpose  Specifies row-major or column-major order
     /// @param[in]   m          Array of float values to set the matrix to
-    
     pub fn rtVariableSetMatrix4x2fv(
         v: RTvariable,
         transpose: ::std::os::raw::c_int,
@@ -1211,7 +1206,6 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable to be modified
     /// @param[in]   transpose  Specifies row-major or column-major order
     /// @param[in]   m          Array of float values to set the matrix to
-    
     pub fn rtVariableSetMatrix4x3fv(
         v: RTvariable,
         transpose: ::std::os::raw::c_int,
@@ -1222,7 +1216,6 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable to be modified
     /// @param[in]   transpose  Specifies row-major or column-major order
     /// @param[in]   m          Array of float values to set the matrix to
-    
     pub fn rtVariableSetMatrix4x4fv(
         v: RTvariable,
         transpose: ::std::os::raw::c_int,
@@ -1266,7 +1259,6 @@ extern "C" {
     /// @ref rtVariableGetObject,
     /// @ref rtContextDeclareVariable
     ///
-    
     pub fn rtVariableSetObject(v: RTvariable, object: RTobject) -> RtResult;
 }
 extern "C" {
@@ -1306,7 +1298,6 @@ extern "C" {
     /// @ref rtVariableGetUserData,
     /// @ref rtContextDeclareVariable
     ///
-    
     pub fn rtVariableSetUserData(
         v: RTvariable,
         size: RTsize,
@@ -1377,14 +1368,12 @@ extern "C" {
     ////**
     /// @param[in]   v          Specifies the program variable whose value is
     /// to be returned @param[in]   f1         Float value to be returned
-    
     pub fn rtVariableGet1f(v: RTvariable, f1: *mut f32) -> RtResult;
 }
 extern "C" {
     /// @param[in]   v          Specifies the program variable whose value is
     /// to be returned @param[in]   f1         Float value to be returned
     /// @param[in]   f2         Float value to be returned
-    
     pub fn rtVariableGet2f(
         v: RTvariable,
         f1: *mut f32,
@@ -1396,7 +1385,6 @@ extern "C" {
     /// to be returned @param[in]   f1         Float value to be returned
     /// @param[in]   f2         Float value to be returned
     /// @param[in]   f3         Float value to be returned
-    
     pub fn rtVariableGet3f(
         v: RTvariable,
         f1: *mut f32,
@@ -1410,7 +1398,6 @@ extern "C" {
     /// @param[in]   f2         Float value to be returned
     /// @param[in]   f3         Float value to be returned
     /// @param[in]   f4         Float value to be returned
-    
     pub fn rtVariableGet4f(
         v: RTvariable,
         f1: *mut f32,
@@ -1423,34 +1410,29 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable whose value is
     /// to be returned @param[in]   f          Array of float value(s) to
     /// be returned
-    
     pub fn rtVariableGet1fv(v: RTvariable, f: *mut f32) -> RtResult;
 }
 extern "C" {
     /// @param[in]   v          Specifies the program variable whose value is
     /// to be returned @param[in]   f          Array of float value(s) to
     /// be returned
-    
     pub fn rtVariableGet2fv(v: RTvariable, f: *mut f32) -> RtResult;
 }
 extern "C" {
     /// @param[in]   v          Specifies the program variable whose value is
     /// to be returned @param[in]   f          Array of float value(s) to
     /// be returned
-    
     pub fn rtVariableGet3fv(v: RTvariable, f: *mut f32) -> RtResult;
 }
 extern "C" {
     /// @param[in]   v          Specifies the program variable whose value is
     /// to be returned @param[in]   f          Array of float value(s) to
     /// be returned
-    
     pub fn rtVariableGet4fv(v: RTvariable, f: *mut f32) -> RtResult;
 }
 extern "C" {
     /// @param[in]   v          Specifies the program variable whose value is
     /// to be returned @param[in]   i1         Integer value to be returned
-    
     pub fn rtVariableGet1i(
         v: RTvariable,
         i1: *mut ::std::os::raw::c_int,
@@ -1460,7 +1442,6 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable whose value is
     /// to be returned @param[in]   i1         Integer value to be returned
     /// @param[in]   i2         Integer value to be returned
-    
     pub fn rtVariableGet2i(
         v: RTvariable,
         i1: *mut ::std::os::raw::c_int,
@@ -1472,7 +1453,6 @@ extern "C" {
     /// to be returned @param[in]   i1         Integer value to be returned
     /// @param[in]   i2         Integer value to be returned
     /// @param[in]   i3         Integer value to be returned
-    
     pub fn rtVariableGet3i(
         v: RTvariable,
         i1: *mut ::std::os::raw::c_int,
@@ -1486,7 +1466,6 @@ extern "C" {
     /// @param[in]   i2         Integer value to be returned
     /// @param[in]   i3         Integer value to be returned
     /// @param[in]   i4         Integer value to be returned
-    
     pub fn rtVariableGet4i(
         v: RTvariable,
         i1: *mut ::std::os::raw::c_int,
@@ -1499,7 +1478,6 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable whose value is
     /// to be returned @param[in]   i          Array of integer values to
     /// be returned
-    
     pub fn rtVariableGet1iv(
         v: RTvariable,
         i: *mut ::std::os::raw::c_int,
@@ -1509,7 +1487,6 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable whose value is
     /// to be returned @param[in]   i          Array of integer values to
     /// be returned
-    
     pub fn rtVariableGet2iv(
         v: RTvariable,
         i: *mut ::std::os::raw::c_int,
@@ -1519,7 +1496,6 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable whose value is
     /// to be returned @param[in]   i          Array of integer values to
     /// be returned
-    
     pub fn rtVariableGet3iv(
         v: RTvariable,
         i: *mut ::std::os::raw::c_int,
@@ -1529,7 +1505,6 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable whose value is
     /// to be returned @param[in]   i          Array of integer values to
     /// be returned
-    
     pub fn rtVariableGet4iv(
         v: RTvariable,
         i: *mut ::std::os::raw::c_int,
@@ -1539,7 +1514,6 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable whose value is
     /// to be returned @param[in]   u1         Unsigned integer value to be
     /// returned
-    
     pub fn rtVariableGet1ui(
         v: RTvariable,
         u1: *mut ::std::os::raw::c_uint,
@@ -1550,7 +1524,6 @@ extern "C" {
     /// to be returned @param[in]   u1         Unsigned integer value to be
     /// returned @param[in]   u2         Unsigned integer value to be
     /// returned
-    
     pub fn rtVariableGet2ui(
         v: RTvariable,
         u1: *mut ::std::os::raw::c_uint,
@@ -1563,7 +1536,6 @@ extern "C" {
     /// returned @param[in]   u2         Unsigned integer value to be
     /// returned @param[in]   u3         Unsigned integer value to be
     /// returned
-    
     pub fn rtVariableGet3ui(
         v: RTvariable,
         u1: *mut ::std::os::raw::c_uint,
@@ -1578,7 +1550,6 @@ extern "C" {
     /// returned @param[in]   u3         Unsigned integer value to be
     /// returned @param[in]   u4         Unsigned integer value to be
     /// returned
-    
     pub fn rtVariableGet4ui(
         v: RTvariable,
         u1: *mut ::std::os::raw::c_uint,
@@ -1591,7 +1562,6 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable whose value is
     /// to be returned @param[in]   u          Array of unsigned integer
     /// values to be returned
-    
     pub fn rtVariableGet1uiv(
         v: RTvariable,
         u: *mut ::std::os::raw::c_uint,
@@ -1601,7 +1571,6 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable whose value is
     /// to be returned @param[in]   u          Array of unsigned integer
     /// values to be returned
-    
     pub fn rtVariableGet2uiv(
         v: RTvariable,
         u: *mut ::std::os::raw::c_uint,
@@ -1611,7 +1580,6 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable whose value is
     /// to be returned @param[in]   u          Array of unsigned integer
     /// values to be returned
-    
     pub fn rtVariableGet3uiv(
         v: RTvariable,
         u: *mut ::std::os::raw::c_uint,
@@ -1621,7 +1589,6 @@ extern "C" {
     /// @param[in]   v          Specifies the program variable whose value is
     /// to be returned @param[in]   u          Array of unsigned integer
     /// values to be returned
-    
     pub fn rtVariableGet4uiv(
         v: RTvariable,
         u: *mut ::std::os::raw::c_uint,
@@ -1632,7 +1599,6 @@ extern "C" {
     /// to be returned @param[in]   transpose  Specify(ies) row-major or
     /// column-major order @param[in]   m          Array of float values to
     /// be returned
-    
     pub fn rtVariableGetMatrix2x2fv(
         v: RTvariable,
         transpose: ::std::os::raw::c_int,
@@ -1644,7 +1610,6 @@ extern "C" {
     /// to be returned @param[in]   transpose  Specify(ies) row-major or
     /// column-major order @param[in]   m          Array of float values to
     /// be returned
-    
     pub fn rtVariableGetMatrix2x3fv(
         v: RTvariable,
         transpose: ::std::os::raw::c_int,
@@ -1656,7 +1621,6 @@ extern "C" {
     /// to be returned @param[in]   transpose  Specify(ies) row-major or
     /// column-major order @param[in]   m          Array of float values to
     /// be returned
-    
     pub fn rtVariableGetMatrix2x4fv(
         v: RTvariable,
         transpose: ::std::os::raw::c_int,
@@ -1668,7 +1632,6 @@ extern "C" {
     /// to be returned @param[in]   transpose  Specify(ies) row-major or
     /// column-major order @param[in]   m          Array of float values to
     /// be returned
-    
     pub fn rtVariableGetMatrix3x2fv(
         v: RTvariable,
         transpose: ::std::os::raw::c_int,
@@ -1680,7 +1643,6 @@ extern "C" {
     /// to be returned @param[in]   transpose  Specify(ies) row-major or
     /// column-major order @param[in]   m          Array of float values to
     /// be returned
-    
     pub fn rtVariableGetMatrix3x3fv(
         v: RTvariable,
         transpose: ::std::os::raw::c_int,
@@ -1692,7 +1654,6 @@ extern "C" {
     /// to be returned @param[in]   transpose  Specify(ies) row-major or
     /// column-major order @param[in]   m          Array of float values to
     /// be returned
-    
     pub fn rtVariableGetMatrix3x4fv(
         v: RTvariable,
         transpose: ::std::os::raw::c_int,
@@ -1704,7 +1665,6 @@ extern "C" {
     /// to be returned @param[in]   transpose  Specify(ies) row-major or
     /// column-major order @param[in]   m          Array of float values to
     /// be returned
-    
     pub fn rtVariableGetMatrix4x2fv(
         v: RTvariable,
         transpose: ::std::os::raw::c_int,
@@ -1716,7 +1676,6 @@ extern "C" {
     /// to be returned @param[in]   transpose  Specify(ies) row-major or
     /// column-major order @param[in]   m          Array of float values to
     /// be returned
-    
     pub fn rtVariableGetMatrix4x3fv(
         v: RTvariable,
         transpose: ::std::os::raw::c_int,
@@ -1728,7 +1687,6 @@ extern "C" {
     /// to be returned @param[in]   transpose  Specify(ies) row-major or
     /// column-major order @param[in]   m          Array of float values to
     /// be returned
-    
     pub fn rtVariableGetMatrix4x4fv(
         v: RTvariable,
         transpose: ::std::os::raw::c_int,
@@ -1771,7 +1729,6 @@ extern "C" {
     /// @ref rtVariableGetType,
     /// @ref rtContextDeclareVariable
     ///
-    
     pub fn rtVariableGetObject(
         v: RTvariable,
         object: *mut RTobject,
@@ -1815,7 +1772,6 @@ extern "C" {
     /// @ref rtVariableSetUserData,
     /// @ref rtContextDeclareVariable
     ///
-    
     pub fn rtVariableGetUserData(
         v: RTvariable,
         size: RTsize,
@@ -1857,7 +1813,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextDeclareVariable
     ///
-    
     pub fn rtVariableGetName(
         v: RTvariable,
         name_return: *mut *const ::std::os::raw::c_char,
@@ -1898,7 +1853,6 @@ extern "C" {
     /// @ref rtDeclareVariable,
     /// @ref rtDeclareAnnotation
     ///
-    
     pub fn rtVariableGetAnnotation(
         v: RTvariable,
         annotation_return: *mut *const ::std::os::raw::c_char,
@@ -1970,7 +1924,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextDeclareVariable
     ///
-    
     pub fn rtVariableGetType(
         v: RTvariable,
         type_return: *mut ObjectType,
@@ -2008,7 +1961,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextDeclareVariable
     ///
-    
     pub fn rtVariableGetContext(
         v: RTvariable,
         context: *mut RTcontext,
@@ -2047,7 +1999,6 @@ extern "C" {
     /// @ref rtVariableGetUserData,
     /// @ref rtContextDeclareVariable
     ///
-    
     pub fn rtVariableGetSize(v: RTvariable, size: *mut RTsize) -> RtResult;
 }
 extern "C" {
@@ -2077,7 +2028,6 @@ extern "C" {
     /// <B>See also</B>
     ///
     ///
-    
     pub fn rtContextCreate(context: *mut RTcontext) -> RtResult;
 }
 extern "C" {
@@ -2110,7 +2060,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextCreate
     ///
-    
     pub fn rtContextDestroy(context: RTcontext) -> RtResult;
 }
 extern "C" {
@@ -2147,7 +2096,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextGetErrorString
     ///
-    
     pub fn rtContextValidate(context: RTcontext) -> RtResult;
 }
 extern "C" {
@@ -2183,7 +2131,6 @@ extern "C" {
     /// <B>See also</B>
     ///
     ///
-    
     pub fn rtContextGetErrorString(
         context: RTcontext,
         code: RtResult,
@@ -2228,7 +2175,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextGetAttribute
     ///
-    
     pub fn rtContextSetAttribute(
         context: RTcontext,
         attrib: ContextAttribute,
@@ -2309,7 +2255,6 @@ extern "C" {
     /// @ref rtContextSetAttribute,
     /// @ref rtDeviceGetAttribute
     ///
-    
     pub fn rtContextGetAttribute(
         context: RTcontext,
         attrib: ContextAttribute,
@@ -2351,7 +2296,6 @@ extern "C" {
     /// @ref rtContextGetDevices,
     /// @ref rtContextGetDeviceCount
     ///
-    
     pub fn rtContextSetDevices(
         context: RTcontext,
         count: ::std::os::raw::c_uint,
@@ -2394,7 +2338,6 @@ extern "C" {
     /// @ref rtContextSetDevices,
     /// @ref rtContextGetDeviceCount
     ///
-    
     pub fn rtContextGetDevices(
         context: RTcontext,
         devices: *mut ::std::os::raw::c_int,
@@ -2428,7 +2371,6 @@ extern "C" {
     /// @ref rtContextSetDevices,
     /// @ref rtContextGetDevices
     ///
-    
     pub fn rtContextGetDeviceCount(
         context: RTcontext,
         count: *mut ::std::os::raw::c_uint,
@@ -2478,7 +2420,6 @@ extern "C" {
     /// @ref rtRemoteDeviceReserve
     /// @ref rtContextLaunchProgressive2D
     ///
-    
     pub fn rtContextSetRemoteDevice(
         context: RTcontext,
         remote_dev: RTremotedevice,
@@ -2511,7 +2452,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextGetStackSize
     ///
-    
     pub fn rtContextSetStackSize(
         context: RTcontext,
         stack_size_bytes: RTsize,
@@ -2545,7 +2485,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextSetStackSize
     ///
-    
     pub fn rtContextGetStackSize(
         context: RTcontext,
         stack_size_bytes: *mut RTsize,
@@ -2612,7 +2551,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextLaunch
     ///
-    
     pub fn rtContextSetTimeoutCallback(
         context: RTcontext,
         callback: RTtimeoutcallback,
@@ -2679,7 +2617,6 @@ extern "C" {
     ///
     /// <B>See also</B>
     ///
-    
     pub fn rtContextSetUsageReportCallback(
         context: RTcontext,
         callback: RTusagereportcallback,
@@ -2713,7 +2650,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextGetEntryPointCount
     ///
-    
     pub fn rtContextSetEntryPointCount(
         context: RTcontext,
         num_entry_points: ::std::os::raw::c_uint,
@@ -2748,7 +2684,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextSetEntryPointCount
     ///
-    
     pub fn rtContextGetEntryPointCount(
         context: RTcontext,
         num_entry_points: *mut ::std::os::raw::c_uint,
@@ -2790,7 +2725,6 @@ extern "C" {
     /// @ref rtContextGetEntryPointCount,
     /// @ref rtContextGetRayGenerationProgram
     ///
-    
     pub fn rtContextSetRayGenerationProgram(
         context: RTcontext,
         entry_point_index: ::std::os::raw::c_uint,
@@ -2830,7 +2764,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextSetRayGenerationProgram
     ///
-    
     pub fn rtContextGetRayGenerationProgram(
         context: RTcontext,
         entry_point_index: ::std::os::raw::c_uint,
@@ -2876,7 +2809,6 @@ extern "C" {
     /// @ref rtThrow,
     /// @ref rtPrintExceptionDetails
     ///
-    
     pub fn rtContextSetExceptionProgram(
         context: RTcontext,
         entry_point_index: ::std::os::raw::c_uint,
@@ -2922,7 +2854,6 @@ extern "C" {
     /// @ref rtThrow,
     /// @ref rtPrintExceptionDetails
     ///
-    
     pub fn rtContextGetExceptionProgram(
         context: RTcontext,
         entry_point_index: ::std::os::raw::c_uint,
@@ -3015,7 +2946,6 @@ extern "C" {
     /// @ref rtThrow,
     /// @ref rtPrintExceptionDetails
     ///
-    
     pub fn rtContextSetExceptionEnabled(
         context: RTcontext,
         exception: Exception,
@@ -3060,7 +2990,6 @@ extern "C" {
     /// @ref rtThrow,
     /// @ref rtPrintExceptionDetails
     ///
-    
     pub fn rtContextGetExceptionEnabled(
         context: RTcontext,
         exception: Exception,
@@ -3093,7 +3022,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextGetRayTypeCount
     ///
-    
     pub fn rtContextSetRayTypeCount(
         context: RTcontext,
         num_ray_types: ::std::os::raw::c_uint,
@@ -3128,7 +3056,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextSetRayTypeCount
     ///
-    
     pub fn rtContextGetRayTypeCount(
         context: RTcontext,
         num_ray_types: *mut ::std::os::raw::c_uint,
@@ -3167,7 +3094,6 @@ extern "C" {
     /// @ref rtContextGetRayTypeCount,
     /// @ref rtContextGetMissProgram
     ///
-    
     pub fn rtContextSetMissProgram(
         context: RTcontext,
         ray_type_index: ::std::os::raw::c_uint,
@@ -3207,7 +3133,6 @@ extern "C" {
     /// @ref rtContextSetMissProgram,
     /// @ref rtContextGetRayTypeCount
     ///
-    
     pub fn rtContextGetMissProgram(
         context: RTcontext,
         ray_type_index: ::std::os::raw::c_uint,
@@ -3246,7 +3171,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerGetId
     ///
-    
     pub fn rtContextGetTextureSamplerFromId(
         context: RTcontext,
         sampler_id: ::std::os::raw::c_int,
@@ -3257,7 +3181,6 @@ extern "C" {
     /// Deprecated in OptiX 4.0. Calling this function has no effect. The
     /// kernel is automatically compiled at launch if needed.
     ///
-    
     pub fn rtContextCompile(context: RTcontext) -> RtResult;
 }
 extern "C" {
@@ -3309,7 +3232,6 @@ extern "C" {
     /// be executed @param[in]   entry_point_index
     /// The initial entry point into kernel @param[in]   width
     /// Width of the computation grid
-    
     pub fn rtContextLaunch1D(
         context: RTcontext,
         entry_point_index: ::std::os::raw::c_uint,
@@ -3323,7 +3245,6 @@ extern "C" {
     /// The initial entry point into kernel @param[in]   width
     /// Width of the computation grid @param[in]   height
     /// Height of the computation grid
-    
     pub fn rtContextLaunch2D(
         context: RTcontext,
         entry_point_index: ::std::os::raw::c_uint,
@@ -3339,7 +3260,6 @@ extern "C" {
     /// Width of the computation grid @param[in]   height
     /// Height of the computation grid @param[in]   depth
     /// Depth of the computation grid
-    
     pub fn rtContextLaunch3D(
         context: RTcontext,
         entry_point_index: ::std::os::raw::c_uint,
@@ -3376,7 +3296,6 @@ extern "C" {
     /// @ref rtContextLaunch2D,
     /// @ref rtContextLaunch3D
     ///
-    
     pub fn rtContextGetRunningState(
         context: RTcontext,
         running: *mut ::std::os::raw::c_int,
@@ -3456,7 +3375,6 @@ extern "C" {
     /// @ref rtContextStopProgressive
     /// @ref rtBufferGetProgressiveUpdateReady
     ///
-    
     pub fn rtContextLaunchProgressive2D(
         context: RTcontext,
         entry_index: ::std::os::raw::c_uint,
@@ -3504,7 +3422,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextLaunchProgressive2D
     ///
-    
     pub fn rtContextStopProgressive(context: RTcontext) -> RtResult;
 }
 extern "C" {
@@ -3540,7 +3457,6 @@ extern "C" {
     /// @ref rtContextSetPrintLaunchIndex,
     /// @ref rtContextGetPrintLaunchIndex
     ///
-    
     pub fn rtContextSetPrintEnabled(
         context: RTcontext,
         enabled: ::std::os::raw::c_int,
@@ -3581,7 +3497,6 @@ extern "C" {
     /// @ref rtContextSetPrintLaunchIndex,
     /// @ref rtContextGetPrintLaunchIndex
     ///
-    
     pub fn rtContextGetPrintEnabled(
         context: RTcontext,
         enabled: *mut ::std::os::raw::c_int,
@@ -3622,7 +3537,6 @@ extern "C" {
     /// @ref rtContextSetPrintLaunchIndex,
     /// @ref rtContextGetPrintLaunchIndex
     ///
-    
     pub fn rtContextSetPrintBufferSize(
         context: RTcontext,
         buffer_size_bytes: RTsize,
@@ -3661,7 +3575,6 @@ extern "C" {
     /// @ref rtContextSetPrintLaunchIndex,
     /// @ref rtContextGetPrintLaunchIndex
     ///
-    
     pub fn rtContextGetPrintBufferSize(
         context: RTcontext,
         buffer_size_bytes: *mut RTsize,
@@ -3713,7 +3626,6 @@ extern "C" {
     /// @ref rtContextGetPrintBufferSize,
     /// @ref rtContextGetPrintLaunchIndex
     ///
-    
     pub fn rtContextSetPrintLaunchIndex(
         context: RTcontext,
         x: ::std::os::raw::c_int,
@@ -3763,7 +3675,6 @@ extern "C" {
     /// @ref rtContextGetPrintBufferSize,
     /// @ref rtContextSetPrintLaunchIndex
     ///
-    
     pub fn rtContextGetPrintLaunchIndex(
         context: RTcontext,
         x: *mut ::std::os::raw::c_int,
@@ -3816,7 +3727,6 @@ extern "C" {
     /// @ref rtContextQueryVariable,
     /// @ref rtContextRemoveVariable
     ///
-    
     pub fn rtContextDeclareVariable(
         context: RTcontext,
         name: *const ::std::os::raw::c_char,
@@ -3863,7 +3773,6 @@ extern "C" {
     /// @ref rtContextGetVariable,
     /// @ref rtContextRemoveVariable
     ///
-    
     pub fn rtContextQueryVariable(
         context: RTcontext,
         name: *const ::std::os::raw::c_char,
@@ -3908,7 +3817,6 @@ extern "C" {
     /// @ref rtContextGetVariableCount,
     /// @ref rtContextQueryVariable,
     ///
-    
     pub fn rtContextRemoveVariable(
         context: RTcontext,
         v: RTvariable,
@@ -3951,7 +3859,6 @@ extern "C" {
     /// @ref rtContextQueryVariable,
     /// @ref rtContextRemoveVariable
     ///
-    
     pub fn rtContextGetVariableCount(
         context: RTcontext,
         count: *mut ::std::os::raw::c_uint,
@@ -3996,7 +3903,6 @@ extern "C" {
     /// @ref rtContextQueryVariable,
     /// @ref rtContextRemoveVariable
     ///
-    
     pub fn rtContextGetVariable(
         context: RTcontext,
         index: ::std::os::raw::c_uint,
@@ -4038,7 +3944,6 @@ extern "C" {
     /// @ref rtProgramCreateFromPTXFile,
     /// @ref rtProgramDestroy
     ///
-    
     pub fn rtProgramCreateFromPTXString(
         context: RTcontext,
         ptx: *const ::std::os::raw::c_char,
@@ -4082,7 +3987,6 @@ extern "C" {
     /// @ref rtProgramCreateFromPTXString,
     /// @ref rtProgramDestroy
     ///
-    
     pub fn rtProgramCreateFromPTXFile(
         context: RTcontext,
         filename: *const ::std::os::raw::c_char,
@@ -4120,7 +4024,6 @@ extern "C" {
     /// @ref rtProgramCreateFromPTXFile,
     /// @ref rtProgramCreateFromPTXString
     ///
-    
     pub fn rtProgramDestroy(program: RTprogram) -> RtResult;
 }
 extern "C" {
@@ -4152,7 +4055,6 @@ extern "C" {
     /// @ref rtProgramCreateFromPTXFile,
     /// @ref rtProgramCreateFromPTXString
     ///
-    
     pub fn rtProgramValidate(program: RTprogram) -> RtResult;
 }
 extern "C" {
@@ -4185,7 +4087,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextCreate
     ///
-    
     pub fn rtProgramGetContext(
         program: RTprogram,
         context: *mut RTcontext,
@@ -4231,7 +4132,6 @@ extern "C" {
     /// @ref rtProgramGetVariableCount,
     /// @ref rtProgramQueryVariable
     ///
-    
     pub fn rtProgramDeclareVariable(
         program: RTprogram,
         name: *const ::std::os::raw::c_char,
@@ -4274,7 +4174,6 @@ extern "C" {
     /// @ref rtProgramGetVariable,
     /// @ref rtProgramGetVariableCount
     ///
-    
     pub fn rtProgramQueryVariable(
         program: RTprogram,
         name: *const ::std::os::raw::c_char,
@@ -4315,7 +4214,6 @@ extern "C" {
     /// @ref rtProgramGetVariableCount,
     /// @ref rtProgramQueryVariable
     ///
-    
     pub fn rtProgramRemoveVariable(
         program: RTprogram,
         v: RTvariable,
@@ -4353,7 +4251,6 @@ extern "C" {
     /// @ref rtProgramGetVariable,
     /// @ref rtProgramQueryVariable
     ///
-    
     pub fn rtProgramGetVariableCount(
         program: RTprogram,
         count: *mut ::std::os::raw::c_uint,
@@ -4399,7 +4296,6 @@ extern "C" {
     /// @ref rtProgramGetVariableCount,
     /// @ref rtProgramQueryVariable
     ///
-    
     pub fn rtProgramGetVariable(
         program: RTprogram,
         index: ::std::os::raw::c_uint,
@@ -4438,7 +4334,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextGetProgramFromId
     ///
-    
     pub fn rtProgramGetId(
         program: RTprogram,
         program_id: *mut ::std::os::raw::c_int,
@@ -4476,7 +4371,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtProgramGetId
     ///
-    
     pub fn rtContextGetProgramFromId(
         context: RTcontext,
         program_id: ::std::os::raw::c_int,
@@ -4514,7 +4408,6 @@ extern "C" {
     /// @ref rtGroupDestroy,
     /// @ref rtContextCreate
     ///
-    
     pub fn rtGroupCreate(context: RTcontext, group: *mut RTgroup) -> RtResult;
 }
 extern "C" {
@@ -4545,7 +4438,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtGroupCreate
     ///
-    
     pub fn rtGroupDestroy(group: RTgroup) -> RtResult;
 }
 extern "C" {
@@ -4574,7 +4466,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtGroupCreate
     ///
-    
     pub fn rtGroupValidate(group: RTgroup) -> RtResult;
 }
 extern "C" {
@@ -4606,7 +4497,6 @@ extern "C" {
     /// @ref rtContextCreate,
     /// @ref rtGroupCreate
     ///
-    
     pub fn rtGroupGetContext(
         group: RTgroup,
         context: *mut RTcontext,
@@ -4670,7 +4560,6 @@ extern "C" {
     /// @ref rtAccelerationCreate,
     /// @ref rtGeometryGroupSetAcceleration
     ///
-    
     pub fn rtGroupSetAcceleration(
         group: RTgroup,
         acceleration: RTacceleration,
@@ -4707,7 +4596,6 @@ extern "C" {
     /// @ref rtGroupSetAcceleration,
     /// @ref rtAccelerationCreate
     ///
-    
     pub fn rtGroupGetAcceleration(
         group: RTgroup,
         acceleration: *mut RTacceleration,
@@ -4747,7 +4635,6 @@ extern "C" {
     /// @ref rtGroupGetChildType,
     /// @ref rtGroupSetChild
     ///
-    
     pub fn rtGroupSetChildCount(
         group: RTgroup,
         count: ::std::os::raw::c_uint,
@@ -4786,7 +4673,6 @@ extern "C" {
     /// @ref rtGroupSetChildCount,
     /// @ref rtGroupGetChildType
     ///
-    
     pub fn rtGroupGetChildCount(
         group: RTgroup,
         count: *mut ::std::os::raw::c_uint,
@@ -4829,7 +4715,6 @@ extern "C" {
     /// @ref rtGroupGetChild,
     /// @ref rtGroupGetChildType
     ///
-    
     pub fn rtGroupSetChild(
         group: RTgroup,
         index: ::std::os::raw::c_uint,
@@ -4869,7 +4754,6 @@ extern "C" {
     /// @ref rtGroupGetChildCount,
     /// @ref rtGroupGetChildType
     ///
-    
     pub fn rtGroupGetChild(
         group: RTgroup,
         index: ::std::os::raw::c_uint,
@@ -4909,7 +4793,6 @@ extern "C" {
     /// @ref rtGroupSetChildCount,
     /// @ref rtGroupGetChildCount
     ///
-    
     pub fn rtGroupGetChildType(
         group: RTgroup,
         index: ::std::os::raw::c_uint,
@@ -4955,7 +4838,6 @@ extern "C" {
     /// @ref rtSelectorSetChildCount,
     /// @ref rtSelectorSetChild
     ///
-    
     pub fn rtSelectorCreate(
         context: RTcontext,
         selector: *mut RTselector,
@@ -4994,7 +4876,6 @@ extern "C" {
     /// @ref rtSelectorValidate,
     /// @ref rtSelectorGetContext
     ///
-    
     pub fn rtSelectorDestroy(selector: RTselector) -> RtResult;
 }
 extern "C" {
@@ -5034,7 +4915,6 @@ extern "C" {
     /// @ref rtSelectorSetChildCount,
     /// @ref rtSelectorSetChild
     ///
-    
     pub fn rtSelectorValidate(selector: RTselector) -> RtResult;
 }
 extern "C" {
@@ -5067,7 +4947,6 @@ extern "C" {
     /// @ref rtSelectorDestroy,
     /// @ref rtSelectorValidate
     ///
-    
     pub fn rtSelectorGetContext(
         selector: RTselector,
         context: *mut RTcontext,
@@ -5108,7 +4987,6 @@ extern "C" {
     /// @ref rtSelectorGetVisitProgram,
     /// @ref rtProgramCreateFromPTXFile
     ///
-    
     pub fn rtSelectorSetVisitProgram(
         selector: RTselector,
         program: RTprogram,
@@ -5142,7 +5020,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtSelectorSetVisitProgram
     ///
-    
     pub fn rtSelectorGetVisitProgram(
         selector: RTselector,
         program: *mut RTprogram,
@@ -5185,7 +5062,6 @@ extern "C" {
     /// @ref rtSelectorGetChild,
     /// @ref rtSelectorGetChildType
     ///
-    
     pub fn rtSelectorSetChildCount(
         selector: RTselector,
         count: ::std::os::raw::c_uint,
@@ -5227,7 +5103,6 @@ extern "C" {
     /// @ref rtSelectorGetChild,
     /// @ref rtSelectorGetChildType
     ///
-    
     pub fn rtSelectorGetChildCount(
         selector: RTselector,
         count: *mut ::std::os::raw::c_uint,
@@ -5272,7 +5147,6 @@ extern "C" {
     /// @ref rtSelectorGetChild,
     /// @ref rtSelectorGetChildType
     ///
-    
     pub fn rtSelectorSetChild(
         selector: RTselector,
         index: ::std::os::raw::c_uint,
@@ -5320,7 +5194,6 @@ extern "C" {
     /// @ref rtSelectorSetChild,
     /// @ref rtSelectorGetChildType
     ///
-    
     pub fn rtSelectorGetChild(
         selector: RTselector,
         index: ::std::os::raw::c_uint,
@@ -5369,7 +5242,6 @@ extern "C" {
     /// @ref rtSelectorSetChild,
     /// @ref rtSelectorGetChild
     ///
-    
     pub fn rtSelectorGetChildType(
         selector: RTselector,
         index: ::std::os::raw::c_uint,
@@ -5417,7 +5289,6 @@ extern "C" {
     /// @ref rtSelectorGetVariable,
     /// @ref rtVariableSet{...}
     ///
-    
     pub fn rtSelectorDeclareVariable(
         selector: RTselector,
         name: *const ::std::os::raw::c_char,
@@ -5460,7 +5331,6 @@ extern "C" {
     /// @ref rtSelectorGetVariable,
     /// \a rtVariableGet{...}
     ///
-    
     pub fn rtSelectorQueryVariable(
         selector: RTselector,
         name: *const ::std::os::raw::c_char,
@@ -5500,7 +5370,6 @@ extern "C" {
     /// @ref rtSelectorGetVariableCount,
     /// @ref rtSelectorGetVariable
     ///
-    
     pub fn rtSelectorRemoveVariable(
         selector: RTselector,
         v: RTvariable,
@@ -5539,7 +5408,6 @@ extern "C" {
     /// @ref rtSelectorRemoveVariable,
     /// @ref rtSelectorGetVariable
     ///
-    
     pub fn rtSelectorGetVariableCount(
         selector: RTselector,
         count: *mut ::std::os::raw::c_uint,
@@ -5584,7 +5452,6 @@ extern "C" {
     /// @ref rtSelectorGetVariableCount,
     /// \a rtVariableGet{...}
     ///
-    
     pub fn rtSelectorGetVariable(
         selector: RTselector,
         index: ::std::os::raw::c_uint,
@@ -5632,7 +5499,6 @@ extern "C" {
     /// @ref rtTransformGetChild,
     /// @ref rtTransformGetChildType
     ///
-    
     pub fn rtTransformCreate(
         context: RTcontext,
         transform: *mut RTtransform,
@@ -5669,7 +5535,6 @@ extern "C" {
     /// @ref rtTransformValidate,
     /// @ref rtTransformGetContext
     ///
-    
     pub fn rtTransformDestroy(transform: RTtransform) -> RtResult;
 }
 extern "C" {
@@ -5709,7 +5574,6 @@ extern "C" {
     /// @ref rtTransformSetMatrix,
     /// @ref rtTransformSetChild
     ///
-    
     pub fn rtTransformValidate(transform: RTtransform) -> RtResult;
 }
 extern "C" {
@@ -5745,7 +5609,6 @@ extern "C" {
     /// @ref rtTransformDestroy,
     /// @ref rtTransformValidate
     ///
-    
     pub fn rtTransformGetContext(
         transform: RTtransform,
         context: *mut RTcontext,
@@ -5803,7 +5666,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTransformGetMatrix
     ///
-    
     pub fn rtTransformSetMatrix(
         transform: RTtransform,
         transpose: ::std::os::raw::c_int,
@@ -5850,7 +5712,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTransformSetMatrix
     ///
-    
     pub fn rtTransformGetMatrix(
         transform: RTtransform,
         transpose: ::std::os::raw::c_int,
@@ -5894,7 +5755,6 @@ extern "C" {
     /// @ref rtTransformSetMotionBorderMode,
     /// @ref rtTransformSetMotionKeys,
     ///
-    
     pub fn rtTransformSetMotionRange(
         transform: RTtransform,
         timeBegin: f32,
@@ -5932,7 +5792,6 @@ extern "C" {
     /// @ref rtTransformGetMotionKeyType,
     /// @ref rtTransformGetMotionKeys,
     ///
-    
     pub fn rtTransformGetMotionRange(
         transform: RTtransform,
         timeBegin: *mut f32,
@@ -5980,7 +5839,6 @@ extern "C" {
     /// @ref rtTransformSetMotionRange,
     /// @ref rtTransformSetMotionKeys,
     ///
-    
     pub fn rtTransformSetMotionBorderMode(
         transform: RTtransform,
         beginMode: MotionBorderMode,
@@ -6018,7 +5876,6 @@ extern "C" {
     /// @ref rtTransformGetMotionKeyType,
     /// @ref rtTransformGetMotionKeys,
     ///
-    
     pub fn rtTransformGetMotionBorderMode(
         transform: RTtransform,
         beginMode: *mut MotionBorderMode,
@@ -6087,7 +5944,6 @@ extern "C" {
     /// @ref rtTransformSetMotionBorderMode,
     /// @ref rtTransformSetMotionRange,
     ///
-    
     pub fn rtTransformSetMotionKeys(
         transform: RTtransform,
         n: ::std::os::raw::c_uint,
@@ -6126,7 +5982,6 @@ extern "C" {
     /// @ref rtTransformGetMotionKeyCount,
     /// @ref rtTransformGetMotionKeys
     ///
-    
     pub fn rtTransformGetMotionKeyType(
         transform: RTtransform,
         type_: *mut MotionKeyType,
@@ -6165,7 +6020,6 @@ extern "C" {
     /// @ref rtTransformGetMotionKeyType
     /// @ref rtTransformGetMotionKeys
     ///
-    
     pub fn rtTransformGetMotionKeyCount(
         transform: RTtransform,
         n: *mut ::std::os::raw::c_uint,
@@ -6207,7 +6061,6 @@ extern "C" {
     /// @ref rtTransformGetMotionKeyCount,
     /// @ref rtTransformGetMotionKeyType
     ///
-    
     pub fn rtTransformGetMotionKeys(
         transform: RTtransform,
         keys: *mut f32,
@@ -6248,7 +6101,6 @@ extern "C" {
     /// @ref rtTransformGetChild,
     /// @ref rtTransformGetChildType
     ///
-    
     pub fn rtTransformSetChild(
         transform: RTtransform,
         child: RTobject,
@@ -6290,7 +6142,6 @@ extern "C" {
     /// @ref rtTransformSetChild,
     /// @ref rtTransformGetChildType
     ///
-    
     pub fn rtTransformGetChild(
         transform: RTtransform,
         child: *mut RTobject,
@@ -6334,7 +6185,6 @@ extern "C" {
     /// @ref rtTransformSetChild,
     /// @ref rtTransformGetChild
     ///
-    
     pub fn rtTransformGetChildType(
         transform: RTtransform,
         type_: *mut ObjectType,
@@ -6375,7 +6225,6 @@ extern "C" {
     /// @ref rtGeometryGroupDestroy,
     /// @ref rtContextCreate
     ///
-    
     pub fn rtGeometryGroupCreate(
         context: RTcontext,
         geometrygroup: *mut RTgeometrygroup,
@@ -6411,7 +6260,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtGeometryGroupCreate
     ///
-    
     pub fn rtGeometryGroupDestroy(geometrygroup: RTgeometrygroup) -> RtResult;
 }
 extern "C" {
@@ -6444,7 +6292,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtGeometryGroupCreate
     ///
-    
     pub fn rtGeometryGroupValidate(geometrygroup: RTgeometrygroup) -> RtResult;
 }
 extern "C" {
@@ -6480,7 +6327,6 @@ extern "C" {
     /// @ref rtContextCreate,
     /// @ref rtGeometryGroupCreate
     ///
-    
     pub fn rtGeometryGroupGetContext(
         geometrygroup: RTgeometrygroup,
         context: *mut RTcontext,
@@ -6531,7 +6377,6 @@ extern "C" {
     /// @ref rtAccelerationCreate,
     /// @ref rtGroupSetAcceleration
     ///
-    
     pub fn rtGeometryGroupSetAcceleration(
         geometrygroup: RTgeometrygroup,
         acceleration: RTacceleration,
@@ -6569,7 +6414,6 @@ extern "C" {
     /// @ref rtGeometryGroupSetAcceleration,
     /// @ref rtAccelerationCreate
     ///
-    
     pub fn rtGeometryGroupGetAcceleration(
         geometrygroup: RTgeometrygroup,
         acceleration: *mut RTacceleration,
@@ -6612,7 +6456,6 @@ extern "C" {
     /// @ref rtGeometryGroupGetChildCount
     /// @ref rtGeometryGroupSetChild
     ///
-    
     pub fn rtGeometryGroupSetChildCount(
         geometrygroup: RTgeometrygroup,
         count: ::std::os::raw::c_uint,
@@ -6650,7 +6493,6 @@ extern "C" {
     /// @ref rtGeometryGroupGetChild,
     /// @ref rtGeometryGroupSetChildCount
     ///
-    
     pub fn rtGeometryGroupGetChildCount(
         geometrygroup: RTgeometrygroup,
         count: *mut ::std::os::raw::c_uint,
@@ -6691,7 +6533,6 @@ extern "C" {
     /// @ref rtGeometryGroupGetChildCount,
     /// @ref rtGeometryGroupGetChild
     ///
-    
     pub fn rtGeometryGroupSetChild(
         geometrygroup: RTgeometrygroup,
         index: ::std::os::raw::c_uint,
@@ -6733,7 +6574,6 @@ extern "C" {
     /// @ref rtGeometryGroupSetChildCount,
     /// @ref rtGeometryGroupGetChildCount,
     ///
-    
     pub fn rtGeometryGroupGetChild(
         geometrygroup: RTgeometrygroup,
         index: ::std::os::raw::c_uint,
@@ -6787,7 +6627,6 @@ extern "C" {
     /// @ref rtGroupSetAcceleration,
     /// @ref rtGeometryGroupSetAcceleration
     ///
-    
     pub fn rtAccelerationCreate(
         context: RTcontext,
         acceleration: *mut RTacceleration,
@@ -6822,7 +6661,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtAccelerationCreate
     ///
-    
     pub fn rtAccelerationDestroy(acceleration: RTacceleration) -> RtResult;
 }
 extern "C" {
@@ -6850,7 +6688,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtAccelerationCreate
     ///
-    
     pub fn rtAccelerationValidate(acceleration: RTacceleration) -> RtResult;
 }
 extern "C" {
@@ -6880,7 +6717,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtAccelerationCreate
     ///
-    
     pub fn rtAccelerationGetContext(
         acceleration: RTacceleration,
         context: *mut RTcontext,
@@ -6957,7 +6793,6 @@ extern "C" {
     /// @ref rtAccelerationGetBuilder,
     /// @ref rtAccelerationSetProperty
     ///
-    
     pub fn rtAccelerationSetBuilder(
         acceleration: RTacceleration,
         builder: *const ::std::os::raw::c_char,
@@ -6993,7 +6828,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtAccelerationSetBuilder
     ///
-    
     pub fn rtAccelerationGetBuilder(
         acceleration: RTacceleration,
         return_string: *mut *const ::std::os::raw::c_char,
@@ -7003,7 +6837,6 @@ extern "C" {
     /// Deprecated in OptiX 4.0. Setting a traverser is no longer necessary and
     /// will be ignored.
     ///
-    
     pub fn rtAccelerationSetTraverser(
         acceleration: RTacceleration,
         traverser: *const ::std::os::raw::c_char,
@@ -7012,7 +6845,6 @@ extern "C" {
 extern "C" {
     /// Deprecated in OptiX 4.0.
     ///
-    
     pub fn rtAccelerationGetTraverser(
         acceleration: RTacceleration,
         return_string: *mut *const ::std::os::raw::c_char,
@@ -7114,7 +6946,6 @@ extern "C" {
     /// @ref rtAccelerationGetProperty,
     /// @ref rtAccelerationSetBuilder,
     ///
-    
     pub fn rtAccelerationSetProperty(
         acceleration: RTacceleration,
         name: *const ::std::os::raw::c_char,
@@ -7153,7 +6984,6 @@ extern "C" {
     /// @ref rtAccelerationSetProperty,
     /// @ref rtAccelerationSetBuilder,
     ///
-    
     pub fn rtAccelerationGetProperty(
         acceleration: RTacceleration,
         name: *const ::std::os::raw::c_char,
@@ -7163,7 +6993,6 @@ extern "C" {
 extern "C" {
     /// Deprecated in OptiX 4.0. Should not be called.
     ///
-    
     pub fn rtAccelerationGetDataSize(
         acceleration: RTacceleration,
         size: *mut RTsize,
@@ -7172,7 +7001,6 @@ extern "C" {
 extern "C" {
     /// Deprecated in OptiX 4.0. Should not be called.
     ///
-    
     pub fn rtAccelerationGetData(
         acceleration: RTacceleration,
         data: *mut ::std::os::raw::c_void,
@@ -7181,7 +7009,6 @@ extern "C" {
 extern "C" {
     /// Deprecated in OptiX 4.0. Should not be called.
     ///
-    
     pub fn rtAccelerationSetData(
         acceleration: RTacceleration,
         data: *const ::std::os::raw::c_void,
@@ -7223,7 +7050,6 @@ extern "C" {
     /// @ref rtAccelerationIsDirty,
     /// @ref rtContextLaunch
     ///
-    
     pub fn rtAccelerationMarkDirty(acceleration: RTacceleration) -> RtResult;
 }
 extern "C" {
@@ -7265,7 +7091,6 @@ extern "C" {
     /// @ref rtAccelerationMarkDirty,
     /// @ref rtContextLaunch
     ///
-    
     pub fn rtAccelerationIsDirty(
         acceleration: RTacceleration,
         dirty: *mut ::std::os::raw::c_int,
@@ -7308,7 +7133,6 @@ extern "C" {
     /// @ref rtGeometryInstanceDestroy,
     /// @ref rtGeometryInstanceGetContext
     ///
-    
     pub fn rtGeometryInstanceCreate(
         context: RTcontext,
         geometryinstance: *mut RTgeometryinstance,
@@ -7348,7 +7172,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtGeometryInstanceCreate
     ///
-    
     pub fn rtGeometryInstanceDestroy(
         geometryinstance: RTgeometryinstance,
     ) -> RtResult;
@@ -7365,7 +7188,7 @@ extern "C" {
     /// attached to \a geometry
     /// are not valid, returns
     /// @ref RT_ERROR_INVALID_VALUE.
-    /// 
+    ///
     ///
     /// @param[in]   geometryinstance   GeometryInstance node of a model
     /// sub-tree to be validated
@@ -7385,7 +7208,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtGeometryInstanceCreate
     ///
-    
     pub fn rtGeometryInstanceValidate(
         geometryinstance: RTgeometryinstance,
     ) -> RtResult;
@@ -7421,7 +7243,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtGeometryInstanceGetContext
     ///
-    
     pub fn rtGeometryInstanceGetContext(
         geometryinstance: RTgeometryinstance,
         context: *mut RTcontext,
@@ -7458,7 +7279,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtGeometryInstanceGetGeometry
     ///
-    
     pub fn rtGeometryInstanceSetGeometry(
         geometryinstance: RTgeometryinstance,
         geometry: RTgeometry,
@@ -7498,7 +7318,6 @@ extern "C" {
     /// @ref rtGeometryInstanceValidate,
     /// @ref rtGeometryInstanceSetGeometry
     ///
-    
     pub fn rtGeometryInstanceGetGeometry(
         geometryinstance: RTgeometryinstance,
         geometry: *mut RTgeometry,
@@ -7538,7 +7357,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtGeometryInstanceGetMaterialCount
     ///
-    
     pub fn rtGeometryInstanceSetMaterialCount(
         geometryinstance: RTgeometryinstance,
         count: ::std::os::raw::c_uint,
@@ -7573,7 +7391,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtGeometryInstanceSetMaterialCount
     ///
-    
     pub fn rtGeometryInstanceGetMaterialCount(
         geometryinstance: RTgeometryinstance,
         count: *mut ::std::os::raw::c_uint,
@@ -7612,7 +7429,6 @@ extern "C" {
     /// @ref rtGeometryInstanceGetMaterialCount,
     /// @ref rtGeometryInstanceSetMaterialCount
     ///
-    
     pub fn rtGeometryInstanceSetMaterial(
         geometryinstance: RTgeometryinstance,
         index: ::std::os::raw::c_uint,
@@ -7651,7 +7467,6 @@ extern "C" {
     /// @ref rtGeometryInstanceGetMaterialCount,
     /// @ref rtGeometryInstanceSetMaterial
     ///
-    
     pub fn rtGeometryInstanceGetMaterial(
         geometryinstance: RTgeometryinstance,
         index: ::std::os::raw::c_uint,
@@ -7708,7 +7523,6 @@ extern "C" {
     /// @ref rtGeometryInstanceGetVariable,
     /// @ref rtGeometryInstanceRemoveVariable
     ///
-    
     pub fn rtGeometryInstanceDeclareVariable(
         geometryinstance: RTgeometryinstance,
         name: *const ::std::os::raw::c_char,
@@ -7757,7 +7571,6 @@ extern "C" {
     /// @ref rtGeometryInstanceGetVariableCount,
     /// @ref rtGeometryInstanceGetVariable
     ///
-    
     pub fn rtGeometryInstanceQueryVariable(
         geometryinstance: RTgeometryinstance,
         name: *const ::std::os::raw::c_char,
@@ -7802,7 +7615,6 @@ extern "C" {
     /// @ref rtContextRemoveVariable,
     /// @ref rtGeometryInstanceDeclareVariable
     ///
-    
     pub fn rtGeometryInstanceRemoveVariable(
         geometryinstance: RTgeometryinstance,
         v: RTvariable,
@@ -7845,7 +7657,6 @@ extern "C" {
     /// @ref rtGeometryInstanceDeclareVariable,
     /// @ref rtGeometryInstanceRemoveVariable
     ///
-    
     pub fn rtGeometryInstanceGetVariableCount(
         geometryinstance: RTgeometryinstance,
         count: *mut ::std::os::raw::c_uint,
@@ -7896,7 +7707,6 @@ extern "C" {
     /// @ref rtGeometryRemoveVariable,
     /// @ref rtGeometryQueryVariable
     ///
-    
     pub fn rtGeometryInstanceGetVariable(
         geometryinstance: RTgeometryinstance,
         index: ::std::os::raw::c_uint,
@@ -7937,7 +7747,6 @@ extern "C" {
     /// @ref rtGeometrySetBoundingBoxProgram,
     /// @ref rtGeometrySetIntersectionProgram
     ///
-    
     pub fn rtGeometryCreate(
         context: RTcontext,
         geometry: *mut RTgeometry,
@@ -7976,7 +7785,6 @@ extern "C" {
     /// @ref rtGeometrySetPrimitiveCount,
     /// @ref rtGeometryGetPrimitiveCount
     ///
-    
     pub fn rtGeometryDestroy(geometry: RTgeometry) -> RtResult;
 }
 extern "C" {
@@ -8007,7 +7815,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextValidate
     ///
-    
     pub fn rtGeometryValidate(geometry: RTgeometry) -> RtResult;
 }
 extern "C" {
@@ -8041,7 +7848,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtGeometryCreate
     ///
-    
     pub fn rtGeometryGetContext(
         geometry: RTgeometry,
         context: *mut RTcontext,
@@ -8076,7 +7882,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtGeometryGetPrimitiveCount
     ///
-    
     pub fn rtGeometrySetPrimitiveCount(
         geometry: RTgeometry,
         num_primitives: ::std::os::raw::c_uint,
@@ -8111,7 +7916,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtGeometrySetPrimitiveCount
     ///
-    
     pub fn rtGeometryGetPrimitiveCount(
         geometry: RTgeometry,
         num_primitives: *mut ::std::os::raw::c_uint,
@@ -8154,7 +7958,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtGeometryGetPrimitiveIndexOffset
     ///
-    
     pub fn rtGeometrySetPrimitiveIndexOffset(
         geometry: RTgeometry,
         index_offset: ::std::os::raw::c_uint,
@@ -8188,7 +7991,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtGeometrySetPrimitiveIndexOffset
     ///
-    
     pub fn rtGeometryGetPrimitiveIndexOffset(
         geometry: RTgeometry,
         index_offset: *mut ::std::os::raw::c_uint,
@@ -8228,7 +8030,6 @@ extern "C" {
     /// @ref rtGeometrySetMotionBorderMode
     /// @ref rtGeometrySetMotionSteps
     ///
-    
     pub fn rtGeometrySetMotionRange(
         geometry: RTgeometry,
         timeBegin: f32,
@@ -8266,7 +8067,6 @@ extern "C" {
     /// @ref rtGeometryGetMotionBorderMode
     /// @ref rtGeometryGetMotionSteps
     ///
-    
     pub fn rtGeometryGetMotionRange(
         geometry: RTgeometry,
         timeBegin: *mut f32,
@@ -8304,7 +8104,6 @@ extern "C" {
     /// @ref rtGeometrySetMotionRange
     /// @ref rtGeometrySetMotionSteps
     ///
-    
     pub fn rtGeometrySetMotionBorderMode(
         geometry: RTgeometry,
         beginMode: MotionBorderMode,
@@ -8340,7 +8139,6 @@ extern "C" {
     /// @ref rtGeometryGetMotionRange
     /// @ref rtGeometryGetMotionSteps
     ///
-    
     pub fn rtGeometryGetMotionBorderMode(
         geometry: RTgeometry,
         beginMode: *mut MotionBorderMode,
@@ -8382,7 +8180,6 @@ extern "C" {
     /// @ref rtGeometrySetMotionBorderMode
     /// @ref rtGeometrySetMotionRange
     ///
-    
     pub fn rtGeometrySetMotionSteps(
         geometry: RTgeometry,
         n: ::std::os::raw::c_uint,
@@ -8418,7 +8215,6 @@ extern "C" {
     /// @ref rtGeometrySetMotionBorderMode
     /// @ref rtGeometrySetMotionRange
     ///
-    
     pub fn rtGeometryGetMotionSteps(
         geometry: RTgeometry,
         n: *mut ::std::os::raw::c_uint,
@@ -8469,7 +8265,6 @@ extern "C" {
     /// @ref rtProgramCreateFromPTXFile,
     /// @ref rtProgramCreateFromPTXString
     ///
-    
     pub fn rtGeometrySetBoundingBoxProgram(
         geometry: RTgeometry,
         program: RTprogram,
@@ -8503,7 +8298,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtGeometrySetBoundingBoxProgram
     ///
-    
     pub fn rtGeometryGetBoundingBoxProgram(
         geometry: RTgeometry,
         program: *mut RTprogram,
@@ -8545,7 +8339,6 @@ extern "C" {
     /// @ref rtProgramCreateFromPTXFile,
     /// @ref rtProgramCreateFromPTXString
     ///
-    
     pub fn rtGeometrySetIntersectionProgram(
         geometry: RTgeometry,
         program: RTprogram,
@@ -8581,7 +8374,6 @@ extern "C" {
     /// @ref rtProgramCreateFromPTXFile,
     /// @ref rtProgramCreateFromPTXString
     ///
-    
     pub fn rtGeometryGetIntersectionProgram(
         geometry: RTgeometry,
         program: *mut RTprogram,
@@ -8590,13 +8382,11 @@ extern "C" {
 extern "C" {
     /// Deprecated in OptiX 4.0. Calling this function has no effect.
     ///
-    
     pub fn rtGeometryMarkDirty(geometry: RTgeometry) -> RtResult;
 }
 extern "C" {
     /// Deprecated in OptiX 4.0. Calling this function has no effect.
     ///
-    
     pub fn rtGeometryIsDirty(
         geometry: RTgeometry,
         dirty: *mut ::std::os::raw::c_int,
@@ -8652,7 +8442,6 @@ extern "C" {
     /// @ref rtGeometryGetVariable,
     /// @ref rtGeometryRemoveVariable
     ///
-    
     pub fn rtGeometryDeclareVariable(
         geometry: RTgeometry,
         name: *const ::std::os::raw::c_char,
@@ -8699,7 +8488,6 @@ extern "C" {
     /// @ref rtGeometryGetVariableCount,
     /// @ref rtGeometryGetVariable
     ///
-    
     pub fn rtGeometryQueryVariable(
         geometry: RTgeometry,
         name: *const ::std::os::raw::c_char,
@@ -8740,7 +8528,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextRemoveVariable
     ///
-    
     pub fn rtGeometryRemoveVariable(
         geometry: RTgeometry,
         v: RTvariable,
@@ -8781,7 +8568,6 @@ extern "C" {
     /// @ref rtGeometryDeclareVariable,
     /// @ref rtGeometryRemoveVariable
     ///
-    
     pub fn rtGeometryGetVariableCount(
         geometry: RTgeometry,
         count: *mut ::std::os::raw::c_uint,
@@ -8829,7 +8615,6 @@ extern "C" {
     /// @ref rtGeometryRemoveVariable,
     /// @ref rtGeometryQueryVariable
     ///
-    
     pub fn rtGeometryGetVariable(
         geometry: RTgeometry,
         index: ::std::os::raw::c_uint,
@@ -8870,7 +8655,6 @@ extern "C" {
     /// @ref rtMaterialDestroy,
     /// @ref rtContextCreate
     ///
-    
     pub fn rtMaterialCreate(
         context: RTcontext,
         material: *mut RTmaterial,
@@ -8906,7 +8690,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtMaterialCreate
     ///
-    
     pub fn rtMaterialDestroy(material: RTmaterial) -> RtResult;
 }
 extern "C" {
@@ -8937,7 +8720,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtMaterialCreate
     ///
-    
     pub fn rtMaterialValidate(material: RTmaterial) -> RtResult;
 }
 extern "C" {
@@ -8971,7 +8753,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtMaterialCreate
     ///
-    
     pub fn rtMaterialGetContext(
         material: RTmaterial,
         context: *mut RTcontext,
@@ -9024,7 +8805,6 @@ extern "C" {
     /// @ref rtProgramCreateFromPTXString,
     /// @ref rtProgramCreateFromPTXFile
     ///
-    
     pub fn rtMaterialSetClosestHitProgram(
         material: RTmaterial,
         ray_type_index: ::std::os::raw::c_uint,
@@ -9072,7 +8852,6 @@ extern "C" {
     /// @ref rtMaterialCreate,
     /// @ref rtContextGetRayTypeCount
     ///
-    
     pub fn rtMaterialGetClosestHitProgram(
         material: RTmaterial,
         ray_type_index: ::std::os::raw::c_uint,
@@ -9125,7 +8904,6 @@ extern "C" {
     /// @ref rtProgramCreateFromPTXString,
     /// @ref rtProgramCreateFromPTXFile
     ///
-    
     pub fn rtMaterialSetAnyHitProgram(
         material: RTmaterial,
         ray_type_index: ::std::os::raw::c_uint,
@@ -9172,7 +8950,6 @@ extern "C" {
     /// @ref rtMaterialCreate,
     /// @ref rtContextGetRayTypeCount
     ///
-    
     pub fn rtMaterialGetAnyHitProgram(
         material: RTmaterial,
         ray_type_index: ::std::os::raw::c_uint,
@@ -9225,7 +9002,6 @@ extern "C" {
     /// @ref rtMaterialQueryVariable,
     /// @ref rtMaterialCreate
     ///
-    
     pub fn rtMaterialDeclareVariable(
         material: RTmaterial,
         name: *const ::std::os::raw::c_char,
@@ -9268,7 +9044,6 @@ extern "C" {
     /// @ref rtMaterialGetVariable,
     /// @ref rtMaterialCreate
     ///
-    
     pub fn rtMaterialQueryVariable(
         material: RTmaterial,
         name: *const ::std::os::raw::c_char,
@@ -9316,7 +9091,6 @@ extern "C" {
     /// @ref rtMaterialDeclareVariable,
     /// @ref rtMaterialCreate
     ///
-    
     pub fn rtMaterialRemoveVariable(
         material: RTmaterial,
         v: RTvariable,
@@ -9354,7 +9128,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtMaterialCreate
     ///
-    
     pub fn rtMaterialGetVariableCount(
         material: RTmaterial,
         count: *mut ::std::os::raw::c_uint,
@@ -9402,7 +9175,6 @@ extern "C" {
     /// @ref rtMaterialGetVariableCount,
     /// @ref rtMaterialCreate
     ///
-    
     pub fn rtMaterialGetVariable(
         material: RTmaterial,
         index: ::std::os::raw::c_uint,
@@ -9440,7 +9212,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerDestroy
     ///
-    
     pub fn rtTextureSamplerCreate(
         context: RTcontext,
         texturesampler: *mut RTtexturesampler,
@@ -9477,7 +9248,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerCreate
     ///
-    
     pub fn rtTextureSamplerDestroy(
         texturesampler: RTtexturesampler,
     ) -> RtResult;
@@ -9495,7 +9265,7 @@ extern "C" {
     /// modes are incompatible with the current MIP level and array slice
     /// configuration then returns
     /// @ref RT_ERROR_INVALID_CONTEXT.
-    /// 
+    ///
     ///
     /// @param[in]   texturesampler   The texture sampler to be validated
     ///
@@ -9514,7 +9284,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextValidate
     ///
-    
     pub fn rtTextureSamplerValidate(
         texturesampler: RTtexturesampler,
     ) -> RtResult;
@@ -9549,7 +9318,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextCreate
     ///
-    
     pub fn rtTextureSamplerGetContext(
         texturesampler: RTtexturesampler,
         context: *mut RTcontext,
@@ -9558,7 +9326,6 @@ extern "C" {
 extern "C" {
     /// Deprecated in OptiX 3.9. Use @ref rtBufferSetMipLevelCount instead.
     ///
-    
     pub fn rtTextureSamplerSetMipLevelCount(
         texturesampler: RTtexturesampler,
         num_mip_levels: ::std::os::raw::c_uint,
@@ -9567,7 +9334,6 @@ extern "C" {
 extern "C" {
     /// Deprecated in OptiX 3.9. Use @ref rtBufferGetMipLevelCount instead.
     ///
-    
     pub fn rtTextureSamplerGetMipLevelCount(
         texturesampler: RTtexturesampler,
         num_mip_levels: *mut ::std::os::raw::c_uint,
@@ -9577,7 +9343,6 @@ extern "C" {
     /// Deprecated in OptiX 3.9. Use texture samplers with layered buffers
     /// instead. See @ref rtBufferCreate.
     ///
-    
     pub fn rtTextureSamplerSetArraySize(
         texturesampler: RTtexturesampler,
         num_textures_in_array: ::std::os::raw::c_uint,
@@ -9587,7 +9352,6 @@ extern "C" {
     /// Deprecated in OptiX 3.9. Use texture samplers with layered buffers
     /// instead. See @ref rtBufferCreate.
     ///
-    
     pub fn rtTextureSamplerGetArraySize(
         texturesampler: RTtexturesampler,
         num_textures_in_array: *mut ::std::os::raw::c_uint,
@@ -9634,7 +9398,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerGetWrapMode
     ///
-    
     pub fn rtTextureSamplerSetWrapMode(
         texturesampler: RTtexturesampler,
         dimension: ::std::os::raw::c_uint,
@@ -9672,7 +9435,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerSetWrapMode
     ///
-    
     pub fn rtTextureSamplerGetWrapMode(
         texturesampler: RTtexturesampler,
         dimension: ::std::os::raw::c_uint,
@@ -9724,7 +9486,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerGetFilteringModes
     ///
-    
     pub fn rtTextureSamplerSetFilteringModes(
         texturesampler: RTtexturesampler,
         minification: FilterMode,
@@ -9772,7 +9533,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerSetFilteringModes
     ///
-    
     pub fn rtTextureSamplerGetFilteringModes(
         texturesampler: RTtexturesampler,
         minification: *mut FilterMode,
@@ -9812,7 +9572,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerGetMaxAnisotropy
     ///
-    
     pub fn rtTextureSamplerSetMaxAnisotropy(
         texturesampler: RTtexturesampler,
         value: f32,
@@ -9846,7 +9605,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerSetMaxAnisotropy
     ///
-    
     pub fn rtTextureSamplerGetMaxAnisotropy(
         texturesampler: RTtexturesampler,
         value: *mut f32,
@@ -9882,7 +9640,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerGetMipLevelClamp
     ///
-    
     pub fn rtTextureSamplerSetMipLevelClamp(
         texturesampler: RTtexturesampler,
         minLevel: f32,
@@ -9921,7 +9678,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerSetMipLevelClamp
     ///
-    
     pub fn rtTextureSamplerGetMipLevelClamp(
         texturesampler: RTtexturesampler,
         minLevel: *mut f32,
@@ -9956,7 +9712,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerGetMipLevelBias
     ///
-    
     pub fn rtTextureSamplerSetMipLevelBias(
         texturesampler: RTtexturesampler,
         value: f32,
@@ -9990,7 +9745,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerSetMipLevelBias
     ///
-    
     pub fn rtTextureSamplerGetMipLevelBias(
         texturesampler: RTtexturesampler,
         value: *mut f32,
@@ -10052,7 +9806,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerGetReadMode
     ///
-    
     pub fn rtTextureSamplerSetReadMode(
         texturesampler: RTtexturesampler,
         readmode: TextureReadMode,
@@ -10088,7 +9841,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerSetReadMode
     ///
-    
     pub fn rtTextureSamplerGetReadMode(
         texturesampler: RTtexturesampler,
         readmode: *mut TextureReadMode,
@@ -10136,7 +9888,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerGetIndexingMode
     ///
-    
     pub fn rtTextureSamplerSetIndexingMode(
         texturesampler: RTtexturesampler,
         indexmode: TextureIndexMode,
@@ -10172,7 +9923,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerSetIndexingMode
     ///
-    
     pub fn rtTextureSamplerGetIndexingMode(
         texturesampler: RTtexturesampler,
         indexmode: *mut TextureIndexMode,
@@ -10208,7 +9958,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerGetBuffer
     ///
-    
     pub fn rtTextureSamplerSetBuffer(
         texturesampler: RTtexturesampler,
         deprecated0: ::std::os::raw::c_uint,
@@ -10249,7 +9998,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerSetBuffer
     ///
-    
     pub fn rtTextureSamplerGetBuffer(
         texturesampler: RTtexturesampler,
         deprecated0: ::std::os::raw::c_uint,
@@ -10287,7 +10035,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtTextureSamplerCreate
     ///
-    
     pub fn rtTextureSamplerGetId(
         texturesampler: RTtexturesampler,
         texture_id: *mut ::std::os::raw::c_int,
@@ -10327,7 +10074,7 @@ extern "C" {
     /// is used to receive stream updates
     /// generated by progressive launches
     /// (see @ref rtContextLaunchProgressive2D).
-    /// 
+    ///
     ///
     /// The supported flags are:
     ///
@@ -10391,7 +10138,6 @@ extern "C" {
     /// @ref rtBufferMarkDirty
     /// @ref rtBufferBindProgressiveStream
     ///
-    
     pub fn rtBufferCreate(
         context: RTcontext,
         bufferdesc: ::std::os::raw::c_uint,
@@ -10429,7 +10175,6 @@ extern "C" {
     /// @ref rtBufferCreate,
     /// @ref rtBufferCreateFromGLBO
     ///
-    
     pub fn rtBufferDestroy(buffer: RTbuffer) -> RtResult;
 }
 extern "C" {
@@ -10443,7 +10188,7 @@ extern "C" {
     /// has not had its dimensionality, size or format set, this call will
     /// return @ref
     /// RT_ERROR_INVALID_CONTEXT.
-    /// 
+    ///
     ///
     /// @param[in]   buffer   The buffer to validate
     ///
@@ -10464,7 +10209,6 @@ extern "C" {
     /// @ref rtBufferCreateFromGLBO
     /// @ref rtContextValidate
     ///
-    
     pub fn rtBufferValidate(buffer: RTbuffer) -> RtResult;
 }
 extern "C" {
@@ -10496,7 +10240,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextCreate
     ///
-    
     pub fn rtBufferGetContext(
         buffer: RTbuffer,
         context: *mut RTcontext,
@@ -10571,7 +10314,6 @@ extern "C" {
     /// @ref rtBufferGetElementSize,
     /// @ref rtBufferSetElementSize
     ///
-    
     pub fn rtBufferSetFormat(buffer: RTbuffer, format: Format) -> RtResult;
 }
 extern "C" {
@@ -10603,7 +10345,6 @@ extern "C" {
     /// @ref rtBufferSetFormat,
     /// @ref rtBufferGetFormat
     ///
-    
     pub fn rtBufferGetFormat(buffer: RTbuffer, format: *mut Format)
         -> RtResult;
 }
@@ -10650,7 +10391,6 @@ extern "C" {
     /// @ref rtBufferGetElementSize,
     /// @ref rtBufferCreate
     ///
-    
     pub fn rtBufferSetElementSize(
         buffer: RTbuffer,
         size_of_element: RTsize,
@@ -10689,7 +10429,6 @@ extern "C" {
     /// @ref rtBufferSetElementSize,
     /// @ref rtBufferCreate
     ///
-    
     pub fn rtBufferGetElementSize(
         buffer: RTbuffer,
         size_of_element: *mut RTsize,
@@ -10737,7 +10476,6 @@ extern "C" {
     /// @ref rtBufferGetSize3D,
     /// @ref rtBufferGetSizev
     ///
-    
     pub fn rtBufferSetSize1D(buffer: RTbuffer, width: RTsize) -> RtResult;
 }
 extern "C" {
@@ -10778,7 +10516,6 @@ extern "C" {
     /// @ref rtBufferGetSize3D,
     /// @ref rtBufferGetSizev
     ///
-    
     pub fn rtBufferGetSize1D(buffer: RTbuffer, width: *mut RTsize) -> RtResult;
 }
 extern "C" {
@@ -10825,7 +10562,6 @@ extern "C" {
     /// @ref rtBufferGetSize3D,
     /// @ref rtBufferGetSizev
     ///
-    
     pub fn rtBufferSetSize2D(
         buffer: RTbuffer,
         width: RTsize,
@@ -10872,7 +10608,6 @@ extern "C" {
     /// @ref rtBufferGetSize3D,
     /// @ref rtBufferGetSizev
     ///
-    
     pub fn rtBufferGetSize2D(
         buffer: RTbuffer,
         width: *mut RTsize,
@@ -10943,7 +10678,6 @@ extern "C" {
     /// @ref rtBufferGetSize3D,
     /// @ref rtBufferGetSizev
     ///
-    
     pub fn rtBufferSetSize3D(
         buffer: RTbuffer,
         width: RTsize,
@@ -10996,7 +10730,6 @@ extern "C" {
     /// @ref rtBufferGetSize3D,
     /// @ref rtBufferGetSizev
     ///
-    
     pub fn rtBufferSetMipLevelCount(
         buffer: RTbuffer,
         levels: ::std::os::raw::c_uint,
@@ -11043,7 +10776,6 @@ extern "C" {
     /// @ref rtBufferGetSize2D,
     /// @ref rtBufferGetSizev
     ///
-    
     pub fn rtBufferGetSize3D(
         buffer: RTbuffer,
         width: *mut RTsize,
@@ -11089,7 +10821,6 @@ extern "C" {
     /// @ref rtBufferGetSize3D,
     /// @ref rtBufferGetSizev
     ///
-    
     pub fn rtBufferGetMipLevelSize1D(
         buffer: RTbuffer,
         level: ::std::os::raw::c_uint,
@@ -11136,7 +10867,6 @@ extern "C" {
     /// @ref rtBufferGetSize3D,
     /// @ref rtBufferGetSizev
     ///
-    
     pub fn rtBufferGetMipLevelSize2D(
         buffer: RTbuffer,
         level: ::std::os::raw::c_uint,
@@ -11184,7 +10914,6 @@ extern "C" {
     /// @ref rtBufferGetSize3D,
     /// @ref rtBufferGetSizev
     ///
-    
     pub fn rtBufferGetMipLevelSize3D(
         buffer: RTbuffer,
         level: ::std::os::raw::c_uint,
@@ -11238,7 +10967,6 @@ extern "C" {
     /// @ref rtBufferGetSize3D,
     /// @ref rtBufferGetSizev
     ///
-    
     pub fn rtBufferSetSizev(
         buffer: RTbuffer,
         dimensionality: ::std::os::raw::c_uint,
@@ -11290,7 +11018,6 @@ extern "C" {
     /// @ref rtBufferGetSize2D,
     /// @ref rtBufferGetSize3D
     ///
-    
     pub fn rtBufferGetSizev(
         buffer: RTbuffer,
         dimensionality: ::std::os::raw::c_uint,
@@ -11327,7 +11054,6 @@ extern "C" {
     /// <B>See also</B>
     /// \a rtBufferSetSize{1-2-3}D
     ///
-    
     pub fn rtBufferGetDimensionality(
         buffer: RTbuffer,
         dimensionality: *mut ::std::os::raw::c_uint,
@@ -11373,7 +11099,6 @@ extern "C" {
     /// @ref rtBufferGetSize3D,
     /// @ref rtBufferGetSizev
     ///
-    
     pub fn rtBufferGetMipLevelCount(
         buffer: RTbuffer,
         level: *mut ::std::os::raw::c_uint,
@@ -11433,7 +11158,6 @@ extern "C" {
     /// @ref rtBufferMapEx,
     /// @ref rtBufferUnmapEx
     ///
-    
     pub fn rtBufferMap(
         buffer: RTbuffer,
         user_pointer: *mut *mut ::std::os::raw::c_void,
@@ -11474,7 +11198,6 @@ extern "C" {
     /// @ref rtBufferMapEx,
     /// @ref rtBufferUnmapEx
     ///
-    
     pub fn rtBufferUnmap(buffer: RTbuffer) -> RtResult;
 }
 extern "C" {
@@ -11529,7 +11252,6 @@ extern "C" {
     /// @ref rtBufferUnmap,
     /// @ref rtBufferUnmapEx
     ///
-    
     pub fn rtBufferMapEx(
         buffer: RTbuffer,
         map_flags: ::std::os::raw::c_uint,
@@ -11576,7 +11298,6 @@ extern "C" {
     /// @ref rtBufferUnmap,
     /// @ref rtBufferMapEx
     ///
-    
     pub fn rtBufferUnmapEx(
         buffer: RTbuffer,
         level: ::std::os::raw::c_uint,
@@ -11614,7 +11335,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextGetBufferFromId
     ///
-    
     pub fn rtBufferGetId(
         buffer: RTbuffer,
         buffer_id: *mut ::std::os::raw::c_int,
@@ -11651,7 +11371,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtBufferGetId
     ///
-    
     pub fn rtContextGetBufferFromId(
         context: RTcontext,
         buffer_id: ::std::os::raw::c_int,
@@ -11703,7 +11422,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtContextLaunchProgressive2D
     ///
-    
     pub fn rtBufferGetProgressiveUpdateReady(
         buffer: RTbuffer,
         ready: *mut ::std::os::raw::c_int,
@@ -11732,7 +11450,7 @@ extern "C" {
     /// @ref RT_BUFFER_OUTPUT;
     /// it may not be of
     /// type @ref RT_BUFFER_INPUT_OUTPUT.
-    /// 
+    ///
     ///
     /// @param[in]   stream             The stream buffer for which the source
     /// is to be specified @param[in]   source             The output
@@ -11753,7 +11471,6 @@ extern "C" {
     /// @ref rtBufferSetAttribute
     /// @ref rtBufferGetAttribute
     ///
-    
     pub fn rtBufferBindProgressiveStream(
         stream: RTbuffer,
         source: RTbuffer,
@@ -11829,7 +11546,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtBufferGetAttribute
     ///
-    
     pub fn rtBufferSetAttribute(
         buffer: RTbuffer,
         attrib: BufferAttribute,
@@ -11868,7 +11584,6 @@ extern "C" {
     /// <B>See also</B>
     /// @ref rtBufferSetAttribute
     ///
-    
     pub fn rtBufferGetAttribute(
         buffer: RTbuffer,
         attrib: BufferAttribute,
@@ -11931,7 +11646,6 @@ extern "C" {
     /// @ref rtRemoteDeviceRelease
     /// @ref rtContextSetRemoteDevice
     ///
-    
     pub fn rtRemoteDeviceCreate(
         url: *const ::std::os::raw::c_char,
         username: *const ::std::os::raw::c_char,
@@ -11968,7 +11682,6 @@ extern "C" {
     /// @ref rtRemoteDeviceRelease
     /// @ref rtContextSetRemoteDevice
     ///
-    
     pub fn rtRemoteDeviceDestroy(remote_dev: RTremotedevice) -> RtResult;
 }
 extern "C" {
@@ -12105,7 +11818,6 @@ extern "C" {
     /// @ref rtRemoteDeviceRelease
     /// @ref rtContextSetRemoteDevice
     ///
-    
     pub fn rtRemoteDeviceGetAttribute(
         remote_dev: RTremotedevice,
         attrib: RemoteDeviceAttribute,
@@ -12162,7 +11874,6 @@ extern "C" {
     /// @ref rtRemoteDeviceRelease
     /// @ref rtContextSetRemoteDevice
     ///
-    
     pub fn rtRemoteDeviceReserve(
         remote_dev: RTremotedevice,
         num_nodes: ::std::os::raw::c_uint,
@@ -12202,7 +11913,6 @@ extern "C" {
     /// @ref rtRemoteDeviceReserve
     /// @ref rtContextSetRemoteDevice
     ///
-    
     pub fn rtRemoteDeviceRelease(remote_dev: RTremotedevice) -> RtResult;
 }
 extern "C" {
@@ -12242,7 +11952,6 @@ extern "C" {
     /// @ref rtPostProcessingStageGetVariableCount
     /// @ref rtPostProcessingStageGetVariable
     ///
-    
     pub fn rtPostProcessingStageCreateBuiltin(
         context: RTcontext,
         builtin_name: *const ::std::os::raw::c_char,
@@ -12282,7 +11991,6 @@ extern "C" {
     /// @ref rtPostProcessingStageGetVariableCount
     /// @ref rtPostProcessingStageGetVariable
     ///
-    
     pub fn rtPostProcessingStageDestroy(
         stage: RTpostprocessingstage,
     ) -> RtResult;
@@ -12337,7 +12045,6 @@ extern "C" {
     /// @ref rtPostProcessingStageQueryVariable,
     /// @ref rtPostProcessingStageGetVariable
     ///
-    
     pub fn rtPostProcessingStageDeclareVariable(
         stage: RTpostprocessingstage,
         name: *const ::std::os::raw::c_char,
@@ -12380,7 +12087,6 @@ extern "C" {
     /// @ref rtPostProcessingStageGetVariableCount
     /// @ref rtPostProcessingStageGetVariable
     ///
-    
     pub fn rtPostProcessingStageGetContext(
         stage: RTpostprocessingstage,
         context: *mut RTcontext,
@@ -12427,7 +12133,6 @@ extern "C" {
     /// @ref rtPostProcessingStageGetVariableCount
     /// @ref rtPostProcessingStageGetVariable
     ///
-    
     pub fn rtPostProcessingStageQueryVariable(
         stage: RTpostprocessingstage,
         name: *const ::std::os::raw::c_char,
@@ -12468,7 +12173,6 @@ extern "C" {
     /// @ref rtPostProcessingStageQueryVariable,
     /// @ref rtPostProcessingStageGetVariable
     ///
-    
     pub fn rtPostProcessingStageGetVariableCount(
         stage: RTpostprocessingstage,
         count: *mut ::std::os::raw::c_uint,
@@ -12515,7 +12219,6 @@ extern "C" {
     /// @ref rtPostProcessingStageQueryVariable,
     /// @ref rtPostProcessingStageGetVariableCount
     ///
-    
     pub fn rtPostProcessingStageGetVariable(
         stage: RTpostprocessingstage,
         index: ::std::os::raw::c_uint,
@@ -12571,7 +12274,6 @@ extern "C" {
     /// @ref rtCommandListFinalize,
     /// @ref rtCommandListExecute
     ///
-    
     pub fn rtCommandListCreate(
         context: RTcontext,
         list: *mut RTcommandlist,
@@ -12608,7 +12310,6 @@ extern "C" {
     /// @ref rtCommandListFinalize,
     /// @ref rtCommandListExecute
     ///
-    
     pub fn rtCommandListDestroy(list: RTcommandlist) -> RtResult;
 }
 extern "C" {
@@ -12664,7 +12365,6 @@ extern "C" {
     /// @ref rtCommandListExecute
     /// @ref rtPostProcessingStageCreateBuiltin,
     ///
-    
     pub fn rtCommandListAppendPostprocessingStage(
         list: RTcommandlist,
         stage: RTpostprocessingstage,
@@ -12706,7 +12406,6 @@ extern "C" {
     /// @ref rtCommandListFinalize,
     /// @ref rtCommandListExecute
     ///
-    
     pub fn rtCommandListAppendLaunch2D(
         list: RTcommandlist,
         entry_point_index: ::std::os::raw::c_uint,
@@ -12752,7 +12451,6 @@ extern "C" {
     /// @ref rtCommandListAppendLaunch2D,
     /// @ref rtCommandListExecute
     ///
-    
     pub fn rtCommandListFinalize(list: RTcommandlist) -> RtResult;
 }
 extern "C" {
@@ -12791,7 +12489,6 @@ extern "C" {
     /// @ref rtCommandListAppendLaunch2D,
     /// @ref rtCommandListFinalize,
     ///
-    
     pub fn rtCommandListExecute(list: RTcommandlist) -> RtResult;
 }
 extern "C" {

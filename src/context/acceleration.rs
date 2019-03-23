@@ -15,7 +15,10 @@ pub enum Builder {
 impl Context {
     /// Creates a new `Acceleration` on this `Context` with the specified
     /// `Builder` returning a handle that can be used to access it later.
-    pub fn acceleration_create(&mut self, builder: Builder) -> Result<AccelerationHandle> {
+    pub fn acceleration_create(
+        &mut self,
+        builder: Builder,
+    ) -> Result<AccelerationHandle> {
         let (rt_acc, result) = unsafe {
             let mut rt_acc: RTacceleration = std::mem::zeroed();
             let result = rtAccelerationCreate(self.rt_ctx, &mut rt_acc);

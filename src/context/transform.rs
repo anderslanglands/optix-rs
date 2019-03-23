@@ -30,7 +30,9 @@ impl Context {
         // validate first
         match child {
             TransformChild::Group(h) => self.group_validate(h)?,
-            TransformChild::GeometryGroup(ggh) => self.geometry_group_validate(ggh)?,
+            TransformChild::GeometryGroup(ggh) => {
+                self.geometry_group_validate(ggh)?
+            }
             TransformChild::Transform(th) => self.transform_validate(th)?,
             TransformChild::None => unreachable!(),
         }
@@ -78,21 +80,28 @@ impl Context {
         match child {
             TransformChild::Group(h) => {
                 let child_rt_grp = self.ga_group_obj.get(h).unwrap();
-                let result = unsafe { rtTransformSetChild(rt_xform, *child_rt_grp as RTobject) };
+                let result = unsafe {
+                    rtTransformSetChild(rt_xform, *child_rt_grp as RTobject)
+                };
                 if result != RtResult::SUCCESS {
                     return Err(self.optix_error("rtTransformSetChild", result));
                 }
             }
             TransformChild::GeometryGroup(ggh) => {
-                let child_rt_geogrp = self.ga_geometry_group_obj.get(ggh).unwrap();
-                let result = unsafe { rtTransformSetChild(rt_xform, *child_rt_geogrp as RTobject) };
+                let child_rt_geogrp =
+                    self.ga_geometry_group_obj.get(ggh).unwrap();
+                let result = unsafe {
+                    rtTransformSetChild(rt_xform, *child_rt_geogrp as RTobject)
+                };
                 if result != RtResult::SUCCESS {
                     return Err(self.optix_error("rtTransformSetChild", result));
                 }
             }
             TransformChild::Transform(th) => {
                 let child_rt_xf = self.ga_transform_obj.get(th).unwrap();
-                let result = unsafe { rtTransformSetChild(rt_xform, *child_rt_xf as RTobject) };
+                let result = unsafe {
+                    rtTransformSetChild(rt_xform, *child_rt_xf as RTobject)
+                };
                 if result != RtResult::SUCCESS {
                     return Err(self.optix_error("rtTransformSetChild", result));
                 }

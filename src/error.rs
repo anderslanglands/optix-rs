@@ -1,5 +1,5 @@
-use crate::optix_bindings::*;
 use crate::nvrtc;
+use crate::optix_bindings::*;
 use crate::search_path;
 use std::{ffi, fmt, io, ptr, result};
 
@@ -43,13 +43,23 @@ impl From<std::ffi::NulError> for Error {
 impl fmt::Display for Error {
     fn fmt(&self, output: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Error::Optix(err) => write!(output, "[ERROR OptiX {:?}] {}", err.0, err.1),
+            Error::Optix(err) => {
+                write!(output, "[ERROR OptiX {:?}] {}", err.0, err.1)
+            }
             Error::Io(err) => write!(output, "[ERROR IO] {}", err),
             Error::Bounds => write!(output, "[ERROR out of bounds]"),
-            Error::IncompatibleBuilderType => write!(output, "[ERROR incompatible builder type]"),
-            Error::SearchPath(err) => write!(output, "[ERROR SearchPath {}", err),
-            Error::HandleNotFoundError => write!(output, "[ERROR Hande Not Found]"),
-            Error::NulError(pos) => write!(output, "[ERROR Nul byte at position {}]", pos),
+            Error::IncompatibleBuilderType => {
+                write!(output, "[ERROR incompatible builder type]")
+            }
+            Error::SearchPath(err) => {
+                write!(output, "[ERROR SearchPath {}", err)
+            }
+            Error::HandleNotFoundError => {
+                write!(output, "[ERROR Hande Not Found]")
+            }
+            Error::NulError(pos) => {
+                write!(output, "[ERROR Nul byte at position {}]", pos)
+            }
             Error::IncompatibleBufferFormat { given, expected } => write!(
                 output,
                 "[ERROR Expected buffer format of {:?}, given {:?}",
@@ -68,9 +78,9 @@ impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Error::Io(e) => Some(e),
-            _ => None
+            _ => None,
         }
-    } 
+    }
 }
 
 pub(crate) type Result<T> = result::Result<T, Error>;

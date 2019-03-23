@@ -25,21 +25,29 @@ impl Context {
         let geogrp = self.ga_geometry_group_obj.insert(rt_geogrp);
 
         let rt_acc = self.ga_acceleration_obj.get(acc).unwrap();
-        let result = unsafe { rtGeometryGroupSetAcceleration(rt_geogrp, *rt_acc) };
+        let result =
+            unsafe { rtGeometryGroupSetAcceleration(rt_geogrp, *rt_acc) };
         if result != RtResult::SUCCESS {
-            return Err(self.optix_error("rtGeometryGroupSetAcceleration", result));
+            return Err(
+                self.optix_error("rtGeometryGroupSetAcceleration", result)
+            );
         } else {
             self.gd_geometry_group_acceleration.insert(geogrp, acc);
         }
 
-        let result = unsafe { rtGeometryGroupSetChildCount(rt_geogrp, children.len() as u32) };
+        let result = unsafe {
+            rtGeometryGroupSetChildCount(rt_geogrp, children.len() as u32)
+        };
         if result != RtResult::SUCCESS {
             return Err(self.optix_error("rtGeometryGroupSetChildCount", result));
         }
 
         for (i, geoinst) in children.iter().enumerate() {
-            let rt_geoinst = self.ga_geometry_instance_obj.get(*geoinst).unwrap();
-            let result = unsafe { rtGeometryGroupSetChild(rt_geogrp, i as u32, *rt_geoinst) };
+            let rt_geoinst =
+                self.ga_geometry_instance_obj.get(*geoinst).unwrap();
+            let result = unsafe {
+                rtGeometryGroupSetChild(rt_geogrp, i as u32, *rt_geoinst)
+            };
             if result != RtResult::SUCCESS {
                 return Err(self.optix_error("rtGeometryGroupSetChild", result));
             }
@@ -63,7 +71,10 @@ impl Context {
         }
     }
 
-    pub fn geometry_group_validate(&self, geogrp: GeometryGroupHandle) -> Result<()> {
+    pub fn geometry_group_validate(
+        &self,
+        geogrp: GeometryGroupHandle,
+    ) -> Result<()> {
         let rt_geogrp = *self.ga_geometry_group_obj.get(geogrp).unwrap();
         let result = unsafe { rtGeometryGroupValidate(rt_geogrp) };
         if result != RtResult::SUCCESS {

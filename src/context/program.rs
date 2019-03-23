@@ -1,8 +1,8 @@
 use crate::context::*;
+use crate::nvrtc;
 use std::collections::HashMap;
 use std::ffi::CString;
 use std::io::Read;
-use crate::nvrtc;
 
 new_key_type! { pub struct ProgramHandle; }
 
@@ -119,7 +119,9 @@ impl Context {
     ) -> Result<()> {
         let rt_prg = self.ga_program_obj.get(prg).unwrap();
 
-        if let Some(old_variable) = self.gd_program_variables.get(prg).unwrap().get(name) {
+        if let Some(old_variable) =
+            self.gd_program_variables.get(prg).unwrap().get(name)
+        {
             let var = match old_variable {
                 Variable::Pod(vp) => vp.var,
                 Variable::Object(vo) => vo.var,
@@ -136,7 +138,11 @@ impl Context {
             let (var, result) = unsafe {
                 let mut var: RTvariable = ::std::mem::uninitialized();
                 let c_name = std::ffi::CString::new(name).unwrap();
-                let result = rtProgramDeclareVariable(*rt_prg, c_name.as_ptr(), &mut var);
+                let result = rtProgramDeclareVariable(
+                    *rt_prg,
+                    c_name.as_ptr(),
+                    &mut var,
+                );
                 (var, result)
             };
             if result != RtResult::SUCCESS {

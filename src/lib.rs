@@ -6,25 +6,25 @@
 pub mod context;
 pub mod error;
 pub mod math;
+pub mod nvrtc;
+mod nvrtc_bindings;
 mod optix_bindings;
 pub mod search_path;
-mod nvrtc_bindings;
-pub mod nvrtc;
 
-pub use self::context::program::*;
-pub use self::context::geometry::*;
-pub use self::context::material::*;
-pub use self::context::geometry_instance::*;
-pub use self::context::buffer::*;
-pub use self::context::variable::*;
 pub use self::context::acceleration::*;
+pub use self::context::buffer::*;
+pub use self::context::geometry::*;
 pub use self::context::geometry_group::*;
-pub use self::context::transform::*;
+pub use self::context::geometry_instance::*;
 pub use self::context::group::*;
+pub use self::context::material::*;
+pub use self::context::program::*;
+pub use self::context::transform::*;
+pub use self::context::variable::*;
 pub use self::context::*;
 
-use crate::error::Result;
 pub use crate::error::Error;
+use crate::error::Result;
 use crate::optix_bindings::{rtGetVersion, RtResult};
 
 /// Returns the version of the OptiX library in use.

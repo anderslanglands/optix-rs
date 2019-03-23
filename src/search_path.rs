@@ -72,7 +72,6 @@ impl SearchPath {
     }
 
     pub fn open(&self, filename: &str) -> Result<std::fs::File, Error> {
-
         if let Ok(f) = std::fs::File::open(filename) {
             return Ok(f);
         } else {

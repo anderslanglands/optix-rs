@@ -25,17 +25,25 @@ impl Context {
         if result != RtResult::SUCCESS {
             Err(self.optix_error("rtGeometryCreate", result))
         } else {
-            let rt_prg_bound = self.ga_program_obj.get(prg_bounding_box).unwrap();
-            let rt_prg_intersection = self.ga_program_obj.get(prg_intersection).unwrap();
+            let rt_prg_bound =
+                self.ga_program_obj.get(prg_bounding_box).unwrap();
+            let rt_prg_intersection =
+                self.ga_program_obj.get(prg_intersection).unwrap();
 
-            let result = unsafe { rtGeometrySetBoundingBoxProgram(geo, *rt_prg_bound) };
+            let result =
+                unsafe { rtGeometrySetBoundingBoxProgram(geo, *rt_prg_bound) };
             if result != RtResult::SUCCESS {
-                return Err(self.optix_error("rtGeometryBoundingBoxProgram", result));
+                return Err(
+                    self.optix_error("rtGeometryBoundingBoxProgram", result)
+                );
             }
 
-            let result = unsafe { rtGeometrySetIntersectionProgram(geo, *rt_prg_intersection) };
+            let result = unsafe {
+                rtGeometrySetIntersectionProgram(geo, *rt_prg_intersection)
+            };
             if result != RtResult::SUCCESS {
-                return Err(self.optix_error("rtGeometrySetIntersectionProgram", result));
+                return Err(self
+                    .optix_error("rtGeometrySetIntersectionProgram", result));
             }
 
             let vars = HashMap::<String, Variable>::new();
@@ -76,7 +84,8 @@ impl Context {
         num_primitives: u32,
     ) -> Result<()> {
         let rt_geo = self.ga_geometry_obj.get_mut(geo).unwrap();
-        let result = unsafe { rtGeometrySetPrimitiveCount(*rt_geo, num_primitives) };
+        let result =
+            unsafe { rtGeometrySetPrimitiveCount(*rt_geo, num_primitives) };
         if result != RtResult::SUCCESS {
             Err(self.optix_error("rtGeometrySetPrimitiveCount", result))
         } else {
@@ -92,7 +101,9 @@ impl Context {
     ) -> Result<()> {
         let rt_geo = self.ga_geometry_obj.get(geo).unwrap();
 
-        if let Some(old_variable) = self.gd_geometry_variables.get(geo).unwrap().get(name) {
+        if let Some(old_variable) =
+            self.gd_geometry_variables.get(geo).unwrap().get(name)
+        {
             let var = match old_variable {
                 Variable::Pod(vp) => vp.var,
                 Variable::Object(vo) => vo.var,
@@ -109,11 +120,17 @@ impl Context {
             let (var, result) = unsafe {
                 let mut var: RTvariable = ::std::mem::uninitialized();
                 let c_name = std::ffi::CString::new(name).unwrap();
-                let result = rtGeometryDeclareVariable(*rt_geo, c_name.as_ptr(), &mut var);
+                let result = rtGeometryDeclareVariable(
+                    *rt_geo,
+                    c_name.as_ptr(),
+                    &mut var,
+                );
                 (var, result)
             };
             if result != RtResult::SUCCESS {
-                return Err(self.optix_error("rtGeometryDeclareVariable", result));
+                return Err(
+                    self.optix_error("rtGeometryDeclareVariable", result)
+                );
             }
 
             let variable = data.set_optix_variable(self, var)?;

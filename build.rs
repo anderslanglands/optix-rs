@@ -31,7 +31,8 @@ fn main() {
     // create a temporary file to tell tests and examples where the cmake-generated ptx
     // has ended up
     let ptx_path = format!("ptx_path = \"{}/ptx\"", dst.display());
-    let mut file = std::fs::File::create(std::path::Path::new("ptx_path.toml")).unwrap();
+    let mut file =
+        std::fs::File::create(std::path::Path::new("ptx_path.toml")).unwrap();
     file.write_all(ptx_path.as_bytes()).unwrap();
 
     // bindgen the ffi

@@ -63,7 +63,8 @@ impl Program {
         let mut header_contents_arr = Vec::new();
         for i in 0..header_names.len() {
             header_names_arr.push(header_names[i].as_ptr() as *const c_char);
-            header_contents_arr.push(header_contents[i].as_ptr() as *const c_char);
+            header_contents_arr
+                .push(header_contents[i].as_ptr() as *const c_char);
         }
 
         let (prog, result) = unsafe {
@@ -133,7 +134,9 @@ impl Program {
 
         let buffer = create_whitespace_cstring(log_size);
 
-        let result = unsafe { nvrtcGetProgramLog(self.prog, buffer.as_ptr() as *mut c_char) };
+        let result = unsafe {
+            nvrtcGetProgramLog(self.prog, buffer.as_ptr() as *mut c_char)
+        };
 
         if result != NvrtcResult::NVRTC_SUCCESS {
             Err(get_error_string(result))
@@ -156,7 +159,8 @@ impl Program {
 
         let buffer = create_whitespace_cstring(ptx_size);
 
-        let result = unsafe { nvrtcGetPTX(self.prog, buffer.as_ptr() as *mut c_char) };
+        let result =
+            unsafe { nvrtcGetPTX(self.prog, buffer.as_ptr() as *mut c_char) };
 
         if result != NvrtcResult::NVRTC_SUCCESS {
             Err(get_error_string(result))
