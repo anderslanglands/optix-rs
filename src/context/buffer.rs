@@ -4,6 +4,7 @@ use std::ops::{Index, IndexMut};
 #[cfg(feature = "colorspace")]
 use colorspace::rgb::RGBf32;
 
+#[derive(Clone, Copy)]
 pub struct BufferId(pub(crate) i32);
 
 new_key_type! { pub struct Buffer1dHandle; }
@@ -44,6 +45,10 @@ impl BufferElement for u16 {
 }
 
 impl BufferElement for i32 {
+    const FORMAT: Format = Format::INT;
+}
+
+impl BufferElement for BufferId {
     const FORMAT: Format = Format::INT;
 }
 
