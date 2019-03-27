@@ -131,4 +131,89 @@ impl Context {
             Ok(())
         }
     }
+
+    pub fn transform_set_motion_keys(
+        &mut self,
+        xform: TransformHandle,
+        n: u32,
+        key_type: MotionKeyType,
+        keys: &[f32],
+    ) -> Result<()> {
+        let rt_xform = *self.ga_transform_obj.get(xform).unwrap();
+
+        // check that the length of the keys array matches the key type and
+        // number of samples
+        match key_type {
+            MotionKeyType::MATRIX_FLOAT12 => {
+                let expected = n * 12;
+                if keys.len() as u32 != expected {
+                    return Err(Error::MotionKeyLength {
+                        got: keys.len() as u32,
+                        expected,
+                    });
+                }
+            }
+            MotionKeyType::SRT_FLOAT16 => {
+                let expected = n * 16;
+                if keys.len() as u32 != expected {
+                    return Err(Error::MotionKeyLength {
+                        got: keys.len() as u32,
+                        expected,
+                    });
+                }
+            }
+            MotionKeyType::NONE => {
+                return Err(Error::MotionKeyType);
+            }
+        }
+
+        let result = unsafe {
+            rtTransformSetMotionKeys(
+                rt_xform,
+                n,
+                key_type,
+                keys.as_ptr() as *const f32,
+            )
+        };
+
+        if result != RtResult::SUCCESS {
+            Err(self.optix_error("rtTransformSetMotionKeys", result))
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn transform_set_motion_range(
+        &mut self,
+        xform: TransformHandle,
+        time_begin: f32,
+        time_end: f32,
+    ) -> Result<()> {
+        let rt_xform = self.ga_transform_obj.get(xform).unwrap();
+        let result = unsafe {
+            rtTransformSetMotionRange(*rt_xform, time_begin, time_end)
+        };
+        if result != RtResult::SUCCESS {
+            Err(self.optix_error("rtTransformSetMotionRange", result))
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn transform_set_motion_border_mode(
+        &mut self,
+        xform: TransformHandle,
+        begin_mode: MotionBorderMode,
+        end_mode: MotionBorderMode,
+    ) -> Result<()> {
+        let rt_xform = self.ga_transform_obj.get(xform).unwrap();
+        let result = unsafe {
+            rtTransformSetMotionBorderMode(*rt_xform, begin_mode, end_mode)
+        };
+        if result != RtResult::SUCCESS {
+            Err(self.optix_error("rtTransformSetMotionBorderMode", result))
+        } else {
+            Ok(())
+        }
+    }
 }

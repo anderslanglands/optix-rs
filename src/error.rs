@@ -14,6 +14,8 @@ pub enum Error {
     HandleNotFoundError,
     IncompatibleBufferFormat { given: Format, expected: Format },
     NvrtcError(String),
+    MotionKeyLength { got: u32, expected: u32 },
+    MotionKeyType,
 }
 
 impl From<io::Error> for Error {
@@ -66,6 +68,14 @@ impl fmt::Display for Error {
                 given, expected
             ),
             Error::NvrtcError(s) => write!(output, "[Error nvrtc] {}", s),
+            Error::MotionKeyLength { got, expected } => write!(
+                output,
+                "[ERROR MotionKeyLength] got: {}, expected: {}",
+                got, expected
+            ),
+            Error::MotionKeyType => {
+                write!(output, "[ERROR] Wrong motion key type")
+            }
         }
     }
 }
