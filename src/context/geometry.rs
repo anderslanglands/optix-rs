@@ -142,4 +142,51 @@ impl Context {
             Ok(())
         }
     }
+
+    pub fn geometry_set_motion_steps(
+        &mut self,
+        geo: GeometryHandle,
+        steps: u32,
+    ) -> Result<()> {
+        let rt_geo = self.ga_geometry_obj.get(geo).unwrap();
+        let result = unsafe { rtGeometrySetMotionSteps(*rt_geo, steps) };
+        if result != RtResult::SUCCESS {
+            Err(self.optix_error("rtGeometrySetMotionSteps", result))
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn geometry_set_motion_range(
+        &mut self,
+        geo: GeometryHandle,
+        time_begin: f32,
+        time_end: f32,
+    ) -> Result<()> {
+        let rt_geo = self.ga_geometry_obj.get(geo).unwrap();
+        let result =
+            unsafe { rtGeometrySetMotionRange(*rt_geo, time_begin, time_end) };
+        if result != RtResult::SUCCESS {
+            Err(self.optix_error("rtGeometrySetMotionRange", result))
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn geometry_set_motion_border_mode(
+        &mut self,
+        geo: GeometryHandle,
+        begin_mode: MotionBorderMode,
+        end_mode: MotionBorderMode,
+    ) -> Result<()> {
+        let rt_geo = self.ga_geometry_obj.get(geo).unwrap();
+        let result = unsafe {
+            rtGeometrySetMotionBorderMode(*rt_geo, begin_mode, end_mode)
+        };
+        if result != RtResult::SUCCESS {
+            Err(self.optix_error("rtGeometrySetMotionBorderMode", result))
+        } else {
+            Ok(())
+        }
+    }
 }
