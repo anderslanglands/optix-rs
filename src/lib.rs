@@ -4,6 +4,9 @@
 //!
 
 pub mod context;
+pub mod cuda;
+pub use cuda::mem_get_info;
+mod cuda_bindings;
 pub mod error;
 pub mod math;
 pub mod nvrtc;
