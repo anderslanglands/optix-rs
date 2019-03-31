@@ -92,6 +92,9 @@ fn main() -> Result<(), String> {
 
                     let mut progression = 0u32;
 
+                    // do a quick launch to warm up before we start the main loop
+                    ctx.launch_2d(entry_point, 1, 1).expect("Warmup launch failed");
+
                     'inner: loop {
                         let now = std::time::Instant::now();
                         match rx_render.try_recv() {
@@ -109,12 +112,12 @@ fn main() -> Result<(), String> {
                                 println!(
                                     "Max : {}s {}ms",
                                     time_max.as_secs(),
-                                    time_max.subsec_nanos()
+                                    time_max.subsec_millis()
                                 );
                                 println!(
                                     "Mean: {}s {}ms",
                                     time_total.as_secs(),
-                                    time_total.subsec_nanos()
+                                    time_total.subsec_millis()
                                 );
                                 break 'outer;
                             }
@@ -156,15 +159,17 @@ fn main() -> Result<(), String> {
                         render_progression_counter
                             .fetch_add(1, Ordering::SeqCst);
 
-                        let duration = now.elapsed();
-                        if duration < time_min {
-                            time_min = duration;
+                        if progression > 1 {
+                            let duration = now.elapsed();
+                            if duration < time_min {
+                                time_min = duration;
+                            }
+                            if duration > time_max {
+                                time_max = duration;
+                            }
+                            time_total += duration;
+                            time_samples += 1;
                         }
-                        if duration > time_max {
-                            time_max = duration;
-                        }
-                        time_total += duration;
-                        time_samples += 1;
                     }
                 }
                 Some(MsgMaster::StopRender) => break 'outer,
