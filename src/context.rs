@@ -1,8 +1,6 @@
 pub use crate::error::*;
 use std::collections::HashMap;
 
-use slotmap::*;
-
 pub use crate::math::*;
 use crate::optix_bindings::*;
 pub use crate::optix_bindings::{BufferFlag, BufferType, Format};
@@ -31,6 +29,9 @@ use self::group::*;
 pub mod texture_sampler;
 use self::texture_sampler::*;
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct RayType {
     ray_type: u32,
@@ -41,7 +42,6 @@ pub struct EntryPointHandle {
     index: u32,
 }
 
-#[derive(Debug, Copy, Clone)]
 pub struct EntryPoint {
     ray_generation_program: ProgramHandle,
     exception_program: Option<ProgramHandle>,
@@ -75,94 +75,28 @@ pub struct Context {
     miss_programs: HashMap<RayType, ProgramHandle>,
     search_path: SearchPath,
 
-    context_variables: HashMap<String, Variable>,
-
-    ga_acceleration_obj: SlotMap<AccelerationHandle, RTacceleration>,
-
-    ga_buffer1d_obj: SlotMap<Buffer1dHandle, RTbuffer>,
-    ga_buffer2d_obj: SlotMap<Buffer2dHandle, RTbuffer>,
-    _ga_buffer3d_obj: SlotMap<Buffer3dHandle, RTbuffer>,
-
-    ga_program_obj: SlotMap<ProgramHandle, RTprogram>,
-    gd_program_variables:
-        SecondaryMap<ProgramHandle, HashMap<String, Variable>>,
-
-    ga_geometry_obj: SlotMap<GeometryHandle, RTgeometry>,
-    gd_geometry_variables:
-        SecondaryMap<GeometryHandle, HashMap<String, Variable>>,
-    gd_geometry_bounding_box: SecondaryMap<GeometryHandle, ProgramHandle>,
-    gd_geometry_intersection: SecondaryMap<GeometryHandle, ProgramHandle>,
-
-    ga_geometry_instance_obj:
-        SlotMap<GeometryInstanceHandle, RTgeometryinstance>,
-    gd_geometry_instance_variables:
-        SecondaryMap<GeometryInstanceHandle, HashMap<String, Variable>>,
-    gd_geometry_instance_geometry:
-        SecondaryMap<GeometryInstanceHandle, GeometryType>,
-    gd_geometry_instance_materials:
-        SecondaryMap<GeometryInstanceHandle, Vec<MaterialHandle>>,
-
-    ga_geometry_group_obj: SlotMap<GeometryGroupHandle, RTgeometrygroup>,
-    gd_geometry_group_acceleration:
-        SecondaryMap<GeometryGroupHandle, AccelerationHandle>,
-    gd_geometry_group_children:
-        SecondaryMap<GeometryGroupHandle, Vec<GeometryInstanceHandle>>,
-
-    ga_material_obj: SlotMap<MaterialHandle, RTmaterial>,
-    gd_material_variables:
-        SecondaryMap<MaterialHandle, HashMap<String, Variable>>,
-    gd_material_programs:
-        SecondaryMap<MaterialHandle, HashMap<RayType, MaterialProgram>>,
-
-    ga_transform_obj: SlotMap<TransformHandle, RTtransform>,
-    gd_transform_child: SecondaryMap<TransformHandle, TransformChild>,
-
-    ga_group_obj: SlotMap<GroupHandle, RTgroup>,
-    gd_group_acceleration: SecondaryMap<GroupHandle, AccelerationHandle>,
-    gd_group_children: SecondaryMap<GroupHandle, Vec<GroupChild>>,
-
-    ga_texture_sampler_obj: SlotMap<TextureSamplerHandle, RTtexturesampler>,
-    gd_texture_sampler_buffer: SecondaryMap<TextureSamplerHandle, BufferHandle>,
+    context_variables: HashMap<String, VariableHandle>,
+    variables: Vec<VariableHandle>,
+    programs: Vec<ProgramHandle>,
+    accelerations: Vec<AccelerationHandle>,
+    buffer1ds: Vec<Buffer1dHandle>,
+    buffer2ds: Vec<Buffer2dHandle>,
+    buffer3ds: Vec<Buffer3dHandle>,
+    geometrys: Vec<GeometryHandle>,
+    materials: Vec<MaterialHandle>,
+    texture_samplers: Vec<TextureSamplerHandle>,
+    geometry_instances: Vec<GeometryInstanceHandle>,
+    geometry_groups: Vec<GeometryGroupHandle>,
+    groups: Vec<GroupHandle>,
+    transforms: Vec<TransformHandle>,
+    buffer_names: HashMap<RTbuffer, String>,
+    buffer_mem: HashMap<RTbuffer, usize>,
 }
 
 unsafe impl Send for Context {}
 
 impl Context {
     pub fn new() -> Context {
-        let ga_acceleration_obj = SlotMap::with_key();
-
-        let ga_buffer1d_obj = SlotMap::with_key();
-        let ga_buffer2d_obj = SlotMap::with_key();
-        let _ga_buffer3d_obj = SlotMap::with_key();
-
-        let ga_program_obj = SlotMap::with_key();
-        let gd_program_variables = SecondaryMap::new();
-
-        let ga_geometry_obj = SlotMap::with_key();
-        let gd_geometry_variables = SecondaryMap::new();
-        let gd_geometry_bounding_box = SecondaryMap::new();
-        let gd_geometry_intersection = SecondaryMap::new();
-
-        let ga_geometry_instance_obj = SlotMap::with_key();
-        let gd_geometry_instance_variables = SecondaryMap::new();
-        let gd_geometry_instance_geometry = SecondaryMap::new();
-        let gd_geometry_instance_materials = SecondaryMap::new();
-
-        let ga_geometry_group_obj = SlotMap::with_key();
-        let gd_geometry_group_acceleration = SecondaryMap::new();
-        let gd_geometry_group_children = SecondaryMap::new();
-
-        let ga_material_obj = SlotMap::with_key();
-        let gd_material_variables = SecondaryMap::new();
-        let gd_material_programs = SecondaryMap::new();
-
-        let ga_transform_obj = SlotMap::with_key();
-        let gd_transform_child = SecondaryMap::new();
-
-        let ga_group_obj = SlotMap::with_key();
-        let gd_group_acceleration = SecondaryMap::new();
-        let gd_group_children = SecondaryMap::new();
-
         let (rt_ctx, result) = unsafe {
             let mut rt_ctx: RTcontext = std::mem::uninitialized();
             let result = rtContextCreate(&mut rt_ctx);
@@ -181,43 +115,22 @@ impl Context {
             search_path: SearchPath::new(),
 
             context_variables: HashMap::new(),
+            variables: Vec::new(),
+            programs: Vec::new(),
+            accelerations: Vec::new(),
+            buffer1ds: Vec::new(),
+            buffer2ds: Vec::new(),
+            buffer3ds: Vec::new(),
+            geometrys: Vec::new(),
+            materials: Vec::new(),
+            texture_samplers: Vec::new(),
+            geometry_instances: Vec::new(),
+            geometry_groups: Vec::new(),
+            groups: Vec::new(),
+            transforms: Vec::new(),
 
-            ga_acceleration_obj,
-
-            ga_buffer1d_obj,
-            ga_buffer2d_obj,
-            _ga_buffer3d_obj,
-
-            ga_program_obj,
-            gd_program_variables,
-
-            ga_geometry_obj,
-            gd_geometry_variables,
-            gd_geometry_bounding_box,
-            gd_geometry_intersection,
-
-            ga_geometry_instance_obj,
-            gd_geometry_instance_variables,
-            gd_geometry_instance_geometry,
-            gd_geometry_instance_materials,
-
-            ga_geometry_group_obj,
-            gd_geometry_group_acceleration,
-            gd_geometry_group_children,
-
-            ga_material_obj,
-            gd_material_variables,
-            gd_material_programs,
-
-            ga_transform_obj,
-            gd_transform_child,
-
-            ga_group_obj,
-            gd_group_acceleration,
-            gd_group_children,
-
-            ga_texture_sampler_obj: SlotMap::with_key(),
-            gd_texture_sampler_buffer: SecondaryMap::new(),
+            buffer_names: HashMap::new(),
+            buffer_mem: HashMap::new(),
         }
     }
 
@@ -253,11 +166,14 @@ impl Context {
         ray_type: RayType,
         prg: ProgramHandle,
     ) -> Result<()> {
-        self.program_validate(prg)?;
+        self.program_validate(&prg)?;
 
-        let rt_prg = self.ga_program_obj.get(prg).unwrap();
         let result = unsafe {
-            rtContextSetMissProgram(self.rt_ctx, ray_type.ray_type, *rt_prg)
+            rtContextSetMissProgram(
+                self.rt_ctx,
+                ray_type.ray_type,
+                prg.borrow().rt_prg,
+            )
         };
         if result != RtResult::SUCCESS {
             Err(self.optix_error("rtContextSetMissProgram", result))
@@ -291,9 +207,9 @@ impl Context {
         exception_program: Option<ProgramHandle>,
     ) -> Result<EntryPointHandle> {
         // Make sure the programs are good before trying to set them
-        self.program_validate(ray_generation_program)?;
-        if let Some(ep) = exception_program {
-            self.program_validate(ep)?;
+        self.program_validate(&ray_generation_program)?;
+        if let Some(ep) = &exception_program {
+            self.program_validate(&ep)?;
         }
 
         let result = unsafe {
@@ -308,28 +224,25 @@ impl Context {
 
         let index = self.entry_points.len() as u32;
 
-        let rt_prg_raygen = self
-            .ga_program_obj
-            .get(ray_generation_program)
-            .expect(&format!(
-                "Could not get RTprogram object from handle: {:?}",
-                ray_generation_program
-            ));
         let result = unsafe {
-            rtContextSetRayGenerationProgram(self.rt_ctx, index, *rt_prg_raygen)
+            rtContextSetRayGenerationProgram(
+                self.rt_ctx,
+                index,
+                ray_generation_program.borrow().rt_prg,
+            )
         };
         if result != RtResult::SUCCESS {
             return Err(
                 self.optix_error("rtContextSetRayGenerationProgram", result)
             );
         }
-        if let Some(ep) = exception_program {
-            let rt_prg_except = self.ga_program_obj.get(ep).expect(&format!(
-                "Could not get RTprogram object from handle: {:?}",
-                ep
-            ));
+        if let Some(ep) = &exception_program {
             let result = unsafe {
-                rtContextSetExceptionProgram(self.rt_ctx, index, *rt_prg_except)
+                rtContextSetExceptionProgram(
+                    self.rt_ctx,
+                    index,
+                    ep.borrow().rt_prg,
+                )
             };
             if result != RtResult::SUCCESS {
                 return Err(
@@ -368,70 +281,39 @@ impl Context {
         data: T,
     ) -> Result<()> {
         // check if the variable exists first
-        if let Some(old_variable) = self.context_variables.get(name) {
-            let var = match old_variable {
-                Variable::Pod(vp) => vp.var,
-                Variable::Object(vo) => vo.var,
-            };
-            let new_variable = data.set_optix_variable(self, var)?;
-            // destroy any resources the existing variable holds
-            if let Some(old_variable) =
-                self.context_variables.insert(name.to_owned(), new_variable)
-            {
-                self.destroy_variable(old_variable);
+        if let Some(ex_var) = self.context_variables.remove(name) {
+            let var = {
+                let ex_var_c = ex_var.borrow();
+                match &*ex_var_c {
+                    Variable::Pod(vp) => vp.var,
+                    Variable::Object(vo) => vo.var,
+                }
             };
 
-            Ok(())
+            ex_var.replace(data.set_optix_variable(self, var)?);
+            self.context_variables.insert(name.into(), ex_var);
         } else {
-            let (var, result) = unsafe {
-                let mut var: RTvariable = ::std::mem::uninitialized();
+            let (rt_var, result) = unsafe {
+                let mut rt_var: RTvariable = ::std::mem::uninitialized();
                 let c_name = std::ffi::CString::new(name).unwrap();
                 let result = rtContextDeclareVariable(
                     self.rt_ctx,
                     c_name.as_ptr(),
-                    &mut var,
+                    &mut rt_var,
                 );
-                (var, result)
+                (rt_var, result)
             };
             if result != RtResult::SUCCESS {
-                return Err(self.optix_error("rtDeclareVariable", result));
+                return Err(self.optix_error("rtContextDeclareVariable", result));
             }
 
-            let variable = data.set_optix_variable(self, var)?;
-            self.context_variables.insert(name.to_owned(), variable);
+            let var =
+                Rc::new(RefCell::new(data.set_optix_variable(self, rt_var)?));
 
-            Ok(())
+            self.context_variables.insert(name.into(), Rc::clone(&var));
         }
-    }
 
-    fn destroy_variable(&mut self, var: Variable) {
-        match var {
-            Variable::Pod(_) => (),
-            Variable::Object(vo) => match vo.object_handle {
-                ObjectHandle::BufferId(_) => (),
-                ObjectHandle::Buffer1d(h) => {
-                    self.buffer_destroy_1d(h);
-                }
-                ObjectHandle::Buffer2d(h) => {
-                    self.buffer_destroy_2d(h);
-                }
-                ObjectHandle::Group(h) => {
-                    self.group_destroy(h);
-                }
-                ObjectHandle::GeometryGroup(h) => {
-                    self.geometry_group_destroy(h);
-                }
-                ObjectHandle::Program(h) => {
-                    self.program_destroy(h);
-                }
-                ObjectHandle::Transform(h) => {
-                    self.transform_destroy(h);
-                }
-                ObjectHandle::TextureSampler(h) => {
-                    self.texture_sampler_destroy(h);
-                }
-            },
-        }
+        Ok(())
     }
 
     pub fn launch_2d(
@@ -506,6 +388,167 @@ impl Context {
 
         Ok(())
     }
+
+    /// Garbage-collect any scene objects that have no more (external) references
+    /// to them. This is stop-the-world so potentially expensive with a cost linear
+    /// in the number of scene objects.
+    pub fn collect(&mut self) {
+        self.variables.retain(|h| {
+            if Rc::strong_count(h) == 1 {
+                false
+            } else {
+                true
+            }
+        });
+
+        self.programs.retain(|h| {
+            if Rc::strong_count(h) == 1 {
+                unsafe {
+                    rtProgramDestroy(h.borrow().rt_prg);
+                }
+                false
+            } else {
+                true
+            }
+        });
+
+        self.accelerations.retain(|h| {
+            if Rc::strong_count(h) == 1 {
+                unsafe {
+                    rtAccelerationDestroy(h.borrow().rt_acc);
+                }
+                false
+            } else {
+                true
+            }
+        });
+
+        self.buffer1ds.retain(|h| {
+            if Rc::strong_count(h) == 1 {
+                unsafe {
+                    rtBufferDestroy(h.borrow().rt_buf);
+                }
+                false
+            } else {
+                true
+            }
+        });
+
+        self.buffer2ds.retain(|h| {
+            if Rc::strong_count(h) == 1 {
+                unsafe {
+                    rtBufferDestroy(h.borrow().rt_buf);
+                }
+                false
+            } else {
+                true
+            }
+        });
+
+        self.buffer3ds.retain(|h| {
+            if Rc::strong_count(h) == 1 {
+                unsafe {
+                    rtBufferDestroy(h.borrow().rt_buf);
+                }
+                false
+            } else {
+                true
+            }
+        });
+
+        self.geometrys.retain(|h| {
+            if Rc::strong_count(h) == 1 {
+                unsafe {
+                    rtGeometryDestroy(h.borrow().rt_geo);
+                }
+                false
+            } else {
+                true
+            }
+        });
+
+        self.materials.retain(|h| {
+            if Rc::strong_count(h) == 1 {
+                unsafe {
+                    rtMaterialDestroy(h.borrow().rt_mat);
+                }
+                false
+            } else {
+                true
+            }
+        });
+
+        self.texture_samplers.retain(|h| {
+            if Rc::strong_count(h) == 1 {
+                unsafe {
+                    rtTextureSamplerDestroy(h.borrow().rt_ts);
+                }
+                false
+            } else {
+                true
+            }
+        });
+
+        self.geometry_instances.retain(|h| {
+            if Rc::strong_count(h) == 1 {
+                unsafe {
+                    rtGeometryInstanceDestroy(h.borrow().rt_geoinst);
+                }
+                false
+            } else {
+                true
+            }
+        });
+
+        self.geometry_groups.retain(|h| {
+            if Rc::strong_count(h) == 1 {
+                unsafe {
+                    rtGeometryGroupDestroy(h.borrow().rt_geogrp);
+                }
+                false
+            } else {
+                true
+            }
+        });
+
+        self.groups.retain(|h| {
+            if Rc::strong_count(h) == 1 {
+                unsafe {
+                    rtGroupDestroy(h.borrow().rt_grp);
+                }
+                false
+            } else {
+                true
+            }
+        });
+
+        self.transforms.retain(|h| {
+            if Rc::strong_count(h) == 1 {
+                unsafe {
+                    rtTransformDestroy(h.borrow().rt_xform);
+                }
+                false
+            } else {
+                true
+            }
+        });
+    }
+
+    /// Creates a HashMap with the device memory usage of all buffers
+    pub fn mem_report(&self) -> HashMap<String, usize> {
+        let mut result = HashMap::new();
+        for (ptr, size) in self.buffer_mem.iter() {
+            let name = if let Some(name) = self.buffer_names.get(ptr) {
+                name.to_string()
+            } else {
+                format!("{:?}", ptr)
+            };
+
+            result.insert(name, *size);
+        }
+
+        result
+    }
 }
 
 impl Drop for Context {
@@ -577,7 +620,7 @@ mod tests {
 
         ctx.set_variable(
             "result_buffer",
-            ObjectHandle::Buffer2d(result_buffer),
+            ObjectHandle::Buffer2d(Rc::clone(&result_buffer)),
         )
         .expect("Setting buffer2d variable failed");
 
@@ -587,7 +630,7 @@ mod tests {
 
         {
             let buffer_map = ctx
-                .buffer_map_2d::<V4f32>(result_buffer)
+                .buffer_map_2d::<V4f32>(&result_buffer)
                 .expect("Buffer map failed");
 
             assert_eq!(buffer_map[(0, 0)], v4f32(0., 0., 0., 0.));
@@ -636,7 +679,7 @@ mod tests {
 
         ctx.set_variable(
             "result_buffer",
-            ObjectHandle::Buffer2d(result_buffer),
+            ObjectHandle::Buffer2d(Rc::clone(&result_buffer)),
         )
         .expect("Setting buffer2d variable failed");
 
@@ -657,7 +700,7 @@ mod tests {
 
         {
             let buffer_map = ctx
-                .buffer_map_2d::<V4f32>(result_buffer)
+                .buffer_map_2d::<V4f32>(&result_buffer)
                 .expect("Buffer map failed");
 
             assert_eq!(buffer_map[(0, 0)], v4f32(0., 0., 0., 0.));
@@ -715,7 +758,7 @@ mod tests {
             .program_create_from_ptx_file("mtl_constant.ptx", "closest_hit")?;
 
         ctx.program_set_variable(
-            prg_material_constant_closest,
+            &prg_material_constant_closest,
             "in_diffuse_albedo",
             v3f32(0.2, 0.2, 0.8),
         )?;
@@ -749,24 +792,24 @@ mod tests {
         )?;
         let geo_triangle =
             ctx.geometry_create(prg_mesh_bound, prg_mesh_intersect)?;
-        ctx.geometry_set_primitive_count(geo_triangle, 1)?;
+        ctx.geometry_set_primitive_count(&geo_triangle, 1)?;
         ctx.geometry_set_variable(
-            geo_triangle,
+            &geo_triangle,
             "vertex_buffer",
             ObjectHandle::Buffer1d(buf_vertex),
         )?;
         ctx.geometry_set_variable(
-            geo_triangle,
+            &geo_triangle,
             "index_buffer",
             ObjectHandle::Buffer1d(buf_indices),
         )?;
         ctx.geometry_set_variable(
-            geo_triangle,
+            &geo_triangle,
             "normal_buffer",
             ObjectHandle::Buffer1d(buf_normal),
         )?;
         ctx.geometry_set_variable(
-            geo_triangle,
+            &geo_triangle,
             "texcoord_buffer",
             ObjectHandle::Buffer1d(buf_texcoord),
         )?;
@@ -777,7 +820,7 @@ mod tests {
             BufferFlag::NONE,
         )?;
         ctx.geometry_set_variable(
-            geo_triangle,
+            &geo_triangle,
             "material_buffer",
             ObjectHandle::Buffer1d(buf_material),
         )?;
@@ -786,14 +829,6 @@ mod tests {
 
         ctx.set_miss_program(raytype_camera, prg_miss)?;
 
-        // let mut map_mtl_camera_any = HashMap::new();
-        // let mut map_mtl_camera_closest = HashMap::new();
-        // map_mtl_camera_any.insert(raytype_camera, prg_material_constant_any);
-        // map_mtl_camera_closest
-        //     .insert(raytype_camera, prg_material_constant_closest);
-
-        // let mtl_constant =
-        //     ctx.material_create(map_mtl_camera_any, map_mtl_camera_closest)?;
         let mut mtl_camera_programs = HashMap::new();
         mtl_camera_programs.insert(
             raytype_camera,
@@ -814,7 +849,7 @@ mod tests {
         let geo_group = ctx.geometry_group_create(acc, vec![geo_inst])?;
 
         ctx.program_set_variable(
-            prg_cam_screen,
+            &prg_cam_screen,
             "scene_root",
             ObjectHandle::GeometryGroup(geo_group),
         )?;
@@ -833,7 +868,7 @@ mod tests {
 
         ctx.set_variable(
             "result_buffer",
-            ObjectHandle::Buffer2d(result_buffer),
+            ObjectHandle::Buffer2d(Rc::clone(&result_buffer)),
         )
         .expect("Setting buffer2d variable failed");
 
@@ -857,7 +892,7 @@ mod tests {
 
         {
             let buffer_map = ctx
-                .buffer_map_2d::<V4f32>(result_buffer)
+                .buffer_map_2d::<V4f32>(&result_buffer)
                 .expect("Buffer map failed");
             write_scoped_buf_map_v4f32("single_triangle_mt.png", &buffer_map)?;
         }

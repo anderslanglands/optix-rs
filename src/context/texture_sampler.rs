@@ -1,6 +1,14 @@
 use crate::context::*;
 
-new_key_type! { pub struct TextureSamplerHandle; }
+use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct TextureSampler {
+    pub(crate) rt_ts: RTtexturesampler,
+    pub(crate) buffer: BufferHandle,
+}
+
+pub type TextureSamplerHandle = Rc<RefCell<TextureSampler>>;
 
 pub enum BufferHandle {
     Buffer1d(Buffer1dHandle),
@@ -12,8 +20,7 @@ impl Context {
         &mut self,
         buf: Buffer1dHandle,
     ) -> Result<TextureSamplerHandle> {
-        self.buffer_validate_1d(buf)?;
-        let rt_buf = self.ga_buffer1d_obj.get(buf).unwrap();
+        self.buffer_validate_1d(&buf)?;
 
         let (rt_ts, result) = unsafe {
             let mut rt_ts: RTtexturesampler = std::mem::zeroed();
@@ -25,15 +32,20 @@ impl Context {
             return Err(self.optix_error("rtTextureSamplerCreate", result));
         }
 
-        let result = unsafe { rtTextureSamplerSetBuffer(rt_ts, 0, 0, *rt_buf) };
+        let result = unsafe {
+            rtTextureSamplerSetBuffer(rt_ts, 0, 0, buf.borrow().rt_buf)
+        };
 
         if result != RtResult::SUCCESS {
             return Err(self.optix_error("rtTextureSamplerSetBuffer 1d", result));
         }
 
-        let ts = self.ga_texture_sampler_obj.insert(rt_ts);
-        self.gd_texture_sampler_buffer
-            .insert(ts, BufferHandle::Buffer1d(buf));
+        let ts = Rc::new(RefCell::new(TextureSampler {
+            rt_ts,
+            buffer: BufferHandle::Buffer1d(buf),
+        }));
+
+        self.texture_samplers.push(Rc::clone(&ts));
 
         Ok(ts)
     }
@@ -42,8 +54,7 @@ impl Context {
         &mut self,
         buf: Buffer2dHandle,
     ) -> Result<TextureSamplerHandle> {
-        self.buffer_validate_2d(buf)?;
-        let rt_buf = self.ga_buffer2d_obj.get(buf).unwrap();
+        self.buffer_validate_2d(&buf)?;
 
         let (rt_ts, result) = unsafe {
             let mut rt_ts: RTtexturesampler = std::mem::zeroed();
@@ -55,17 +66,25 @@ impl Context {
             return Err(self.optix_error("rtTextureSamplerCreate", result));
         }
 
-        let result = unsafe { rtTextureSamplerSetBuffer(rt_ts, 0, 0, *rt_buf) };
+        let result = unsafe {
+            rtTextureSamplerSetBuffer(rt_ts, 0, 0, buf.borrow().rt_buf)
+        };
 
         if result != RtResult::SUCCESS {
             return Err(self.optix_error("rtTextureSamplerSetBuffer 2d", result));
         }
 
-        let ts = self.ga_texture_sampler_obj.insert(rt_ts);
+        let ts = Rc::new(RefCell::new(TextureSampler {
+            rt_ts,
+            buffer: BufferHandle::Buffer2d(buf),
+        }));
+
+        self.texture_samplers.push(Rc::clone(&ts));
 
         Ok(ts)
     }
 
+    /*
     pub fn texture_sampler_destroy(&mut self, ts: TextureSamplerHandle) {
         let rt_ts = self.ga_texture_sampler_obj.get(ts).unwrap();
 
@@ -75,14 +94,13 @@ impl Context {
             panic!("rtTextureSamplerDestroy");
         }
     }
+    */
 
     pub fn texture_sampler_validate(
         &mut self,
-        ts: TextureSamplerHandle,
+        ts: &TextureSamplerHandle,
     ) -> Result<()> {
-        let rt_ts = self.ga_texture_sampler_obj.get(ts).unwrap();
-
-        let result = unsafe { rtTextureSamplerValidate(*rt_ts) };
+        let result = unsafe { rtTextureSamplerValidate(ts.borrow().rt_ts) };
 
         if result == RtResult::SUCCESS {
             Ok(())
@@ -93,59 +111,64 @@ impl Context {
 
     pub fn texture_sampler_set_buffer_1d(
         &mut self,
-        ts: TextureSamplerHandle,
+        ts: &TextureSamplerHandle,
         buf: Buffer1dHandle,
     ) -> Result<()> {
-        self.buffer_validate_1d(buf)?;
-        let rt_buf = self.ga_buffer1d_obj.get(buf).unwrap();
-        let rt_ts = self.ga_texture_sampler_obj.get(ts).unwrap();
+        self.buffer_validate_1d(&buf)?;
 
-        let result =
-            unsafe { rtTextureSamplerSetBuffer(*rt_ts, 0, 0, *rt_buf) };
+        let result = unsafe {
+            rtTextureSamplerSetBuffer(
+                ts.borrow().rt_ts,
+                0,
+                0,
+                buf.borrow().rt_buf,
+            )
+        };
 
         if result != RtResult::SUCCESS {
             return Err(self.optix_error("rtTextureSamplerSetBuffer 1d", result));
         }
 
-        self.gd_texture_sampler_buffer
-            .insert(ts, BufferHandle::Buffer1d(buf));
+        ts.borrow_mut().buffer = BufferHandle::Buffer1d(buf);
 
         Ok(())
     }
 
     pub fn texture_sampler_set_buffer_2d(
         &mut self,
-        ts: TextureSamplerHandle,
+        ts: &TextureSamplerHandle,
         buf: Buffer2dHandle,
     ) -> Result<()> {
-        self.buffer_validate_2d(buf)?;
-        let rt_buf = self.ga_buffer2d_obj.get(buf).unwrap();
-        let rt_ts = self.ga_texture_sampler_obj.get(ts).unwrap();
+        self.buffer_validate_2d(&buf)?;
 
-        let result =
-            unsafe { rtTextureSamplerSetBuffer(*rt_ts, 0, 0, *rt_buf) };
+        let result = unsafe {
+            rtTextureSamplerSetBuffer(
+                ts.borrow().rt_ts,
+                0,
+                0,
+                buf.borrow().rt_buf,
+            )
+        };
 
         if result != RtResult::SUCCESS {
             return Err(self.optix_error("rtTextureSamplerSetBuffer 1d", result));
         }
 
-        self.gd_texture_sampler_buffer
-            .insert(ts, BufferHandle::Buffer2d(buf));
+        ts.borrow_mut().buffer = BufferHandle::Buffer2d(buf);
 
         Ok(())
     }
 
     pub fn texture_sampler_set_filtering_modes(
         &mut self,
-        ts: TextureSamplerHandle,
+        ts: &TextureSamplerHandle,
         minification: FilterMode,
         magnification: FilterMode,
         mipmapping: FilterMode,
     ) -> Result<()> {
-        let rt_ts = self.ga_texture_sampler_obj.get(ts).unwrap();
         let result = unsafe {
             rtTextureSamplerSetFilteringModes(
-                *rt_ts,
+                ts.borrow().rt_ts,
                 minification,
                 magnification,
                 mipmapping,
@@ -163,12 +186,12 @@ impl Context {
 
     pub fn texture_sampler_set_indexing_mode(
         &mut self,
-        ts: TextureSamplerHandle,
+        ts: &TextureSamplerHandle,
         indexmode: TextureIndexMode,
     ) -> Result<()> {
-        let rt_ts = self.ga_texture_sampler_obj.get(ts).unwrap();
-        let result =
-            unsafe { rtTextureSamplerSetIndexingMode(*rt_ts, indexmode) };
+        let result = unsafe {
+            rtTextureSamplerSetIndexingMode(ts.borrow().rt_ts, indexmode)
+        };
 
         if result != RtResult::SUCCESS {
             return Err(
@@ -181,11 +204,12 @@ impl Context {
 
     pub fn texture_sampler_set_max_anisotropy(
         &mut self,
-        ts: TextureSamplerHandle,
+        ts: &TextureSamplerHandle,
         value: f32,
     ) -> Result<()> {
-        let rt_ts = self.ga_texture_sampler_obj.get(ts).unwrap();
-        let result = unsafe { rtTextureSamplerSetMaxAnisotropy(*rt_ts, value) };
+        let result = unsafe {
+            rtTextureSamplerSetMaxAnisotropy(ts.borrow().rt_ts, value)
+        };
 
         if result != RtResult::SUCCESS {
             return Err(
@@ -198,11 +222,12 @@ impl Context {
 
     pub fn texture_sampler_set_mip_level_bias(
         &mut self,
-        ts: TextureSamplerHandle,
+        ts: &TextureSamplerHandle,
         value: f32,
     ) -> Result<()> {
-        let rt_ts = self.ga_texture_sampler_obj.get(ts).unwrap();
-        let result = unsafe { rtTextureSamplerSetMipLevelBias(*rt_ts, value) };
+        let result = unsafe {
+            rtTextureSamplerSetMipLevelBias(ts.borrow().rt_ts, value)
+        };
 
         if result != RtResult::SUCCESS {
             return Err(
@@ -215,13 +240,13 @@ impl Context {
 
     pub fn texture_sampler_set_mip_level_clamp(
         &mut self,
-        ts: TextureSamplerHandle,
+        ts: &TextureSamplerHandle,
         lower: f32,
         upper: f32,
     ) -> Result<()> {
-        let rt_ts = self.ga_texture_sampler_obj.get(ts).unwrap();
-        let result =
-            unsafe { rtTextureSamplerSetMipLevelClamp(*rt_ts, lower, upper) };
+        let result = unsafe {
+            rtTextureSamplerSetMipLevelClamp(ts.borrow().rt_ts, lower, upper)
+        };
 
         if result != RtResult::SUCCESS {
             return Err(
@@ -234,11 +259,11 @@ impl Context {
 
     pub fn texture_sampler_set_read_mode(
         &mut self,
-        ts: TextureSamplerHandle,
+        ts: &TextureSamplerHandle,
         mode: TextureReadMode,
     ) -> Result<()> {
-        let rt_ts = self.ga_texture_sampler_obj.get(ts).unwrap();
-        let result = unsafe { rtTextureSamplerSetReadMode(*rt_ts, mode) };
+        let result =
+            unsafe { rtTextureSamplerSetReadMode(ts.borrow().rt_ts, mode) };
 
         if result != RtResult::SUCCESS {
             return Err(self.optix_error("rtTextureSamplerSetReadMode", result));
@@ -249,13 +274,13 @@ impl Context {
 
     pub fn texture_sampler_set_wrap_mode(
         &mut self,
-        ts: TextureSamplerHandle,
+        ts: &TextureSamplerHandle,
         dimension: u32,
         mode: WrapMode,
     ) -> Result<()> {
-        let rt_ts = self.ga_texture_sampler_obj.get(ts).unwrap();
-        let result =
-            unsafe { rtTextureSamplerSetWrapMode(*rt_ts, dimension, mode) };
+        let result = unsafe {
+            rtTextureSamplerSetWrapMode(ts.borrow().rt_ts, dimension, mode)
+        };
 
         if result != RtResult::SUCCESS {
             return Err(self.optix_error("rtTextureSamplerSetWrapMode", result));

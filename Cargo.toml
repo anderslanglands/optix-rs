@@ -17,7 +17,6 @@ colorspace_support = ["colorspace"]
 [dependencies]
 config = "0.9"
 nalgebra = "0.16"
-slotmap = "0.3"
 colorspace = {path="../colorspace-rs", optional = true}
 
 [build-dependencies]
