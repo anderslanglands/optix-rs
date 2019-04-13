@@ -28,7 +28,9 @@ pub use self::context::*;
 
 pub use crate::error::Error;
 use crate::error::Result;
-use crate::optix_bindings::{rtGetVersion, RtResult};
+pub use crate::optix_bindings::{
+    rtGetVersion, rtVariableSetUserData, RTsize, RTvariable, RtResult,
+};
 
 /// Returns the version of the OptiX library in use.
 pub fn get_version() -> Result<u32> {

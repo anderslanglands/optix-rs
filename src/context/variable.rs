@@ -7,13 +7,14 @@ use std::rc::Rc;
 use colorspace::rgb::RGBf32;
 
 pub enum ObjectHandle {
-    BufferId(BufferId),
+    BufferID(BufferId),
     Buffer1d(Buffer1dHandle),
     Buffer2d(Buffer2dHandle),
     // Buffer3d(Buffer3dHandle),
     GeometryGroup(GeometryGroupHandle),
     Group(GroupHandle),
     Program(ProgramHandle),
+    ProgramID(ProgramHandle),
     // Selector(SelectorHandle),
     TextureSampler(TextureSamplerHandle),
     Transform(TransformHandle),
@@ -26,6 +27,12 @@ pub struct VariableObject {
 
 pub struct VariablePod {
     pub(crate) var: RTvariable,
+}
+
+impl VariablePod {
+    pub fn new(var: RTvariable) -> VariablePod {
+        VariablePod { var }
+    }
 }
 
 pub enum Variable {
@@ -50,7 +57,7 @@ impl VariableStorable for ObjectHandle {
         variable: RTvariable,
     ) -> Result<Variable> {
         match &self {
-            ObjectHandle::BufferId(ref buf_id) => unsafe {
+            ObjectHandle::BufferID(ref buf_id) => unsafe {
                 let result = rtVariableSetUserData(
                     variable,
                     std::mem::size_of::<i32>() as RTsize,
@@ -151,6 +158,30 @@ impl VariableStorable for ObjectHandle {
                 if result != RtResult::SUCCESS {
                     return Err(ctx.optix_error(
                         "rtVariableSetObject(Program)".into(),
+                        result,
+                    ));
+                } else {
+                    return Ok(Variable::Object(VariableObject {
+                        var: variable,
+                        object_handle: self,
+                    }));
+                }
+            },
+            ObjectHandle::ProgramID(program_handle) => unsafe {
+                let mut id: i32 = std::mem::uninitialized();
+                let result =
+                    rtProgramGetId(program_handle.borrow().rt_prg, &mut id);
+
+                if result != RtResult::SUCCESS {
+                    return Err(ctx.optix_error(
+                        "rtProgramGetId(Program)".into(),
+                        result,
+                    ));
+                }
+                let result = rtVariableSet1i(variable, id);
+                if result != RtResult::SUCCESS {
+                    return Err(ctx.optix_error(
+                        "rtVariableSet1i(ProgramID)".into(),
                         result,
                     ));
                 } else {
