@@ -1,5 +1,9 @@
 use crate::context::*;
+use crate::format_get_size;
 use std::ops::{Index, IndexMut};
+
+use std::cell::RefCell;
+use std::rc::Rc;
 
 #[cfg(feature = "colorspace")]
 use colorspace::rgb::RGBf32;
@@ -7,9 +11,21 @@ use colorspace::rgb::RGBf32;
 #[derive(Clone, Copy)]
 pub struct BufferId(pub(crate) i32);
 
-new_key_type! { pub struct Buffer1dHandle; }
-new_key_type! { pub struct Buffer2dHandle; }
-new_key_type! { pub struct Buffer3dHandle; }
+pub struct Buffer1d {
+    pub(crate) rt_buf: RTbuffer,
+}
+
+pub struct Buffer2d {
+    pub(crate) rt_buf: RTbuffer,
+}
+
+pub struct Buffer3d {
+    pub(crate) rt_buf: RTbuffer,
+}
+
+pub type Buffer1dHandle = Rc<RefCell<Buffer1d>>;
+pub type Buffer2dHandle = Rc<RefCell<Buffer2d>>;
+pub type Buffer3dHandle = Rc<RefCell<Buffer3d>>;
 
 pub trait BufferElement: Clone {
     const FORMAT: Format;
@@ -17,6 +33,11 @@ pub trait BufferElement: Clone {
 
 impl BufferElement for f32 {
     const FORMAT: Format = Format::FLOAT;
+}
+
+#[cfg(feature = "colorspace")]
+impl BufferElement for RGBf32 {
+    const FORMAT: Format = Format::FLOAT3;
 }
 
 impl BufferElement for V2f32 {
@@ -27,13 +48,20 @@ impl BufferElement for V3f32 {
     const FORMAT: Format = Format::FLOAT3;
 }
 
-#[cfg(feature = "colorspace")]
-impl BufferElement for RGBf32 {
-    const FORMAT: Format = Format::FLOAT3;
-}
-
 impl BufferElement for V4f32 {
     const FORMAT: Format = Format::FLOAT4;
+}
+
+impl BufferElement for V2i32 {
+    const FORMAT: Format = Format::INT2;
+}
+
+impl BufferElement for V3i32 {
+    const FORMAT: Format = Format::INT3;
+}
+
+impl BufferElement for V4i32 {
+    const FORMAT: Format = Format::INT4;
 }
 
 impl BufferElement for i16 {
@@ -49,30 +77,18 @@ impl BufferElement for i32 {
 }
 
 impl BufferElement for BufferId {
-    const FORMAT: Format = Format::INT;
+    const FORMAT: Format = Format::BUFFER_ID;
 }
 
 impl BufferElement for u32 {
     const FORMAT: Format = Format::UNSIGNED_INT;
 }
 
-impl BufferElement for V2i32 {
-    const FORMAT: Format = Format::INT2;
-}
-
-impl BufferElement for V3i32 {
-    const FORMAT: Format = Format::INT3;
-}
-
-impl BufferElement for V4i32 {
-    const FORMAT: Format = Format::INT4;
-}
-
 /// A wrapper for a read-only mapping of a `Buffer1d` to host memory. The buffer
 /// is automatically unmapped when this struct is dropped.
 pub struct ScopedBufMap1d<'a, T: 'a + BufferElement> {
     data: &'a [T],
-    buf: &'a RTbuffer,
+    buf: &'a Buffer1dHandle,
 }
 
 impl<'a, T: BufferElement> ScopedBufMap1d<'a, T> {
@@ -103,7 +119,7 @@ impl<'a, T: BufferElement> Index<usize> for ScopedBufMap1d<'a, T> {
 impl<'a, T: BufferElement> Drop for ScopedBufMap1d<'a, T> {
     fn drop(&mut self) {
         unsafe {
-            if rtBufferUnmap(*self.buf) != RtResult::SUCCESS {
+            if rtBufferUnmap(self.buf.borrow().rt_buf) != RtResult::SUCCESS {
                 panic!("rtBufferUnmap failed!");
             }
         }
@@ -114,7 +130,7 @@ impl<'a, T: BufferElement> Drop for ScopedBufMap1d<'a, T> {
 /// buffer is automatically unmapped when this struct is dropped.
 pub struct ScopedBufMap1dMut<'a, T: 'a + BufferElement> {
     data: &'a mut [T],
-    buf: &'a mut RTbuffer,
+    buf: &'a Buffer1dHandle,
 }
 
 impl<'a, T: BufferElement> ScopedBufMap1dMut<'a, T> {
@@ -156,7 +172,7 @@ impl<'a, T: BufferElement> IndexMut<usize> for ScopedBufMap1dMut<'a, T> {
 impl<'a, T: BufferElement> Drop for ScopedBufMap1dMut<'a, T> {
     fn drop(&mut self) {
         unsafe {
-            if rtBufferUnmap(*self.buf) != RtResult::SUCCESS {
+            if rtBufferUnmap(self.buf.borrow().rt_buf) != RtResult::SUCCESS {
                 panic!("rtBufferUnmap failed!");
             }
         }
@@ -167,7 +183,7 @@ impl<'a, T: BufferElement> Drop for ScopedBufMap1dMut<'a, T> {
 /// is automatically unmapped when this struct is dropped.
 pub struct ScopedBufMap2d<'a, T: 'a + BufferElement> {
     data: &'a [T],
-    buf: &'a RTbuffer,
+    buf: &'a Buffer2dHandle,
     width: usize,
     height: usize,
 }
@@ -205,7 +221,7 @@ impl<'a, T: BufferElement> Index<(usize, usize)> for ScopedBufMap2d<'a, T> {
 impl<'a, T: BufferElement> Drop for ScopedBufMap2d<'a, T> {
     fn drop(&mut self) {
         unsafe {
-            if rtBufferUnmap(*self.buf) != RtResult::SUCCESS {
+            if rtBufferUnmap(self.buf.borrow().rt_buf) != RtResult::SUCCESS {
                 panic!("rtBufferUnmap failed!");
             }
         }
@@ -216,7 +232,7 @@ impl<'a, T: BufferElement> Drop for ScopedBufMap2d<'a, T> {
 /// buffer is automatically unmapped when this struct is dropped.
 pub struct ScopedBufMap2dMut<'a, T: 'a + BufferElement> {
     data: &'a mut [T],
-    buf: &'a mut RTbuffer,
+    buf: &'a Buffer2dHandle,
     width: usize,
     height: usize,
 }
@@ -267,7 +283,7 @@ impl<'a, T: BufferElement> IndexMut<(usize, usize)>
 impl<'a, T: BufferElement> Drop for ScopedBufMap2dMut<'a, T> {
     fn drop(&mut self) {
         unsafe {
-            if rtBufferUnmap(*self.buf) != RtResult::SUCCESS {
+            if rtBufferUnmap(self.buf.borrow().rt_buf) != RtResult::SUCCESS {
                 panic!("rtBufferUnmap failed!");
             }
         }
@@ -284,40 +300,61 @@ impl Context {
         buffer_type: BufferType,
         flags: BufferFlag,
     ) -> Result<Buffer1dHandle> {
-        let (buf, result) = unsafe {
-            let mut buf: RTbuffer = std::mem::uninitialized();
+        let (rt_buf, result) = unsafe {
+            let mut rt_buf: RTbuffer = std::mem::uninitialized();
             let result = rtBufferCreate(
                 self.rt_ctx,
                 buffer_type as u32 | flags as u32,
-                &mut buf,
+                &mut rt_buf,
             );
-            (buf, result)
+            (rt_buf, result)
         };
         if result != RtResult::SUCCESS {
             return Err(self.optix_error("rtBufferCreate", result));
         }
 
-        let result = unsafe { rtBufferSetFormat(buf, format) };
+        let result = unsafe { rtBufferSetFormat(rt_buf, format) };
         if result != RtResult::SUCCESS {
             return Err(self.optix_error("rtBufferSetFormat", result));
         }
 
-        let result = unsafe { rtBufferSetSize1D(buf, width as u64) };
+        let result = unsafe { rtBufferSetSize1D(rt_buf, width as u64) };
         if result != RtResult::SUCCESS {
             return Err(self.optix_error("rtBufferSetSize1D", result));
         }
 
-        let hnd = self.ga_buffer1d_obj.insert(buf);
+        let buf = Rc::new(RefCell::new(Buffer1d { rt_buf }));
+        self.buffer1ds.push(Rc::clone(&buf));
 
-        Ok(hnd)
+        self.buffer_mem
+            .insert(rt_buf, format_get_size(format) * width);
+
+        Ok(buf)
+    }
+
+    pub fn buffer_create_1d_named<S: Into<String>>(
+        &mut self,
+        width: usize,
+        format: Format,
+        buffer_type: BufferType,
+        flags: BufferFlag,
+        name: S,
+    ) -> Result<Buffer1dHandle> {
+        self.buffer_create_1d(width, format, buffer_type, flags)
+            .map(|h| {
+                self.buffer_names.insert(h.borrow().rt_buf, name.into());
+                h
+            })
     }
 
     /// Get the format of this buffer
-    pub fn buffer_get_format_1d(&self, buf: Buffer1dHandle) -> Result<Format> {
-        let buf = self.ga_buffer1d_obj.get(buf).unwrap();
+    pub fn buffer_get_format_1d(&self, buf: &Buffer1dHandle) -> Result<Format> {
         let (format, result) = unsafe {
             let mut format = Format::UNKNOWN;
-            let result = rtBufferGetFormat(*buf, &mut format as *mut Format);
+            let result = rtBufferGetFormat(
+                buf.borrow().rt_buf,
+                &mut format as *mut Format,
+            );
             (format, result)
         };
         if result != RtResult::SUCCESS {
@@ -329,14 +366,52 @@ impl Context {
     /// Set the format of this buffer
     pub fn buffer_set_format_1d(
         &mut self,
-        buf: Buffer1dHandle,
+        buf: &Buffer1dHandle,
         format: Format,
     ) -> Result<()> {
-        let buf = self.ga_buffer1d_obj.get(buf).unwrap();
-        let result = unsafe { rtBufferSetFormat(*buf, format) };
+        let result = unsafe { rtBufferSetFormat(buf.borrow().rt_buf, format) };
         if result != RtResult::SUCCESS {
             return Err(self.optix_error("rtBufferSetFormat", result));
         }
+
+        let width = self.buffer_get_size_1d(buf)?;
+        self.buffer_mem
+            .insert(buf.borrow().rt_buf, width * format_get_size(format));
+
+        Ok(())
+    }
+
+    /// Get the size of this buffer.
+    pub fn buffer_get_size_1d(&self, buf: &Buffer1dHandle) -> Result<usize> {
+        let (size, result) = unsafe {
+            let mut width = 0u64;
+            let result =
+                rtBufferGetSize1D(buf.borrow().rt_buf, &mut width as *mut u64);
+            (width, result)
+        };
+        if result != RtResult::SUCCESS {
+            return Err(self.optix_error("rtBufferGetSize1D", result));
+        }
+
+        Ok(size as usize)
+    }
+
+    /// Set the size of this buffer.
+    pub fn buffer_set_size_1d(
+        &mut self,
+        buf: &Buffer1dHandle,
+        width: usize,
+    ) -> Result<()> {
+        let result =
+            unsafe { rtBufferSetSize1D(buf.borrow().rt_buf, width as u64) };
+        if result != RtResult::SUCCESS {
+            return Err(self.optix_error("rtBufferSetSize1D", result));
+        }
+
+        let f = self.buffer_get_format_1d(buf)?;
+        self.buffer_mem
+            .insert(buf.borrow().rt_buf, width * format_get_size(f));
+
         Ok(())
     }
 
@@ -350,21 +425,35 @@ impl Context {
         let hnd =
             self.buffer_create_1d(data.len(), T::FORMAT, buffer_type, flags)?;
         {
-            let mut map = self.buffer_map_1d_mut::<T>(hnd).unwrap();
+            let mut map = self.buffer_map_1d_mut::<T>(&hnd).unwrap();
             map.as_slice_mut().clone_from_slice(data);
         }
         Ok(hnd)
     }
 
-    /// Destroys this buffer. Not that the buffer will not actually be destroyed
-    /// until all references to it from other scene graph objects are released.
-    /// # Panics
-    /// If buf is not a valid Buffer1dHandle
-    pub fn buffer_destroy_1d(&mut self, buf: Buffer1dHandle) {
-        let rt_buf = self.ga_buffer1d_obj.remove(buf).unwrap();
-        if unsafe { rtBufferDestroy(rt_buf) } != RtResult::SUCCESS {
-            panic!("Error destroying buffer {:?}", buf);
+    /// Create a new named `Buffer1d` and fill it with the given data.
+    pub fn buffer_create_from_slice_1d_named<
+        T: BufferElement,
+        S: Into<String>,
+    >(
+        &mut self,
+        data: &[T],
+        buffer_type: BufferType,
+        flags: BufferFlag,
+        name: S,
+    ) -> Result<Buffer1dHandle> {
+        let hnd = self.buffer_create_1d_named(
+            data.len(),
+            T::FORMAT,
+            buffer_type,
+            flags,
+            name,
+        )?;
+        {
+            let mut map = self.buffer_map_1d_mut::<T>(&hnd).unwrap();
+            map.as_slice_mut().clone_from_slice(data);
         }
+        Ok(hnd)
     }
 
     /// Creates a new `Buffer2d` on this Context, returning a `Buffer2dHandle`
@@ -377,33 +466,53 @@ impl Context {
         buffer_type: BufferType,
         flags: BufferFlag,
     ) -> Result<Buffer2dHandle> {
-        let (buf, result) = unsafe {
-            let mut buf: RTbuffer = std::mem::uninitialized();
+        let (rt_buf, result) = unsafe {
+            let mut rt_buf: RTbuffer = std::mem::uninitialized();
             let result = rtBufferCreate(
                 self.rt_ctx,
                 buffer_type as u32 | flags as u32,
-                &mut buf,
+                &mut rt_buf,
             );
-            (buf, result)
+            (rt_buf, result)
         };
         if result != RtResult::SUCCESS {
             return Err(self.optix_error("rtBufferCreate", result));
         }
 
-        let result = unsafe { rtBufferSetFormat(buf, format) };
+        let result = unsafe { rtBufferSetFormat(rt_buf, format) };
         if result != RtResult::SUCCESS {
             return Err(self.optix_error("rtBufferSetFormat", result));
         }
 
         let result =
-            unsafe { rtBufferSetSize2D(buf, width as u64, height as u64) };
+            unsafe { rtBufferSetSize2D(rt_buf, width as u64, height as u64) };
         if result != RtResult::SUCCESS {
             return Err(self.optix_error("rtBufferSetSize2D", result));
         }
 
-        let hnd = self.ga_buffer2d_obj.insert(buf);
+        let buf = Rc::new(RefCell::new(Buffer2d { rt_buf }));
+        self.buffer2ds.push(Rc::clone(&buf));
 
-        Ok(hnd)
+        self.buffer_mem
+            .insert(rt_buf, format_get_size(format) * width * height);
+
+        Ok(buf)
+    }
+
+    pub fn buffer_create_2d_named<S: Into<String>>(
+        &mut self,
+        width: usize,
+        height: usize,
+        format: Format,
+        buffer_type: BufferType,
+        flags: BufferFlag,
+        name: S,
+    ) -> Result<Buffer2dHandle> {
+        self.buffer_create_2d(width, height, format, buffer_type, flags)
+            .map(|h| {
+                self.buffer_names.insert(h.borrow().rt_buf, name.into());
+                h
+            })
     }
 
     /// Creates an unsized `Buffer2d` on this Context, returning a `Buffer2dHandle`
@@ -415,40 +524,42 @@ impl Context {
         buffer_type: BufferType,
         flags: BufferFlag,
     ) -> Result<Buffer2dHandle> {
-        let (buf, result) = unsafe {
-            let mut buf: RTbuffer = std::mem::uninitialized();
+        let (rt_buf, result) = unsafe {
+            let mut rt_buf: RTbuffer = std::mem::uninitialized();
             let result = rtBufferCreate(
                 self.rt_ctx,
                 buffer_type as u32 | flags as u32,
-                &mut buf,
+                &mut rt_buf,
             );
-            (buf, result)
+            (rt_buf, result)
         };
         if result != RtResult::SUCCESS {
             return Err(self.optix_error("rtBufferCreate", result));
         }
 
-        let result = unsafe { rtBufferSetFormat(buf, format) };
+        let result = unsafe { rtBufferSetFormat(rt_buf, format) };
         if result != RtResult::SUCCESS {
             return Err(self.optix_error("rtBufferSetFormat", result));
         }
 
-        let hnd = self.ga_buffer2d_obj.insert(buf);
+        let buf = Rc::new(RefCell::new(Buffer2d { rt_buf }));
+        self.buffer2ds.push(Rc::clone(&buf));
 
-        Ok(hnd)
+        self.buffer_mem.insert(rt_buf, 0);
+
+        Ok(buf)
     }
 
     /// Get the size of this buffer.
     pub fn buffer_get_size_2d(
         &self,
-        buf: Buffer2dHandle,
+        buf: &Buffer2dHandle,
     ) -> Result<(usize, usize)> {
-        let buf = self.ga_buffer2d_obj.get(buf).unwrap();
         let (size, result) = unsafe {
             let mut width = 0u64;
             let mut height = 0u64;
             let result = rtBufferGetSize2D(
-                *buf,
+                buf.borrow().rt_buf,
                 &mut width as *mut u64,
                 &mut height as *mut u64,
             );
@@ -463,25 +574,34 @@ impl Context {
     /// Set the size of this buffer.
     pub fn buffer_set_size_2d(
         &mut self,
-        buf: Buffer2dHandle,
+        buf: &Buffer2dHandle,
         width: usize,
         height: usize,
     ) -> Result<()> {
-        let buf = self.ga_buffer2d_obj.get(buf).unwrap();
-        let result =
-            unsafe { rtBufferSetSize2D(*buf, width as u64, height as u64) };
+        let result = unsafe {
+            rtBufferSetSize2D(buf.borrow().rt_buf, width as u64, height as u64)
+        };
         if result != RtResult::SUCCESS {
             return Err(self.optix_error("rtBufferSetSize2D", result));
         }
+
+        let format = self.buffer_get_format_2d(&buf)?;
+        self.buffer_mem.insert(
+            buf.borrow().rt_buf,
+            format_get_size(format) * width * height,
+        );
+
         Ok(())
     }
 
     /// Get the format of this buffer
-    pub fn buffer_get_format_2d(&self, buf: Buffer2dHandle) -> Result<Format> {
-        let buf = self.ga_buffer2d_obj.get(buf).unwrap();
+    pub fn buffer_get_format_2d(&self, buf: &Buffer2dHandle) -> Result<Format> {
         let (format, result) = unsafe {
             let mut format = Format::UNKNOWN;
-            let result = rtBufferGetFormat(*buf, &mut format as *mut Format);
+            let result = rtBufferGetFormat(
+                buf.borrow().rt_buf,
+                &mut format as *mut Format,
+            );
             (format, result)
         };
         if result != RtResult::SUCCESS {
@@ -493,26 +613,21 @@ impl Context {
     /// Set the format of this buffer
     pub fn buffer_set_format_2d(
         &mut self,
-        buf: Buffer2dHandle,
+        buf: &Buffer2dHandle,
         format: Format,
     ) -> Result<()> {
-        let buf = self.ga_buffer2d_obj.get(buf).unwrap();
-        let result = unsafe { rtBufferSetFormat(*buf, format) };
+        let result = unsafe { rtBufferSetFormat(buf.borrow().rt_buf, format) };
         if result != RtResult::SUCCESS {
             return Err(self.optix_error("rtBufferSetFormat", result));
         }
-        Ok(())
-    }
 
-    /// Destroys this buffer. Not that the buffer will not actually be destroyed
-    /// until all references to it from other scene graph objects are released.
-    /// # Panics
-    /// If buf is not a valid Buffer2dHandle
-    pub fn buffer_destroy_2d(&mut self, buf: Buffer2dHandle) {
-        let rt_buf = self.ga_buffer2d_obj.remove(buf).unwrap();
-        if unsafe { rtBufferDestroy(rt_buf) } != RtResult::SUCCESS {
-            panic!("Error destroying program {:?}", buf);
-        }
+        let (width, height) = self.buffer_get_size_2d(&buf)?;
+        self.buffer_mem.insert(
+            buf.borrow().rt_buf,
+            format_get_size(format) * width * height,
+        );
+
+        Ok(())
     }
 
     /// Map the buffer so that i can be read by host memory. The returned struct
@@ -520,8 +635,8 @@ impl Context {
     /// # Panics
     /// If buf is not a valid Buffer1dHandle
     pub fn buffer_map_1d<'a, T: BufferElement>(
-        &'a self,
-        buffer_handle: Buffer1dHandle,
+        &self,
+        buffer_handle: &'a Buffer1dHandle,
     ) -> Result<ScopedBufMap1d<'a, T>> {
         // first check that the formats align
         let format = self.buffer_get_format_1d(buffer_handle)?;
@@ -532,39 +647,33 @@ impl Context {
             });
         }
 
-        match self.ga_buffer1d_obj.get(buffer_handle) {
-            Some(buf) => {
-                let mut p: *const T = std::ptr::null();
-                let result = unsafe {
-                    rtBufferMap(
-                        *buf,
-                        (&mut p) as *mut _ as *mut *mut ::std::os::raw::c_void,
-                    )
-                };
-                if result != RtResult::SUCCESS {
-                    Err(self.optix_error("rtBufferMap", result))
-                } else {
-                    let (width, result) = unsafe {
-                        let mut width: RTsize = 0;
-                        let result = rtBufferGetSize1D(*buf, &mut width);
-                        (width, result)
-                    };
+        let mut p: *const T = std::ptr::null();
+        let result = unsafe {
+            rtBufferMap(
+                buffer_handle.borrow().rt_buf,
+                (&mut p) as *mut _ as *mut *mut ::std::os::raw::c_void,
+            )
+        };
+        if result != RtResult::SUCCESS {
+            Err(self.optix_error("rtBufferMap", result))
+        } else {
+            let (width, result) = unsafe {
+                let mut width: RTsize = 0;
+                let result = rtBufferGetSize1D(
+                    buffer_handle.borrow().rt_buf,
+                    &mut width,
+                );
+                (width, result)
+            };
 
-                    if result != RtResult::SUCCESS {
-                        return Err(
-                            self.optix_error("rtBufferGetSize1D", result)
-                        );
-                    }
-
-                    Ok(ScopedBufMap1d {
-                        data: unsafe {
-                            std::slice::from_raw_parts(p, width as usize)
-                        },
-                        buf,
-                    })
-                }
+            if result != RtResult::SUCCESS {
+                return Err(self.optix_error("rtBufferGetSize1D", result));
             }
-            None => Err(Error::HandleNotFoundError),
+
+            Ok(ScopedBufMap1d {
+                data: unsafe { std::slice::from_raw_parts(p, width as usize) },
+                buf: &buffer_handle,
+            })
         }
     }
 
@@ -573,8 +682,8 @@ impl Context {
     /// # Panics
     /// If buf is not a valid Buffer1dHandle
     pub fn buffer_map_1d_mut<'a, T: BufferElement>(
-        &'a mut self,
-        buffer_handle: Buffer1dHandle,
+        &mut self,
+        buffer_handle: &'a Buffer1dHandle,
     ) -> Result<ScopedBufMap1dMut<'a, T>> {
         // first check that the formats align
         let format = self.buffer_get_format_1d(buffer_handle)?;
@@ -585,40 +694,38 @@ impl Context {
             });
         }
 
-        match self.ga_buffer1d_obj.get_mut(buffer_handle) {
-            Some(buf) => {
-                let mut p: *mut T = std::ptr::null_mut();
-                let result = unsafe {
-                    rtBufferMap(
-                        *buf,
-                        (&mut p) as *mut _ as *mut *mut ::std::os::raw::c_void,
-                    )
-                };
-                if result != RtResult::SUCCESS {
-                    Err(Error::Optix((result, "rtBufferMap".to_owned())))
-                } else {
-                    let (width, result) = unsafe {
-                        let mut width: RTsize = 0;
-                        let result = rtBufferGetSize1D(*buf, &mut width);
-                        (width, result)
-                    };
+        let mut p: *mut T = std::ptr::null_mut();
+        let result = unsafe {
+            rtBufferMap(
+                buffer_handle.borrow().rt_buf,
+                (&mut p) as *mut _ as *mut *mut ::std::os::raw::c_void,
+            )
+        };
+        if result != RtResult::SUCCESS {
+            Err(Error::Optix((result, "rtBufferMap".to_owned())))
+        } else {
+            let (width, result) = unsafe {
+                let mut width: RTsize = 0;
+                let result = rtBufferGetSize1D(
+                    buffer_handle.borrow().rt_buf,
+                    &mut width,
+                );
+                (width, result)
+            };
 
-                    if result != RtResult::SUCCESS {
-                        return Err(Error::Optix((
-                            result,
-                            "rtBufferGetSize1D".to_owned(),
-                        )));
-                    }
-
-                    Ok(ScopedBufMap1dMut {
-                        data: unsafe {
-                            std::slice::from_raw_parts_mut(p, width as usize)
-                        },
-                        buf,
-                    })
-                }
+            if result != RtResult::SUCCESS {
+                return Err(Error::Optix((
+                    result,
+                    "rtBufferGetSize1D".to_owned(),
+                )));
             }
-            None => Err(Error::HandleNotFoundError),
+
+            Ok(ScopedBufMap1dMut {
+                data: unsafe {
+                    std::slice::from_raw_parts_mut(p, width as usize)
+                },
+                buf: &buffer_handle,
+            })
         }
     }
 
@@ -627,8 +734,8 @@ impl Context {
     /// # Panics
     /// If buf is not a valid Buffer2dHandle
     pub fn buffer_map_2d<'a, T: BufferElement>(
-        &'a self,
-        buffer_handle: Buffer2dHandle,
+        &self,
+        buffer_handle: &'a Buffer2dHandle,
     ) -> Result<ScopedBufMap2d<'a, T>> {
         // first check that the formats align
         let format = self.buffer_get_format_2d(buffer_handle)?;
@@ -653,47 +760,45 @@ impl Context {
             Ok(1)
         }?;
 
-        match self.ga_buffer2d_obj.get(buffer_handle) {
-            Some(buf) => {
-                let mut p: *const T = std::ptr::null();
-                let result = unsafe {
-                    rtBufferMap(
-                        *buf,
-                        (&mut p) as *mut _ as *mut *mut ::std::os::raw::c_void,
-                    )
-                };
-                if result != RtResult::SUCCESS {
-                    Err(Error::Optix((result, "rtBufferMap".to_owned())))
-                } else {
-                    let (width, height, result) = unsafe {
-                        let mut width: RTsize = 0;
-                        let mut height: RTsize = 0;
-                        let result =
-                            rtBufferGetSize2D(*buf, &mut width, &mut height);
-                        (width, height, result)
-                    };
+        let mut p: *const T = std::ptr::null();
+        let result = unsafe {
+            rtBufferMap(
+                buffer_handle.borrow().rt_buf,
+                (&mut p) as *mut _ as *mut *mut ::std::os::raw::c_void,
+            )
+        };
+        if result != RtResult::SUCCESS {
+            Err(Error::Optix((result, "rtBufferMap".to_owned())))
+        } else {
+            let (width, height, result) = unsafe {
+                let mut width: RTsize = 0;
+                let mut height: RTsize = 0;
+                let result = rtBufferGetSize2D(
+                    buffer_handle.borrow().rt_buf,
+                    &mut width,
+                    &mut height,
+                );
+                (width, height, result)
+            };
 
-                    if result != RtResult::SUCCESS {
-                        return Err(Error::Optix((
-                            result,
-                            "rtBufferGetSize2D".to_owned(),
-                        )));
-                    }
-
-                    Ok(ScopedBufMap2d {
-                        data: unsafe {
-                            std::slice::from_raw_parts(
-                                p,
-                                (width * height) as usize * num_channels,
-                            )
-                        },
-                        buf,
-                        width: width as usize,
-                        height: height as usize,
-                    })
-                }
+            if result != RtResult::SUCCESS {
+                return Err(Error::Optix((
+                    result,
+                    "rtBufferGetSize2D".to_owned(),
+                )));
             }
-            None => Err(Error::HandleNotFoundError),
+
+            Ok(ScopedBufMap2d {
+                data: unsafe {
+                    std::slice::from_raw_parts(
+                        p,
+                        (width * height) as usize * num_channels,
+                    )
+                },
+                buf: &buffer_handle,
+                width: width as usize,
+                height: height as usize,
+            })
         }
     }
 
@@ -702,8 +807,8 @@ impl Context {
     /// # Panics
     /// If buf is not a valid Buffer2dHandle
     pub fn buffer_map_2d_mut<'a, T: BufferElement>(
-        &'a mut self,
-        buffer_handle: Buffer2dHandle,
+        &mut self,
+        buffer_handle: &'a Buffer2dHandle,
     ) -> Result<ScopedBufMap2dMut<'a, T>> {
         // first check that the formats align
         // we support 'downcasting' a float tuple type to a float array
@@ -729,57 +834,55 @@ impl Context {
             Ok(1)
         }?;
 
-        match self.ga_buffer2d_obj.get_mut(buffer_handle) {
-            Some(buf) => {
-                let mut p: *mut T = std::ptr::null_mut();
-                let result = unsafe {
-                    rtBufferMap(
-                        *buf,
-                        (&mut p) as *mut _ as *mut *mut ::std::os::raw::c_void,
-                    )
-                };
-                if result != RtResult::SUCCESS {
-                    Err(Error::Optix((result, "rtBufferMap".to_owned())))
-                } else {
-                    let (width, height, result) = unsafe {
-                        let mut width: RTsize = 0;
-                        let mut height: RTsize = 0;
-                        let result =
-                            rtBufferGetSize2D(*buf, &mut width, &mut height);
-                        (width, height, result)
-                    };
+        let mut p: *mut T = std::ptr::null_mut();
+        let result = unsafe {
+            rtBufferMap(
+                buffer_handle.borrow().rt_buf,
+                (&mut p) as *mut _ as *mut *mut ::std::os::raw::c_void,
+            )
+        };
+        if result != RtResult::SUCCESS {
+            Err(Error::Optix((result, "rtBufferMap".to_owned())))
+        } else {
+            let (width, height, result) = unsafe {
+                let mut width: RTsize = 0;
+                let mut height: RTsize = 0;
+                let result = rtBufferGetSize2D(
+                    buffer_handle.borrow().rt_buf,
+                    &mut width,
+                    &mut height,
+                );
+                (width, height, result)
+            };
 
-                    if result != RtResult::SUCCESS {
-                        return Err(Error::Optix((
-                            result,
-                            "rtBufferGetSize2D".to_owned(),
-                        )));
-                    }
-
-                    Ok(ScopedBufMap2dMut {
-                        data: unsafe {
-                            std::slice::from_raw_parts_mut(
-                                p,
-                                (width * height) as usize * num_channels,
-                            )
-                        },
-                        buf,
-                        width: width as usize,
-                        height: height as usize,
-                    })
-                }
+            if result != RtResult::SUCCESS {
+                return Err(Error::Optix((
+                    result,
+                    "rtBufferGetSize2D".to_owned(),
+                )));
             }
-            None => Err(Error::HandleNotFoundError),
+
+            Ok(ScopedBufMap2dMut {
+                data: unsafe {
+                    std::slice::from_raw_parts_mut(
+                        p,
+                        (width * height) as usize * num_channels,
+                    )
+                },
+                buf: &buffer_handle,
+                width: width as usize,
+                height: height as usize,
+            })
         }
     }
 
     pub fn buffer_get_id_1d(
         &mut self,
-        buffer_handle: Buffer1dHandle,
+        buffer_handle: &Buffer1dHandle,
     ) -> Result<BufferId> {
-        let buf = self.ga_buffer1d_obj.get(buffer_handle).unwrap();
         let mut id = 0i32;
-        let result = unsafe { rtBufferGetId(*buf, &mut id) };
+        let result =
+            unsafe { rtBufferGetId(buffer_handle.borrow().rt_buf, &mut id) };
         if result != RtResult::SUCCESS {
             return Err(Error::Optix((result, "rtBufferGetId".to_owned())));
         } else {
@@ -789,11 +892,11 @@ impl Context {
 
     pub fn buffer_get_id_2d(
         &mut self,
-        buffer_handle: Buffer2dHandle,
+        buffer_handle: &Buffer2dHandle,
     ) -> Result<BufferId> {
-        let buf = self.ga_buffer2d_obj.get(buffer_handle).unwrap();
         let mut id = 0i32;
-        let result = unsafe { rtBufferGetId(*buf, &mut id) };
+        let result =
+            unsafe { rtBufferGetId(buffer_handle.borrow().rt_buf, &mut id) };
         if result != RtResult::SUCCESS {
             return Err(Error::Optix((result, "rtBufferGetId".to_owned())));
         } else {
@@ -801,9 +904,8 @@ impl Context {
         }
     }
 
-    pub fn buffer_validate_1d(&self, buf: Buffer1dHandle) -> Result<()> {
-        let rt_buf = self.ga_buffer1d_obj.get(buf).unwrap();
-        let result = unsafe { rtBufferValidate(*rt_buf) };
+    pub fn buffer_validate_1d(&self, buf: &Buffer1dHandle) -> Result<()> {
+        let result = unsafe { rtBufferValidate(buf.borrow().rt_buf) };
         if result == RtResult::SUCCESS {
             Ok(())
         } else {
@@ -811,9 +913,8 @@ impl Context {
         }
     }
 
-    pub fn buffer_validate_2d(&self, buf: Buffer2dHandle) -> Result<()> {
-        let rt_buf = self.ga_buffer2d_obj.get(buf).unwrap();
-        let result = unsafe { rtBufferValidate(*rt_buf) };
+    pub fn buffer_validate_2d(&self, buf: &Buffer2dHandle) -> Result<()> {
+        let result = unsafe { rtBufferValidate(buf.borrow().rt_buf) };
         if result == RtResult::SUCCESS {
             Ok(())
         } else {

@@ -1,7 +1,13 @@
 use crate::context::*;
+use std::cell::RefCell;
 use std::ffi::CString;
+use std::rc::Rc;
 
-new_key_type! { pub struct AccelerationHandle; }
+pub struct Acceleration {
+    pub(crate) rt_acc: RTacceleration,
+}
+
+pub type AccelerationHandle = Rc<RefCell<Acceleration>>;
 
 /// Selects the BVH building algorithm to be used by an `Accelerator`
 #[derive(Copy, Clone)]
@@ -39,20 +45,21 @@ impl Context {
         if result != RtResult::SUCCESS {
             Err(self.optix_error("rtAccelerationCreate", result))
         } else {
-            let acc = self.ga_acceleration_obj.insert(rt_acc);
+            let acc = Rc::new(RefCell::new(Acceleration { rt_acc }));
+            self.accelerations.push(Rc::clone(&acc));
             Ok(acc)
         }
     }
 
-    /// Destroys this Acceleration an all objects attached to it. Note that the
-    /// Acceleration will not actually be destroyed until all references to it from
-    /// other scene graph objects are released.
-    /// # Panics
-    /// If mat is not a valid AccelerationHandle
-    pub fn acceleration_destroy(&mut self, acc: AccelerationHandle) {
-        let rt_acc = self.ga_acceleration_obj.remove(acc).unwrap();
-        if unsafe { rtAccelerationDestroy(rt_acc) } != RtResult::SUCCESS {
-            panic!("Error destroying acceleration: {:?}", acc);
+    pub fn acceleration_mark_dirty(
+        &mut self,
+        acc: &AccelerationHandle,
+    ) -> Result<()> {
+        let result = unsafe { rtAccelerationMarkDirty(acc.borrow().rt_acc) };
+        if result != RtResult::SUCCESS {
+            Err(self.optix_error("rtAccelerationMarkDirty", result))
+        } else {
+            Ok(())
         }
     }
 
@@ -60,9 +67,11 @@ impl Context {
     /// set up.
     /// # Panics
     /// If mat is not a valid AccelerationHandle
-    pub fn acceleration_validate(&self, acc: AccelerationHandle) -> Result<()> {
-        let rt_acc = *self.ga_acceleration_obj.get(acc).unwrap();
-        let result = unsafe { rtAccelerationValidate(rt_acc) };
+    pub fn acceleration_validate(
+        &self,
+        acc: &AccelerationHandle,
+    ) -> Result<()> {
+        let result = unsafe { rtAccelerationValidate(acc.borrow().rt_acc) };
         if result != RtResult::SUCCESS {
             Err(self.optix_error("rtAccelerationValidate", result))
         } else {

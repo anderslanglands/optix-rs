@@ -1,6 +1,15 @@
 use crate::context::*;
 
-new_key_type! { pub struct GroupHandle; }
+use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct Group {
+    pub(crate) rt_grp: RTgroup,
+    pub(crate) acc: AccelerationHandle,
+    pub(crate) children: Vec<GroupChild>,
+}
+
+pub type GroupHandle = Rc<RefCell<Group>>;
 
 pub enum GroupChild {
     None,
@@ -19,10 +28,10 @@ impl Context {
         for child in &children {
             match child {
                 GroupChild::GeometryGroup(h) => {
-                    self.geometry_group_validate(*h)?
+                    self.geometry_group_validate(h)?
                 }
-                GroupChild::Group(h) => self.group_validate(*h)?,
-                GroupChild::Transform(h) => self.transform_validate(*h)?,
+                GroupChild::Group(h) => self.group_validate(h)?,
+                GroupChild::Transform(h) => self.transform_validate(h)?,
                 GroupChild::None => unreachable!(),
             }
         }
@@ -36,15 +45,12 @@ impl Context {
             return Err(self.optix_error("rtGroupCreate", result));
         }
 
-        let grp = self.ga_group_obj.insert(rt_grp);
-
         // Add the acceleration
-        let rt_acc = self.ga_acceleration_obj.get(acc).unwrap();
-        let result = unsafe { rtGroupSetAcceleration(rt_grp, *rt_acc) };
+        let result =
+            unsafe { rtGroupSetAcceleration(rt_grp, acc.borrow().rt_acc) };
         if result != RtResult::SUCCESS {
             return Err(self.optix_error("rtGroupSetAcceleration", result));
         }
-        self.gd_group_acceleration.insert(grp, acc);
 
         // Add the children
         let result =
@@ -55,13 +61,11 @@ impl Context {
         for (i, child) in children.iter().enumerate() {
             match child {
                 GroupChild::GeometryGroup(h) => {
-                    let c_rt_geogrp =
-                        *self.ga_geometry_group_obj.get(*h).unwrap();
                     let result = unsafe {
                         rtGroupSetChild(
                             rt_grp,
                             i as u32,
-                            c_rt_geogrp as RTobject,
+                            h.borrow().rt_geogrp as RTobject,
                         )
                     };
                     if result != RtResult::SUCCESS {
@@ -69,21 +73,23 @@ impl Context {
                     }
                 }
                 GroupChild::Group(h) => {
-                    let c_rt_grp = *self.ga_group_obj.get(*h).unwrap();
                     let result = unsafe {
-                        rtGroupSetChild(rt_grp, i as u32, c_rt_grp as RTobject)
+                        rtGroupSetChild(
+                            rt_grp,
+                            i as u32,
+                            h.borrow().rt_grp as RTobject,
+                        )
                     };
                     if result != RtResult::SUCCESS {
                         return Err(self.optix_error("rtGroupSetChild", result));
                     }
                 }
                 GroupChild::Transform(h) => {
-                    let c_rt_xform = *self.ga_transform_obj.get(*h).unwrap();
                     let result = unsafe {
                         rtGroupSetChild(
                             rt_grp,
                             i as u32,
-                            c_rt_xform as RTobject,
+                            h.borrow().rt_xform as RTobject,
                         )
                     };
                     if result != RtResult::SUCCESS {
@@ -94,55 +100,139 @@ impl Context {
             }
         }
 
-        self.gd_group_children.insert(grp, children);
+        let grp = Rc::new(RefCell::new(Group {
+            rt_grp,
+            acc,
+            children,
+        }));
+
+        self.groups.push(Rc::clone(&grp));
 
         Ok(grp)
     }
 
+    pub fn group_set_children(
+        &mut self,
+        grp: &GroupHandle,
+        children: Vec<GroupChild>,
+    ) -> Result<()> {
+        for child in &children {
+            match child {
+                GroupChild::GeometryGroup(h) => {
+                    self.geometry_group_validate(h)?
+                }
+                GroupChild::Group(h) => self.group_validate(h)?,
+                GroupChild::Transform(h) => self.transform_validate(h)?,
+                GroupChild::None => unreachable!(),
+            }
+        }
+
+        // Add the children
+        let result = unsafe {
+            rtGroupSetChildCount(grp.borrow().rt_grp, children.len() as u32)
+        };
+        if result != RtResult::SUCCESS {
+            return Err(self.optix_error("rtGroupSetChildCount", result));
+        }
+        for (i, child) in children.iter().enumerate() {
+            match child {
+                GroupChild::GeometryGroup(h) => {
+                    let result = unsafe {
+                        rtGroupSetChild(
+                            grp.borrow().rt_grp,
+                            i as u32,
+                            h.borrow().rt_geogrp as RTobject,
+                        )
+                    };
+                    if result != RtResult::SUCCESS {
+                        return Err(self.optix_error("rtGroupSetChild", result));
+                    }
+                }
+                GroupChild::Group(h) => {
+                    let result = unsafe {
+                        rtGroupSetChild(
+                            grp.borrow().rt_grp,
+                            i as u32,
+                            h.borrow().rt_grp as RTobject,
+                        )
+                    };
+                    if result != RtResult::SUCCESS {
+                        return Err(self.optix_error("rtGroupSetChild", result));
+                    }
+                }
+                GroupChild::Transform(h) => {
+                    let result = unsafe {
+                        rtGroupSetChild(
+                            grp.borrow().rt_grp,
+                            i as u32,
+                            h.borrow().rt_xform as RTobject,
+                        )
+                    };
+                    if result != RtResult::SUCCESS {
+                        return Err(self.optix_error("rtGroupSetChild", result));
+                    }
+                }
+                GroupChild::None => unreachable!(),
+            }
+        }
+
+        grp.borrow_mut().children = children;
+
+        Ok(())
+    }
+
     pub fn group_add_child(
         &mut self,
-        grp: GroupHandle,
+        grp: &GroupHandle,
         child: GroupChild,
     ) -> Result<()> {
-        match child {
-            GroupChild::GeometryGroup(h) => self.geometry_group_validate(h)?,
-            GroupChild::Group(h) => self.group_validate(h)?,
-            GroupChild::Transform(h) => self.transform_validate(h)?,
+        match &child {
+            GroupChild::GeometryGroup(h) => self.geometry_group_validate(&h)?,
+            GroupChild::Group(h) => self.group_validate(&h)?,
+            GroupChild::Transform(h) => self.transform_validate(&h)?,
             GroupChild::None => unreachable!(),
         }
 
-        let rt_grp = *self.ga_group_obj.get(grp).unwrap();
-        let children = self.gd_group_children.get_mut(grp).unwrap();
-        let index = children.len() as u32;
+        let index = grp.borrow().children.len() as u32;
 
-        let result = unsafe { rtGroupSetChildCount(rt_grp, index + 1) };
+        let result =
+            unsafe { rtGroupSetChildCount(grp.borrow().rt_grp, index + 1) };
         if result != RtResult::SUCCESS {
             return Err(self.optix_error("rtGroupSetChildCount", result));
         }
 
-        match child {
+        match &child {
             GroupChild::GeometryGroup(h) => {
-                let c_rt_geogrp = *self.ga_geometry_group_obj.get(h).unwrap();
                 let result = unsafe {
-                    rtGroupSetChild(rt_grp, index, c_rt_geogrp as RTobject)
+                    rtGroupSetChild(
+                        grp.borrow().rt_grp,
+                        index,
+                        h.borrow().rt_geogrp as RTobject,
+                    )
                 };
                 if result != RtResult::SUCCESS {
                     return Err(self.optix_error("rtGroupSetChild", result));
                 }
             }
             GroupChild::Group(h) => {
-                let c_rt_grp = *self.ga_group_obj.get(h).unwrap();
                 let result = unsafe {
-                    rtGroupSetChild(rt_grp, index, c_rt_grp as RTobject)
+                    rtGroupSetChild(
+                        grp.borrow().rt_grp,
+                        index,
+                        h.borrow().rt_grp as RTobject,
+                    )
                 };
                 if result != RtResult::SUCCESS {
                     return Err(self.optix_error("rtGroupSetChild", result));
                 }
             }
             GroupChild::Transform(h) => {
-                let c_rt_xform = *self.ga_transform_obj.get(h).unwrap();
                 let result = unsafe {
-                    rtGroupSetChild(rt_grp, index, c_rt_xform as RTobject)
+                    rtGroupSetChild(
+                        grp.borrow().rt_grp,
+                        index,
+                        h.borrow().rt_xform as RTobject,
+                    )
                 };
                 if result != RtResult::SUCCESS {
                     return Err(self.optix_error("rtGroupSetChild", result));
@@ -151,30 +241,35 @@ impl Context {
             GroupChild::None => unreachable!(),
         }
 
-        children.push(child);
+        grp.borrow_mut().children.push(child);
 
         Ok(())
     }
 
-    pub fn group_destroy(&mut self, grp: GroupHandle) {
-        let rt_grp = self.ga_group_obj.remove(grp).unwrap();
-
-        let _acc = self.gd_group_acceleration.remove(grp);
-
-        let _children = self.gd_group_children.remove(grp);
-
-        if unsafe { rtGroupDestroy(rt_grp) } != RtResult::SUCCESS {
-            panic!("Error destroying group {:?}", grp);
-        }
-    }
-
-    pub fn group_validate(&self, grp: GroupHandle) -> Result<()> {
-        let rt_grp = *self.ga_group_obj.get(grp).unwrap();
-        let result = unsafe { rtGroupValidate(rt_grp) };
+    pub fn group_validate(&self, grp: &GroupHandle) -> Result<()> {
+        let result = unsafe { rtGroupValidate(grp.borrow().rt_grp) };
         if result != RtResult::SUCCESS {
             Err(self.optix_error("rtGroupValidate", result))
         } else {
             Ok(())
         }
+    }
+
+    pub fn group_set_acceleration(
+        &self,
+        grp: &GroupHandle,
+        acc: AccelerationHandle,
+    ) -> Result<()> {
+        // Add the acceleration
+        let result = unsafe {
+            rtGroupSetAcceleration(grp.borrow().rt_grp, acc.borrow().rt_acc)
+        };
+        if result != RtResult::SUCCESS {
+            return Err(self.optix_error("rtGroupSetAcceleration", result));
+        }
+
+        grp.borrow_mut().acc = acc;
+
+        Ok(())
     }
 }

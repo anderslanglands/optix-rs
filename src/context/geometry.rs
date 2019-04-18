@@ -1,7 +1,16 @@
 use crate::context::*;
+use std::cell::RefCell;
 use std::collections::HashMap;
+use std::rc::Rc;
 
-new_key_type! { pub struct GeometryHandle; }
+pub struct Geometry {
+    pub(crate) rt_geo: RTgeometry,
+    pub(crate) prg_bounding_box: ProgramHandle,
+    pub(crate) prg_intersection: ProgramHandle,
+    pub(crate) variables: HashMap<String, VariableHandle>,
+}
+
+pub type GeometryHandle = Rc<RefCell<Geometry>>;
 
 pub enum GeometryType {
     Geometry(GeometryHandle),
@@ -14,8 +23,8 @@ impl Context {
         prg_bounding_box: ProgramHandle,
         prg_intersection: ProgramHandle,
     ) -> Result<GeometryHandle> {
-        self.program_validate(prg_bounding_box)?;
-        self.program_validate(prg_intersection)?;
+        self.program_validate(&prg_bounding_box)?;
+        self.program_validate(&prg_intersection)?;
 
         let (geo, result) = unsafe {
             let mut geo: RTgeometry = std::mem::zeroed();
@@ -25,13 +34,12 @@ impl Context {
         if result != RtResult::SUCCESS {
             Err(self.optix_error("rtGeometryCreate", result))
         } else {
-            let rt_prg_bound =
-                self.ga_program_obj.get(prg_bounding_box).unwrap();
-            let rt_prg_intersection =
-                self.ga_program_obj.get(prg_intersection).unwrap();
-
-            let result =
-                unsafe { rtGeometrySetBoundingBoxProgram(geo, *rt_prg_bound) };
+            let result = unsafe {
+                rtGeometrySetBoundingBoxProgram(
+                    geo,
+                    prg_bounding_box.borrow().rt_prg,
+                )
+            };
             if result != RtResult::SUCCESS {
                 return Err(
                     self.optix_error("rtGeometryBoundingBoxProgram", result)
@@ -39,38 +47,31 @@ impl Context {
             }
 
             let result = unsafe {
-                rtGeometrySetIntersectionProgram(geo, *rt_prg_intersection)
+                rtGeometrySetIntersectionProgram(
+                    geo,
+                    prg_intersection.borrow().rt_prg,
+                )
             };
             if result != RtResult::SUCCESS {
                 return Err(self
                     .optix_error("rtGeometrySetIntersectionProgram", result));
             }
 
-            let vars = HashMap::<String, Variable>::new();
-            let hnd = self.ga_geometry_obj.insert(geo);
-            self.gd_geometry_variables.insert(hnd, vars);
-            self.gd_geometry_bounding_box.insert(hnd, prg_bounding_box);
-            self.gd_geometry_intersection.insert(hnd, prg_intersection);
+            let hnd = Rc::new(RefCell::new(Geometry {
+                rt_geo: geo,
+                prg_bounding_box,
+                prg_intersection,
+                variables: HashMap::new(),
+            }));
+
+            self.geometrys.push(Rc::clone(&hnd));
 
             Ok(hnd)
         }
     }
 
-    pub fn geometry_destroy(&mut self, geo: GeometryHandle) {
-        let _vars = self.gd_geometry_variables.remove(geo);
-
-        let _prg_bounding_box = self.gd_geometry_bounding_box.remove(geo);
-        let _prg_intersection = self.gd_geometry_intersection.remove(geo);
-
-        let rt_geo = self.ga_geometry_obj.remove(geo).unwrap();
-        if unsafe { rtGeometryDestroy(rt_geo) } != RtResult::SUCCESS {
-            panic!("Error destroying Geometry");
-        }
-    }
-
-    pub fn geometry_validate(&self, geo: GeometryHandle) -> Result<()> {
-        let rt_geo = self.ga_geometry_obj.get(geo).unwrap();
-        let result = unsafe { rtGeometryValidate(*rt_geo) };
+    pub fn geometry_validate(&self, geo: &GeometryHandle) -> Result<()> {
+        let result = unsafe { rtGeometryValidate(geo.borrow().rt_geo) };
         if result != RtResult::SUCCESS {
             Err(self.optix_error("rtGeometryValidate", result))
         } else {
@@ -80,12 +81,12 @@ impl Context {
 
     pub fn geometry_set_primitive_count(
         &mut self,
-        geo: GeometryHandle,
+        geo: &GeometryHandle,
         num_primitives: u32,
     ) -> Result<()> {
-        let rt_geo = self.ga_geometry_obj.get_mut(geo).unwrap();
-        let result =
-            unsafe { rtGeometrySetPrimitiveCount(*rt_geo, num_primitives) };
+        let result = unsafe {
+            rtGeometrySetPrimitiveCount(geo.borrow().rt_geo, num_primitives)
+        };
         if result != RtResult::SUCCESS {
             Err(self.optix_error("rtGeometrySetPrimitiveCount", result))
         } else {
@@ -95,37 +96,35 @@ impl Context {
 
     pub fn geometry_set_variable<T: VariableStorable>(
         &mut self,
-        geo: GeometryHandle,
+        geo: &GeometryHandle,
         name: &str,
         data: T,
     ) -> Result<()> {
-        let rt_geo = self.ga_geometry_obj.get(geo).unwrap();
-
-        if let Some(old_variable) =
-            self.gd_geometry_variables.get(geo).unwrap().get(name)
-        {
-            let var = match old_variable {
-                Variable::Pod(vp) => vp.var,
-                Variable::Object(vo) => vo.var,
+        // we have to remove the variable first so that we're not holding a borrow
+        // further down here
+        let ex_var = geo.borrow_mut().variables.remove(name);
+        if let Some(ex_var) = ex_var {
+            let var = {
+                let ex_var_c = ex_var.borrow();
+                match &*ex_var_c {
+                    Variable::Pod(vp) => vp.var,
+                    Variable::Object(vo) => vo.var,
+                }
             };
-            let new_variable = data.set_optix_variable(self, var)?;
-            // destroy any resources the existing variable holds
-            self.gd_geometry_variables
-                .get_mut(geo)
-                .unwrap()
-                .insert(name.to_owned(), new_variable);
 
-            Ok(())
+            // replace the variable and reinsert it
+            ex_var.replace(data.set_optix_variable(self, var)?);
+            geo.borrow_mut().variables.insert(name.into(), ex_var);
         } else {
-            let (var, result) = unsafe {
-                let mut var: RTvariable = ::std::mem::uninitialized();
+            let (rt_var, result) = unsafe {
+                let mut rt_var: RTvariable = ::std::mem::uninitialized();
                 let c_name = std::ffi::CString::new(name).unwrap();
                 let result = rtGeometryDeclareVariable(
-                    *rt_geo,
+                    geo.borrow_mut().rt_geo,
                     c_name.as_ptr(),
-                    &mut var,
+                    &mut rt_var,
                 );
-                (var, result)
+                (rt_var, result)
             };
             if result != RtResult::SUCCESS {
                 return Err(
@@ -133,23 +132,26 @@ impl Context {
                 );
             }
 
-            let variable = data.set_optix_variable(self, var)?;
-            self.gd_geometry_variables
-                .get_mut(geo)
-                .unwrap()
-                .insert(name.to_owned(), variable);
+            let var =
+                Rc::new(RefCell::new(data.set_optix_variable(self, rt_var)?));
+            geo.borrow_mut()
+                .variables
+                .insert(name.into(), Rc::clone(&var));
 
-            Ok(())
+            // if it's a new variable, push it to the context storage
+            self.variables.push(var)
         }
+
+        Ok(())
     }
 
     pub fn geometry_set_motion_steps(
         &mut self,
-        geo: GeometryHandle,
+        geo: &GeometryHandle,
         steps: u32,
     ) -> Result<()> {
-        let rt_geo = self.ga_geometry_obj.get(geo).unwrap();
-        let result = unsafe { rtGeometrySetMotionSteps(*rt_geo, steps) };
+        let result =
+            unsafe { rtGeometrySetMotionSteps(geo.borrow().rt_geo, steps) };
         if result != RtResult::SUCCESS {
             Err(self.optix_error("rtGeometrySetMotionSteps", result))
         } else {
@@ -159,13 +161,13 @@ impl Context {
 
     pub fn geometry_set_motion_range(
         &mut self,
-        geo: GeometryHandle,
+        geo: &GeometryHandle,
         time_begin: f32,
         time_end: f32,
     ) -> Result<()> {
-        let rt_geo = self.ga_geometry_obj.get(geo).unwrap();
-        let result =
-            unsafe { rtGeometrySetMotionRange(*rt_geo, time_begin, time_end) };
+        let result = unsafe {
+            rtGeometrySetMotionRange(geo.borrow().rt_geo, time_begin, time_end)
+        };
         if result != RtResult::SUCCESS {
             Err(self.optix_error("rtGeometrySetMotionRange", result))
         } else {
@@ -175,18 +177,67 @@ impl Context {
 
     pub fn geometry_set_motion_border_mode(
         &mut self,
-        geo: GeometryHandle,
+        geo: &GeometryHandle,
         begin_mode: MotionBorderMode,
         end_mode: MotionBorderMode,
     ) -> Result<()> {
-        let rt_geo = self.ga_geometry_obj.get(geo).unwrap();
         let result = unsafe {
-            rtGeometrySetMotionBorderMode(*rt_geo, begin_mode, end_mode)
+            rtGeometrySetMotionBorderMode(
+                geo.borrow().rt_geo,
+                begin_mode,
+                end_mode,
+            )
         };
         if result != RtResult::SUCCESS {
             Err(self.optix_error("rtGeometrySetMotionBorderMode", result))
         } else {
             Ok(())
         }
+    }
+
+    pub fn geometry_set_intersection_program(
+        &mut self,
+        geo: &GeometryHandle,
+        prg: &ProgramHandle,
+    ) -> Result<()> {
+        self.program_validate(&prg)?;
+        let result = unsafe {
+            rtGeometrySetIntersectionProgram(
+                geo.borrow().rt_geo,
+                prg.borrow().rt_prg,
+            )
+        };
+        if result != RtResult::SUCCESS {
+            return Err(
+                self.optix_error("rtGeometrySetIntersectionProgram", result)
+            );
+        }
+
+        geo.borrow_mut().prg_intersection = Rc::clone(prg);
+
+        Ok(())
+    }
+
+    pub fn geometry_set_bounding_box_program(
+        &mut self,
+        geo: &GeometryHandle,
+        prg: &ProgramHandle,
+    ) -> Result<()> {
+        self.program_validate(&prg)?;
+        let result = unsafe {
+            rtGeometrySetBoundingBoxProgram(
+                geo.borrow().rt_geo,
+                prg.borrow().rt_prg,
+            )
+        };
+        if result != RtResult::SUCCESS {
+            return Err(
+                self.optix_error("rtGeometrySetBoundingBoxProgram", result)
+            );
+        }
+
+        geo.borrow_mut().prg_bounding_box = Rc::clone(prg);
+
+        Ok(())
     }
 }

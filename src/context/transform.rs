@@ -1,6 +1,14 @@
 use crate::context::*;
 
-new_key_type! { pub struct TransformHandle; }
+use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct Transform {
+    pub(crate) rt_xform: RTtransform,
+    pub child: TransformChild,
+}
+
+pub type TransformHandle = Rc<RefCell<Transform>>;
 
 pub enum TransformChild {
     None,
@@ -28,12 +36,12 @@ impl Context {
         child: TransformChild,
     ) -> Result<TransformHandle> {
         // validate first
-        match child {
-            TransformChild::Group(h) => self.group_validate(h)?,
+        match &child {
+            TransformChild::Group(h) => self.group_validate(&h)?,
             TransformChild::GeometryGroup(ggh) => {
-                self.geometry_group_validate(ggh)?
+                self.geometry_group_validate(&ggh)?
             }
-            TransformChild::Transform(th) => self.transform_validate(th)?,
+            TransformChild::Transform(th) => self.transform_validate(&th)?,
             TransformChild::None => unreachable!(),
         }
 
@@ -45,8 +53,6 @@ impl Context {
         if result != RtResult::SUCCESS {
             return Err(self.optix_error("rtTransformCreate", result));
         }
-
-        let xform = self.ga_transform_obj.insert(rt_xform);
 
         match matrix {
             MatrixFormat::RowMajor(m) => {
@@ -59,7 +65,9 @@ impl Context {
                     )
                 };
                 if result != RtResult::SUCCESS {
-                    return Err(self.optix_error("rtTransformSetMatrix", result));
+                    return Err(
+                        self.optix_error("rtTransformSetMatrix", result)
+                    );
                 }
             }
             MatrixFormat::ColumnMajor(m) => {
@@ -72,35 +80,39 @@ impl Context {
                     )
                 };
                 if result != RtResult::SUCCESS {
-                    return Err(self.optix_error("rtTransformSetMatrix", result));
+                    return Err(
+                        self.optix_error("rtTransformSetMatrix", result)
+                    );
                 }
             }
         }
 
-        match child {
+        match &child {
             TransformChild::Group(h) => {
-                let child_rt_grp = self.ga_group_obj.get(h).unwrap();
                 let result = unsafe {
-                    rtTransformSetChild(rt_xform, *child_rt_grp as RTobject)
+                    rtTransformSetChild(rt_xform, h.borrow().rt_grp as RTobject)
                 };
                 if result != RtResult::SUCCESS {
                     return Err(self.optix_error("rtTransformSetChild", result));
                 }
             }
             TransformChild::GeometryGroup(ggh) => {
-                let child_rt_geogrp =
-                    self.ga_geometry_group_obj.get(ggh).unwrap();
                 let result = unsafe {
-                    rtTransformSetChild(rt_xform, *child_rt_geogrp as RTobject)
+                    rtTransformSetChild(
+                        rt_xform,
+                        ggh.borrow().rt_geogrp as RTobject,
+                    )
                 };
                 if result != RtResult::SUCCESS {
                     return Err(self.optix_error("rtTransformSetChild", result));
                 }
             }
             TransformChild::Transform(th) => {
-                let child_rt_xf = self.ga_transform_obj.get(th).unwrap();
                 let result = unsafe {
-                    rtTransformSetChild(rt_xform, *child_rt_xf as RTobject)
+                    rtTransformSetChild(
+                        rt_xform,
+                        th.borrow().rt_xform as RTobject,
+                    )
                 };
                 if result != RtResult::SUCCESS {
                     return Err(self.optix_error("rtTransformSetChild", result));
@@ -109,7 +121,9 @@ impl Context {
             TransformChild::None => unreachable!(),
         }
 
-        self.gd_transform_child.insert(xform, child);
+        let xform = Rc::new(RefCell::new(Transform { rt_xform, child }));
+
+        self.transforms.push(Rc::clone(&xform));
 
         Ok(xform)
     }
@@ -122,12 +136,12 @@ impl Context {
         child: TransformChild,
     ) -> Result<TransformHandle> {
         // validate first
-        match child {
-            TransformChild::Group(h) => self.group_validate(h)?,
+        match &child {
+            TransformChild::Group(h) => self.group_validate(&h)?,
             TransformChild::GeometryGroup(ggh) => {
-                self.geometry_group_validate(ggh)?
+                self.geometry_group_validate(&ggh)?
             }
-            TransformChild::Transform(th) => self.transform_validate(th)?,
+            TransformChild::Transform(th) => self.transform_validate(&th)?,
             TransformChild::None => unreachable!(),
         }
 
@@ -139,8 +153,6 @@ impl Context {
         if result != RtResult::SUCCESS {
             return Err(self.optix_error("rtTransformCreate", result));
         }
-
-        let xform = self.ga_transform_obj.insert(rt_xform);
 
         let n = motion_keys.len() / 16;
         let result = unsafe {
@@ -162,30 +174,32 @@ impl Context {
             return Err(self.optix_error("rtTransformSetMotionRange", result));
         }
 
-        match child {
+        match &child {
             TransformChild::Group(h) => {
-                let child_rt_grp = self.ga_group_obj.get(h).unwrap();
                 let result = unsafe {
-                    rtTransformSetChild(rt_xform, *child_rt_grp as RTobject)
+                    rtTransformSetChild(rt_xform, h.borrow().rt_grp as RTobject)
                 };
                 if result != RtResult::SUCCESS {
                     return Err(self.optix_error("rtTransformSetChild", result));
                 }
             }
             TransformChild::GeometryGroup(ggh) => {
-                let child_rt_geogrp =
-                    self.ga_geometry_group_obj.get(ggh).unwrap();
                 let result = unsafe {
-                    rtTransformSetChild(rt_xform, *child_rt_geogrp as RTobject)
+                    rtTransformSetChild(
+                        rt_xform,
+                        ggh.borrow().rt_geogrp as RTobject,
+                    )
                 };
                 if result != RtResult::SUCCESS {
                     return Err(self.optix_error("rtTransformSetChild", result));
                 }
             }
             TransformChild::Transform(th) => {
-                let child_rt_xf = self.ga_transform_obj.get(th).unwrap();
                 let result = unsafe {
-                    rtTransformSetChild(rt_xform, *child_rt_xf as RTobject)
+                    rtTransformSetChild(
+                        rt_xform,
+                        th.borrow().rt_xform as RTobject,
+                    )
                 };
                 if result != RtResult::SUCCESS {
                     return Err(self.optix_error("rtTransformSetChild", result));
@@ -194,22 +208,15 @@ impl Context {
             TransformChild::None => unreachable!(),
         }
 
-        self.gd_transform_child.insert(xform, child);
+        let xform = Rc::new(RefCell::new(Transform { rt_xform, child }));
+
+        self.transforms.push(Rc::clone(&xform));
 
         Ok(xform)
     }
 
-    pub fn transform_destroy(&mut self, xform: TransformHandle) {
-        let rt_xform = self.ga_transform_obj.remove(xform).unwrap();
-        let _child = self.gd_transform_child.remove(xform);
-        if unsafe { rtTransformDestroy(rt_xform) } != RtResult::SUCCESS {
-            panic!("Error destroying transform {:?}", xform);
-        }
-    }
-
-    pub fn transform_validate(&self, xform: TransformHandle) -> Result<()> {
-        let rt_xform = *self.ga_transform_obj.get(xform).unwrap();
-        let result = unsafe { rtTransformValidate(rt_xform) };
+    pub fn transform_validate(&self, xform: &TransformHandle) -> Result<()> {
+        let result = unsafe { rtTransformValidate(xform.borrow().rt_xform) };
         if result != RtResult::SUCCESS {
             Err(self.optix_error("rtTransformValidate", result))
         } else {
@@ -217,15 +224,54 @@ impl Context {
         }
     }
 
+    pub fn transform_set_matrix(
+        &mut self,
+        xform: &TransformHandle,
+        matrix: MatrixFormat,
+    ) -> Result<()> {
+        match matrix {
+            MatrixFormat::RowMajor(m) => {
+                let result = unsafe {
+                    rtTransformSetMatrix(
+                        xform.borrow().rt_xform,
+                        0,
+                        &m as *const M4f32 as *const f32,
+                        std::ptr::null(),
+                    )
+                };
+                if result != RtResult::SUCCESS {
+                    return Err(
+                        self.optix_error("rtTransformSetMatrix", result)
+                    );
+                }
+            }
+            MatrixFormat::ColumnMajor(m) => {
+                let result = unsafe {
+                    rtTransformSetMatrix(
+                        xform.borrow().rt_xform,
+                        1,
+                        &m as *const M4f32 as *const f32,
+                        std::ptr::null(),
+                    )
+                };
+                if result != RtResult::SUCCESS {
+                    return Err(
+                        self.optix_error("rtTransformSetMatrix", result)
+                    );
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     pub fn transform_set_motion_keys(
         &mut self,
-        xform: TransformHandle,
+        xform: &TransformHandle,
         n: u32,
         key_type: MotionKeyType,
         keys: &[f32],
     ) -> Result<()> {
-        let rt_xform = *self.ga_transform_obj.get(xform).unwrap();
-
         // check that the length of the keys array matches the key type and
         // number of samples
         match key_type {
@@ -254,7 +300,7 @@ impl Context {
 
         let result = unsafe {
             rtTransformSetMotionKeys(
-                rt_xform,
+                xform.borrow().rt_xform,
                 n,
                 key_type,
                 keys.as_ptr() as *const f32,
@@ -270,13 +316,16 @@ impl Context {
 
     pub fn transform_set_motion_range(
         &mut self,
-        xform: TransformHandle,
+        xform: &TransformHandle,
         time_begin: f32,
         time_end: f32,
     ) -> Result<()> {
-        let rt_xform = self.ga_transform_obj.get(xform).unwrap();
         let result = unsafe {
-            rtTransformSetMotionRange(*rt_xform, time_begin, time_end)
+            rtTransformSetMotionRange(
+                xform.borrow().rt_xform,
+                time_begin,
+                time_end,
+            )
         };
         if result != RtResult::SUCCESS {
             Err(self.optix_error("rtTransformSetMotionRange", result))
@@ -287,13 +336,16 @@ impl Context {
 
     pub fn transform_set_motion_border_mode(
         &mut self,
-        xform: TransformHandle,
+        xform: &TransformHandle,
         begin_mode: MotionBorderMode,
         end_mode: MotionBorderMode,
     ) -> Result<()> {
-        let rt_xform = self.ga_transform_obj.get(xform).unwrap();
         let result = unsafe {
-            rtTransformSetMotionBorderMode(*rt_xform, begin_mode, end_mode)
+            rtTransformSetMotionBorderMode(
+                xform.borrow().rt_xform,
+                begin_mode,
+                end_mode,
+            )
         };
         if result != RtResult::SUCCESS {
             Err(self.optix_error("rtTransformSetMotionBorderMode", result))

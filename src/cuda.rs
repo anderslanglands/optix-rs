@@ -5,7 +5,7 @@ pub fn mem_get_info() -> (usize, usize) {
         let mut free = 0;
         let mut total = 0;
 
-        let result =
+        let _result =
             cudaMemGetInfo(&mut free as *mut usize, &mut total as *mut usize);
 
         (free, total)

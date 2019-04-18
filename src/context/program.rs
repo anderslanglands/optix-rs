@@ -1,15 +1,23 @@
 use crate::context::*;
 use crate::nvrtc;
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::ffi::CString;
 use std::io::Read;
+use std::rc::Rc;
 
-new_key_type! { pub struct ProgramHandle; }
+pub struct Program {
+    pub(crate) rt_prg: RTprogram,
+    pub(crate) variables: HashMap<String, VariableHandle>,
+}
+
+pub type ProgramHandle = Rc<RefCell<Program>>;
 
 impl Context {
     /// Destroys the Program referred to by `prg` and all its attached objects.
     /// The underlying program will remain alive until all references to it
     /// have been destroyed.
+    /*
     pub fn program_destroy(&mut self, prg: ProgramHandle) {
         let _vars = self.gd_program_variables.remove(prg);
 
@@ -18,13 +26,13 @@ impl Context {
             panic!("Error destroying program {:?}", prg);
         }
     }
+    */
 
     fn program_create_from_obj(&mut self, rt_prg: RTprogram) -> ProgramHandle {
-        let vars = HashMap::<String, Variable>::new();
-        let hnd = self.ga_program_obj.insert(rt_prg);
-        self.gd_program_variables.insert(hnd, vars);
-
-        hnd
+        let variables = HashMap::<String, VariableHandle>::new();
+        let prg = Rc::new(RefCell::new(Program { rt_prg, variables }));
+        self.programs.push(Rc::clone(&prg));
+        prg
     }
 
     /// Create a new Program from the PTX in `ptx_str`, with the given
@@ -94,13 +102,9 @@ impl Context {
 
     /// Validate the Program. If the program referred to by `handle` or any of
     /// its attached objects are invalid, return an OptixError.
-    pub fn program_validate(&mut self, handle: ProgramHandle) -> Result<()> {
-        let rt_prg = self.ga_program_obj.get(handle).expect(&format!(
-            "Tried to validate an invalid handle: {:?}",
-            handle
-        ));
+    pub fn program_validate(&mut self, handle: &ProgramHandle) -> Result<()> {
         unsafe {
-            let result = rtProgramValidate(*rt_prg);
+            let result = rtProgramValidate(handle.borrow().rt_prg);
             if result == RtResult::SUCCESS {
                 Ok(())
             } else {
@@ -113,49 +117,50 @@ impl Context {
     /// previously assigned to the variable will be destroyed.
     pub fn program_set_variable<T: VariableStorable>(
         &mut self,
-        prg: ProgramHandle,
+        prg: &ProgramHandle,
         name: &str,
         data: T,
     ) -> Result<()> {
-        let rt_prg = self.ga_program_obj.get(prg).unwrap();
-
-        if let Some(old_variable) =
-            self.gd_program_variables.get(prg).unwrap().get(name)
-        {
-            let var = match old_variable {
-                Variable::Pod(vp) => vp.var,
-                Variable::Object(vo) => vo.var,
+        // we have to remove the variable first so that we're not holding a borrow
+        // further down here
+        let ex_var = prg.borrow_mut().variables.remove(name);
+        if let Some(ex_var) = ex_var {
+            let var = {
+                let ex_var_c = ex_var.borrow();
+                match &*ex_var_c {
+                    Variable::Pod(vp) => vp.var,
+                    Variable::Object(vo) => vo.var,
+                }
             };
-            let new_variable = data.set_optix_variable(self, var)?;
-            // destroy any resources the existing variable holds
-            self.gd_program_variables
-                .get_mut(prg)
-                .unwrap()
-                .insert(name.to_owned(), new_variable);
 
-            Ok(())
+            // replace the variable and reinsert it
+            ex_var.replace(data.set_optix_variable(self, var)?);
+            prg.borrow_mut().variables.insert(name.into(), ex_var);
         } else {
-            let (var, result) = unsafe {
-                let mut var: RTvariable = ::std::mem::uninitialized();
+            let (rt_var, result) = unsafe {
+                let mut rt_var: RTvariable = ::std::mem::uninitialized();
                 let c_name = std::ffi::CString::new(name).unwrap();
                 let result = rtProgramDeclareVariable(
-                    *rt_prg,
+                    prg.borrow_mut().rt_prg,
                     c_name.as_ptr(),
-                    &mut var,
+                    &mut rt_var,
                 );
-                (var, result)
+                (rt_var, result)
             };
             if result != RtResult::SUCCESS {
                 return Err(self.optix_error("rtProgramDeclareVariable", result));
             }
 
-            let variable = data.set_optix_variable(self, var)?;
-            self.gd_program_variables
-                .get_mut(prg)
-                .unwrap()
-                .insert(name.to_owned(), variable);
+            let var =
+                Rc::new(RefCell::new(data.set_optix_variable(self, rt_var)?));
+            prg.borrow_mut()
+                .variables
+                .insert(name.into(), Rc::clone(&var));
 
-            Ok(())
+            // if it's a new variable, push it to the context storage
+            self.variables.push(var)
         }
+
+        Ok(())
     }
 }

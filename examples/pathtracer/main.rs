@@ -13,6 +13,8 @@ use crate::gl_util::*;
 use optix as rt;
 use optix::math::*;
 
+use std::rc::Rc;
+
 fn main() -> Result<(), String> {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
     glfw.window_hint(glfw::WindowHint::ContextVersion(4, 1));
@@ -75,25 +77,27 @@ fn main() -> Result<(), String> {
             match rx_render.recv() {
                 Some(MsgMaster::StartRender(mut ctx, entry_point)) => {
                     let result_buffer = ctx
-                        .buffer_create_2d(
+                        .buffer_create_2d_named(
                             width as usize,
                             height as usize,
                             rt::Format::FLOAT4,
                             rt::BufferType::OUTPUT,
                             rt::BufferFlag::NONE,
+                            "result_buffer",
                         )
                         .expect("Could not create result buffer");
 
                     ctx.set_variable(
                         "result_buffer",
-                        rt::ObjectHandle::Buffer2d(result_buffer),
+                        rt::ObjectHandle::Buffer2d(Rc::clone(&result_buffer)),
                     )
                     .expect("Setting buffer2d variable failed");
 
                     let mut progression = 0u32;
 
                     // do a quick launch to warm up before we start the main loop
-                    ctx.launch_2d(entry_point, 1, 1).expect("Warmup launch failed");
+                    ctx.launch_2d(entry_point, 1, 1)
+                        .expect("Warmup launch failed");
 
                     'inner: loop {
                         let now = std::time::Instant::now();
@@ -119,6 +123,11 @@ fn main() -> Result<(), String> {
                                     time_total.as_secs(),
                                     time_total.subsec_millis()
                                 );
+
+                                let buffer_mem = ctx.mem_report();
+                                for (name, size) in buffer_mem.iter() {
+                                    println!("{}: {}", name, size);
+                                }
                                 break 'outer;
                             }
                             None => (),
@@ -144,7 +153,7 @@ fn main() -> Result<(), String> {
                         // update the shared buffer
                         {
                             let buffer_map = ctx
-                                .buffer_map_2d::<V4f32>(result_buffer)
+                                .buffer_map_2d::<V4f32>(&result_buffer)
                                 .unwrap();
                             let mut output =
                                 mtx_image_data_render.lock().unwrap();
@@ -169,6 +178,10 @@ fn main() -> Result<(), String> {
                             }
                             time_total += duration;
                             time_samples += 1;
+                        }
+
+                        if progression % 10 == 0 {
+                            ctx.collect();
                         }
                     }
                 }
@@ -252,13 +265,13 @@ fn create_context(
     let mtx_camera_to_world = m4f32_translation(275.0, 275.0, 900.0);
     let mtx_raster_to_camera = mtx_screen_to_camera * mtx_raster_to_screen;
     ctx.program_set_variable(
-        prg_cam_screen,
+        &prg_cam_screen,
         "raster_to_camera",
         rt::MatrixFormat::ColumnMajor(mtx_raster_to_camera),
     )?;
 
     ctx.program_set_variable(
-        prg_cam_screen,
+        &prg_cam_screen,
         "camera_to_world",
         rt::MatrixFormat::ColumnMajor(mtx_camera_to_world),
     )?;
@@ -291,7 +304,7 @@ fn create_context(
         raytype_shadow,
         rt::MaterialProgram {
             closest: None,
-            any: Some(prg_material_constant_any),
+            any: Some(Rc::clone(&prg_material_constant_any)),
         },
     );
 
@@ -315,10 +328,11 @@ fn create_context(
     let mtl_emission = ctx.material_create(map_mtl_emission)?;
 
     let materials = vec![0];
-    let buf_material = ctx.buffer_create_from_slice_1d(
+    let buf_material = ctx.buffer_create_from_slice_1d_named(
         &materials,
         rt::BufferType::INPUT,
         rt::BufferFlag::NONE,
+        "materials",
     )?;
 
     let geo_floor = create_quad(
@@ -329,8 +343,9 @@ fn create_context(
             v3f32(555.0, 0.0, -555.0),
             v3f32(0.0, 0.0, -555.0),
         ],
-        prg_mesh_bound,
-        prg_mesh_intersect,
+        Rc::clone(&prg_mesh_bound),
+        Rc::clone(&prg_mesh_intersect),
+        "floor",
     )?;
     let geo_ceiling = create_quad(
         &mut ctx,
@@ -340,8 +355,9 @@ fn create_context(
             v3f32(555.0, 555.0, 0.0),
             v3f32(0.0, 555.0, 0.0),
         ],
-        prg_mesh_bound,
-        prg_mesh_intersect,
+        Rc::clone(&prg_mesh_bound),
+        Rc::clone(&prg_mesh_intersect),
+        "ceiling",
     )?;
     let geo_wall_back = create_quad(
         &mut ctx,
@@ -351,8 +367,9 @@ fn create_context(
             v3f32(555.0, 555.0, -555.0),
             v3f32(0.0, 555.0, -555.0),
         ],
-        prg_mesh_bound,
-        prg_mesh_intersect,
+        Rc::clone(&prg_mesh_bound),
+        Rc::clone(&prg_mesh_intersect),
+        "wall_back",
     )?;
     let geo_wall_left = create_quad(
         &mut ctx,
@@ -362,8 +379,9 @@ fn create_context(
             v3f32(0.0, 555.0, -555.0),
             v3f32(0.0, 555.0, 0.0),
         ],
-        prg_mesh_bound,
-        prg_mesh_intersect,
+        Rc::clone(&prg_mesh_bound),
+        Rc::clone(&prg_mesh_intersect),
+        "wall_left",
     )?;
     let geo_wall_right = create_quad(
         &mut ctx,
@@ -373,8 +391,9 @@ fn create_context(
             v3f32(555.0, 555.0, 0.0),
             v3f32(555.0, 555.0, -555.0),
         ],
-        prg_mesh_bound,
-        prg_mesh_intersect,
+        Rc::clone(&prg_mesh_bound),
+        Rc::clone(&prg_mesh_intersect),
+        "wall_right",
     )?;
 
     let light_center = v3f32(277.5, 554.0, -277.5);
@@ -389,99 +408,102 @@ fn create_context(
             v3f32(light_max.x, light_min.y, light_max.z),
             v3f32(light_min.x, light_min.y, light_max.z),
         ],
-        prg_mesh_bound,
-        prg_mesh_intersect,
+        Rc::clone(&prg_mesh_bound),
+        Rc::clone(&prg_mesh_intersect),
+        "light",
     )?;
 
     let geo_tall_box = create_box(
         &mut ctx,
         v3f32(0.0, 0.0, 0.0),
         v3f32(165.0, 330.0, 165.0),
-        prg_mesh_bound,
-        prg_mesh_intersect,
+        Rc::clone(&prg_mesh_bound),
+        Rc::clone(&prg_mesh_intersect),
+        "tall_box",
     )?;
     let geo_short_box = create_box(
         &mut ctx,
         v3f32(0.0, 0.0, 0.0),
         v3f32(165.0, 165.0, 165.0),
-        prg_mesh_bound,
-        prg_mesh_intersect,
+        Rc::clone(&prg_mesh_bound),
+        Rc::clone(&prg_mesh_intersect),
+        "short_box",
     )?;
 
     ctx.geometry_set_variable(
-        geo_floor,
+        &geo_floor,
         "material_buffer",
-        rt::ObjectHandle::Buffer1d(buf_material),
+        rt::ObjectHandle::Buffer1d(Rc::clone(&buf_material)),
     )?;
     ctx.geometry_set_variable(
-        geo_ceiling,
+        &geo_ceiling,
         "material_buffer",
-        rt::ObjectHandle::Buffer1d(buf_material),
+        rt::ObjectHandle::Buffer1d(Rc::clone(&buf_material)),
     )?;
     ctx.geometry_set_variable(
-        geo_wall_back,
+        &geo_wall_back,
         "material_buffer",
-        rt::ObjectHandle::Buffer1d(buf_material),
+        rt::ObjectHandle::Buffer1d(Rc::clone(&buf_material)),
     )?;
     ctx.geometry_set_variable(
-        geo_wall_left,
+        &geo_wall_left,
         "material_buffer",
-        rt::ObjectHandle::Buffer1d(buf_material),
+        rt::ObjectHandle::Buffer1d(Rc::clone(&buf_material)),
     )?;
     ctx.geometry_set_variable(
-        geo_wall_right,
+        &geo_wall_right,
         "material_buffer",
-        rt::ObjectHandle::Buffer1d(buf_material),
+        rt::ObjectHandle::Buffer1d(Rc::clone(&buf_material)),
     )?;
     ctx.geometry_set_variable(
-        geo_tall_box,
+        &geo_tall_box,
         "material_buffer",
-        rt::ObjectHandle::Buffer1d(buf_material),
+        rt::ObjectHandle::Buffer1d(Rc::clone(&buf_material)),
     )?;
     ctx.geometry_set_variable(
-        geo_short_box,
+        &geo_short_box,
         "material_buffer",
-        rt::ObjectHandle::Buffer1d(buf_material),
+        rt::ObjectHandle::Buffer1d(Rc::clone(&buf_material)),
     )?;
 
     ctx.geometry_set_variable(
-        geo_light,
+        &geo_light,
         "material_buffer",
-        rt::ObjectHandle::Buffer1d(buf_material),
+        rt::ObjectHandle::Buffer1d(Rc::clone(&buf_material)),
     )?;
 
     let geo_inst_floor = ctx.geometry_instance_create(
         rt::GeometryType::Geometry(geo_floor),
-        vec![mtl_constant],
+        vec![Rc::clone(&mtl_constant)],
     )?;
     let geo_inst_ceiling = ctx.geometry_instance_create(
         rt::GeometryType::Geometry(geo_ceiling),
-        vec![mtl_constant],
+        vec![Rc::clone(&mtl_constant)],
     )?;
     let geo_inst_wall_back = ctx.geometry_instance_create(
         rt::GeometryType::Geometry(geo_wall_back),
-        vec![mtl_constant],
+        vec![Rc::clone(&mtl_constant)],
     )?;
     let geo_inst_wall_left = ctx.geometry_instance_create(
         rt::GeometryType::Geometry(geo_wall_left),
-        vec![mtl_constant],
+        vec![Rc::clone(&mtl_constant)],
     )?;
     let geo_inst_wall_right = ctx.geometry_instance_create(
         rt::GeometryType::Geometry(geo_wall_right),
-        vec![mtl_constant],
+        vec![Rc::clone(&mtl_constant)],
     )?;
     let geo_inst_tall_box = ctx.geometry_instance_create(
         rt::GeometryType::Geometry(geo_tall_box),
-        vec![mtl_constant],
+        vec![Rc::clone(&mtl_constant)],
     )?;
     let geo_inst_short_box = ctx.geometry_instance_create(
         rt::GeometryType::Geometry(geo_short_box),
-        vec![mtl_constant],
+        vec![Rc::clone(&mtl_constant)],
     )?;
 
     let geo_inst_light = ctx.geometry_instance_create(
         rt::GeometryType::Geometry(geo_light),
-        vec![mtl_emission],
+        vec![Rc::clone(&mtl_emission)],
     )?;
 
     let col_white = v3f32(0.76, 0.75, 0.5);
@@ -489,37 +511,37 @@ fn create_context(
     let col_green = v3f32(0.15, 0.48, 0.09);
 
     ctx.geometry_instance_set_variable(
-        geo_inst_floor,
+        &geo_inst_floor,
         "in_diffuse_albedo",
         col_white,
     )?;
     ctx.geometry_instance_set_variable(
-        geo_inst_ceiling,
+        &geo_inst_ceiling,
         "in_diffuse_albedo",
         col_white,
     )?;
     ctx.geometry_instance_set_variable(
-        geo_inst_wall_back,
+        &geo_inst_wall_back,
         "in_diffuse_albedo",
         col_white,
     )?;
     ctx.geometry_instance_set_variable(
-        geo_inst_wall_left,
+        &geo_inst_wall_left,
         "in_diffuse_albedo",
         col_red,
     )?;
     ctx.geometry_instance_set_variable(
-        geo_inst_wall_right,
+        &geo_inst_wall_right,
         "in_diffuse_albedo",
         col_green,
     )?;
     ctx.geometry_instance_set_variable(
-        geo_inst_tall_box,
+        &geo_inst_tall_box,
         "in_diffuse_albedo",
         col_white,
     )?;
     ctx.geometry_instance_set_variable(
-        geo_inst_short_box,
+        &geo_inst_short_box,
         "in_diffuse_albedo",
         col_white,
     )?;
@@ -592,8 +614,9 @@ pub fn create_box(
     max: V3f32,
     prg_mesh_bound: rt::ProgramHandle,
     prg_mesh_intersect: rt::ProgramHandle,
+    name: &str,
 ) -> Result<rt::GeometryHandle, rt::Error> {
-    let buf_vertex = ctx.buffer_create_from_slice_1d(
+    let buf_vertex = ctx.buffer_create_from_slice_1d_named(
         &[
             // BLF - 0
             v3f32(min.x, min.y, min.z),
@@ -614,6 +637,7 @@ pub fn create_box(
         ],
         rt::BufferType::INPUT,
         rt::BufferFlag::NONE,
+        format!("{}/vertex", name),
     )?;
 
     let indices = [
@@ -637,10 +661,11 @@ pub fn create_box(
         v3i32(0, 1, 4),
     ];
 
-    let buf_indices = ctx.buffer_create_from_slice_1d(
+    let buf_indices = ctx.buffer_create_from_slice_1d_named(
         &indices,
         rt::BufferType::INPUT,
         rt::BufferFlag::NONE,
+        format!("{}/index", name),
     )?;
 
     let buf_normal = ctx.buffer_create_1d(
@@ -658,24 +683,24 @@ pub fn create_box(
     )?;
 
     let geo_box = ctx.geometry_create(prg_mesh_bound, prg_mesh_intersect)?;
-    ctx.geometry_set_primitive_count(geo_box, indices.len() as u32)?;
+    ctx.geometry_set_primitive_count(&geo_box, indices.len() as u32)?;
     ctx.geometry_set_variable(
-        geo_box,
+        &geo_box,
         "vertex_buffer",
         rt::ObjectHandle::Buffer1d(buf_vertex),
     )?;
     ctx.geometry_set_variable(
-        geo_box,
+        &geo_box,
         "index_buffer",
         rt::ObjectHandle::Buffer1d(buf_indices),
     )?;
     ctx.geometry_set_variable(
-        geo_box,
+        &geo_box,
         "normal_buffer",
         rt::ObjectHandle::Buffer1d(buf_normal),
     )?;
     ctx.geometry_set_variable(
-        geo_box,
+        &geo_box,
         "texcoord_buffer",
         rt::ObjectHandle::Buffer1d(buf_texcoord),
     )?;
@@ -688,50 +713,55 @@ pub fn create_quad(
     vertices: [V3f32; 4],
     prg_mesh_bound: rt::ProgramHandle,
     prg_mesh_intersect: rt::ProgramHandle,
+    name: &str,
 ) -> Result<rt::GeometryHandle, rt::Error> {
-    let buf_vertex = ctx.buffer_create_from_slice_1d(
+    let buf_vertex = ctx.buffer_create_from_slice_1d_named(
         &vertices,
         rt::BufferType::INPUT,
         rt::BufferFlag::NONE,
+        format!("{}/vertex", name),
     )?;
     let indices = [v3i32(0, 1, 2), v3i32(0, 2, 3)];
-    let buf_indices = ctx.buffer_create_from_slice_1d(
+    let buf_indices = ctx.buffer_create_from_slice_1d_named(
         &indices,
         rt::BufferType::INPUT,
         rt::BufferFlag::NONE,
+        format!("{}/index", name),
     )?;
-    let buf_normal = ctx.buffer_create_1d(
+    let buf_normal = ctx.buffer_create_1d_named(
         0,
         rt::Format::FLOAT3,
         rt::BufferType::INPUT,
         rt::BufferFlag::NONE,
+        format!("{}/normal", name),
     )?;
-    let buf_texcoord = ctx.buffer_create_1d(
+    let buf_texcoord = ctx.buffer_create_1d_named(
         0,
         rt::Format::FLOAT2,
         rt::BufferType::INPUT,
         rt::BufferFlag::NONE,
+        format!("{}/texcoord", name),
     )?;
     let geo_triangle =
         ctx.geometry_create(prg_mesh_bound, prg_mesh_intersect)?;
-    ctx.geometry_set_primitive_count(geo_triangle, indices.len() as u32)?;
+    ctx.geometry_set_primitive_count(&geo_triangle, indices.len() as u32)?;
     ctx.geometry_set_variable(
-        geo_triangle,
+        &geo_triangle,
         "vertex_buffer",
         rt::ObjectHandle::Buffer1d(buf_vertex),
     )?;
     ctx.geometry_set_variable(
-        geo_triangle,
+        &geo_triangle,
         "index_buffer",
         rt::ObjectHandle::Buffer1d(buf_indices),
     )?;
     ctx.geometry_set_variable(
-        geo_triangle,
+        &geo_triangle,
         "normal_buffer",
         rt::ObjectHandle::Buffer1d(buf_normal),
     )?;
     ctx.geometry_set_variable(
-        geo_triangle,
+        &geo_triangle,
         "texcoord_buffer",
         rt::ObjectHandle::Buffer1d(buf_texcoord),
     )?;

@@ -1,16 +1,20 @@
 use crate::context::*;
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 #[cfg(feature = "colorspace_support")]
 use colorspace::rgb::RGBf32;
 
 pub enum ObjectHandle {
-    BufferId(BufferId),
+    BufferID(BufferId),
     Buffer1d(Buffer1dHandle),
     Buffer2d(Buffer2dHandle),
     // Buffer3d(Buffer3dHandle),
     GeometryGroup(GeometryGroupHandle),
     Group(GroupHandle),
     Program(ProgramHandle),
+    ProgramID(ProgramHandle),
     // Selector(SelectorHandle),
     TextureSampler(TextureSamplerHandle),
     Transform(TransformHandle),
@@ -18,17 +22,25 @@ pub enum ObjectHandle {
 
 pub struct VariableObject {
     pub(crate) var: RTvariable,
-    pub(crate) object_handle: ObjectHandle,
+    pub(crate) _object_handle: ObjectHandle,
 }
 
 pub struct VariablePod {
     pub(crate) var: RTvariable,
 }
 
+impl VariablePod {
+    pub fn new(var: RTvariable) -> VariablePod {
+        VariablePod { var }
+    }
+}
+
 pub enum Variable {
     Pod(VariablePod),
     Object(VariableObject),
 }
+
+pub type VariableHandle = Rc<RefCell<Variable>>;
 
 pub trait VariableStorable {
     fn set_optix_variable(
@@ -44,8 +56,8 @@ impl VariableStorable for ObjectHandle {
         ctx: &mut Context,
         variable: RTvariable,
     ) -> Result<Variable> {
-        match self {
-            ObjectHandle::BufferId(ref buf_id) => unsafe {
+        match &self {
+            ObjectHandle::BufferID(ref buf_id) => unsafe {
                 let result = rtVariableSetUserData(
                     variable,
                     std::mem::size_of::<i32>() as RTsize,
@@ -62,167 +74,155 @@ impl VariableStorable for ObjectHandle {
                 } else {
                     return Ok(Variable::Object(VariableObject {
                         var: variable,
-                        object_handle: self,
+                        _object_handle: self,
                     }));
                 }
             },
             ObjectHandle::Buffer1d(buffer_handle) => unsafe {
-                let buf =
-                    ctx.ga_buffer1d_obj.get(buffer_handle).expect(&format!(
-                        "Could not get buffer object for handle {:?}",
-                        buffer_handle
-                    ));
                 let result = rtVariableSetObject(
                     variable,
-                    *buf as *mut ::std::os::raw::c_void,
+                    buffer_handle.borrow().rt_buf
+                        as *mut ::std::os::raw::c_void,
                 );
                 if result != RtResult::SUCCESS {
                     return Err(ctx.optix_error(
-                        &format!("rtVariableSetObject {:?}", buffer_handle),
+                        "rtVariableSetObject {Buffer1d}".into(),
                         result,
                     ));
                 } else {
                     return Ok(Variable::Object(VariableObject {
                         var: variable,
-                        object_handle: self,
+                        _object_handle: self,
                     }));
                 }
             },
             ObjectHandle::Buffer2d(buffer_handle) => unsafe {
-                let buf =
-                    ctx.ga_buffer2d_obj.get(buffer_handle).expect(&format!(
-                        "Could not get buffer object for handle {:?}",
-                        buffer_handle
-                    ));
                 let result = rtVariableSetObject(
                     variable,
-                    *buf as *mut ::std::os::raw::c_void,
+                    buffer_handle.borrow().rt_buf
+                        as *mut ::std::os::raw::c_void,
                 );
                 if result != RtResult::SUCCESS {
                     return Err(ctx.optix_error(
-                        &format!("rtVariableSetObject {:?}", buffer_handle),
+                        "rtVariableSetObject {Buffer2d}".into(),
                         result,
                     ));
                 } else {
                     return Ok(Variable::Object(VariableObject {
                         var: variable,
-                        object_handle: self,
+                        _object_handle: self,
                     }));
                 }
             },
             ObjectHandle::Group(group_handle) => unsafe {
-                let rt_grp =
-                    ctx.ga_group_obj.get(group_handle).expect(&format!(
-                        "Could not get group object for handle {:?}",
-                        group_handle
-                    ));
                 let result = rtVariableSetObject(
                     variable,
-                    *rt_grp as *mut ::std::os::raw::c_void,
+                    group_handle.borrow().rt_grp as *mut ::std::os::raw::c_void,
                 );
                 if result != RtResult::SUCCESS {
                     return Err(ctx.optix_error(
-                        &format!("rtVariableSetObject {:?}", group_handle),
+                        "rtVariableSetObject(Group)".into(),
                         result,
                     ));
                 } else {
                     return Ok(Variable::Object(VariableObject {
                         var: variable,
-                        object_handle: self,
+                        _object_handle: self,
                     }));
                 }
             },
             ObjectHandle::GeometryGroup(geometry_group_handle) => unsafe {
-                let prg = ctx
-                    .ga_geometry_group_obj
-                    .get(geometry_group_handle)
-                    .expect(&format!(
-                        "Could not get geometry_group object for handle {:?}",
-                        geometry_group_handle
-                    ));
                 let result = rtVariableSetObject(
                     variable,
-                    *prg as *mut ::std::os::raw::c_void,
+                    geometry_group_handle.borrow().rt_geogrp
+                        as *mut ::std::os::raw::c_void,
                 );
                 if result != RtResult::SUCCESS {
                     return Err(ctx.optix_error(
-                        &format!(
-                            "rtVariableSetObject {:?}",
-                            geometry_group_handle
-                        ),
+                        "rtVariableSetObject {GeometryGroup}".into(),
                         result,
                     ));
                 } else {
                     return Ok(Variable::Object(VariableObject {
                         var: variable,
-                        object_handle: self,
+                        _object_handle: self,
                     }));
                 }
             },
             ObjectHandle::Program(program_handle) => unsafe {
-                let prg =
-                    ctx.ga_program_obj.get(program_handle).expect(&format!(
-                        "Could not get program object for handle {:?}",
-                        program_handle
-                    ));
                 let result = rtVariableSetObject(
                     variable,
-                    *prg as *mut ::std::os::raw::c_void,
+                    program_handle.borrow().rt_prg
+                        as *mut ::std::os::raw::c_void,
                 );
                 if result != RtResult::SUCCESS {
                     return Err(ctx.optix_error(
-                        &format!("rtVariableSetObject {:?}", program_handle),
+                        "rtVariableSetObject(Program)".into(),
                         result,
                     ));
                 } else {
                     return Ok(Variable::Object(VariableObject {
                         var: variable,
-                        object_handle: self,
+                        _object_handle: self,
+                    }));
+                }
+            },
+            ObjectHandle::ProgramID(program_handle) => unsafe {
+                let mut id: i32 = std::mem::uninitialized();
+                let result =
+                    rtProgramGetId(program_handle.borrow().rt_prg, &mut id);
+
+                if result != RtResult::SUCCESS {
+                    return Err(ctx.optix_error(
+                        "rtProgramGetId(Program)".into(),
+                        result,
+                    ));
+                }
+                let result = rtVariableSet1i(variable, id);
+                if result != RtResult::SUCCESS {
+                    return Err(ctx.optix_error(
+                        "rtVariableSet1i(ProgramID)".into(),
+                        result,
+                    ));
+                } else {
+                    return Ok(Variable::Object(VariableObject {
+                        var: variable,
+                        _object_handle: self,
                     }));
                 }
             },
             ObjectHandle::Transform(transform_handle) => unsafe {
-                let prg = ctx.ga_transform_obj.get(transform_handle).expect(
-                    &format!(
-                        "Could not get transform object for handle {:?}",
-                        transform_handle
-                    ),
-                );
                 let result = rtVariableSetObject(
                     variable,
-                    *prg as *mut ::std::os::raw::c_void,
+                    transform_handle.borrow().rt_xform
+                        as *mut ::std::os::raw::c_void,
                 );
                 if result != RtResult::SUCCESS {
                     return Err(ctx.optix_error(
-                        &format!("rtVariableSetObject {:?}", transform_handle),
+                        "rtVariableSetObject {Transform}".into(),
                         result,
                     ));
                 } else {
                     return Ok(Variable::Object(VariableObject {
                         var: variable,
-                        object_handle: self,
+                        _object_handle: self,
                     }));
                 }
             },
             ObjectHandle::TextureSampler(ts_handle) => unsafe {
-                let ts =
-                    ctx.ga_texture_sampler_obj.get(ts_handle).expect(&format!(
-                        "Could not get texture sampler for handle {:?}",
-                        ts_handle
-                    ));
                 let result = rtVariableSetObject(
                     variable,
-                    *ts as *mut ::std::os::raw::c_void,
+                    ts_handle.borrow().rt_ts as *mut ::std::os::raw::c_void,
                 );
                 if result != RtResult::SUCCESS {
                     return Err(ctx.optix_error(
-                        &format!("rtVariableSetObject {:?}", ts_handle),
+                        "rtVariableSetObject {TextureSampler}".into(),
                         result,
                     ));
                 } else {
                     return Ok(Variable::Object(VariableObject {
                         var: variable,
-                        object_handle: self,
+                        _object_handle: self,
                     }));
                 }
             },

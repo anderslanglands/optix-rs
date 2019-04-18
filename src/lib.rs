@@ -28,7 +28,10 @@ pub use self::context::*;
 
 pub use crate::error::Error;
 use crate::error::Result;
-use crate::optix_bindings::{rtGetVersion, RtResult};
+pub use crate::optix_bindings::{
+    rtGetVersion, rtVariableSetUserData, MotionKeyType, RTsize, RTvariable,
+    RtResult,
+};
 
 /// Returns the version of the OptiX library in use.
 pub fn get_version() -> Result<u32> {
@@ -38,6 +41,47 @@ pub fn get_version() -> Result<u32> {
         Ok(version)
     } else {
         Err(Error::Optix((result, "rtGetVersion failed".to_owned())))
+    }
+}
+
+pub fn format_get_size(f: Format) -> usize {
+    match f {
+        Format::UNKNOWN => 0,
+        Format::FLOAT => 4,
+        Format::FLOAT2 => 8,
+        Format::FLOAT3 => 12,
+        Format::FLOAT4 => 16,
+        Format::BYTE => 1,
+        Format::BYTE2 => 2,
+        Format::BYTE3 => 3,
+        Format::BYTE4 => 4,
+        Format::UNSIGNED_BYTE => 1,
+        Format::UNSIGNED_BYTE2 => 2,
+        Format::UNSIGNED_BYTE3 => 3,
+        Format::UNSIGNED_BYTE4 => 4,
+        Format::SHORT => 2,
+        Format::SHORT2 => 4,
+        Format::SHORT3 => 6,
+        Format::SHORT4 => 8,
+        Format::UNSIGNED_SHORT => 2,
+        Format::UNSIGNED_SHORT2 => 4,
+        Format::UNSIGNED_SHORT3 => 6,
+        Format::UNSIGNED_SHORT4 => 8,
+        Format::INT => 4,
+        Format::INT2 => 8,
+        Format::INT3 => 12,
+        Format::INT4 => 16,
+        Format::UNSIGNED_INT => 4,
+        Format::UNSIGNED_INT2 => 8,
+        Format::UNSIGNED_INT3 => 12,
+        Format::UNSIGNED_INT4 => 16,
+        Format::USER => 0,
+        Format::BUFFER_ID => 4,
+        Format::PROGRAM_ID => 4,
+        Format::HALF => 2,
+        Format::HALF2 => 4,
+        Format::HALF3 => 6,
+        Format::HALF4 => 8,
     }
 }
 
