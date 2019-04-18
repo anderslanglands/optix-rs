@@ -22,7 +22,7 @@ pub enum ObjectHandle {
 
 pub struct VariableObject {
     pub(crate) var: RTvariable,
-    pub(crate) object_handle: ObjectHandle,
+    pub(crate) _object_handle: ObjectHandle,
 }
 
 pub struct VariablePod {
@@ -74,7 +74,7 @@ impl VariableStorable for ObjectHandle {
                 } else {
                     return Ok(Variable::Object(VariableObject {
                         var: variable,
-                        object_handle: self,
+                        _object_handle: self,
                     }));
                 }
             },
@@ -92,7 +92,7 @@ impl VariableStorable for ObjectHandle {
                 } else {
                     return Ok(Variable::Object(VariableObject {
                         var: variable,
-                        object_handle: self,
+                        _object_handle: self,
                     }));
                 }
             },
@@ -110,7 +110,7 @@ impl VariableStorable for ObjectHandle {
                 } else {
                     return Ok(Variable::Object(VariableObject {
                         var: variable,
-                        object_handle: self,
+                        _object_handle: self,
                     }));
                 }
             },
@@ -127,7 +127,7 @@ impl VariableStorable for ObjectHandle {
                 } else {
                     return Ok(Variable::Object(VariableObject {
                         var: variable,
-                        object_handle: self,
+                        _object_handle: self,
                     }));
                 }
             },
@@ -145,7 +145,7 @@ impl VariableStorable for ObjectHandle {
                 } else {
                     return Ok(Variable::Object(VariableObject {
                         var: variable,
-                        object_handle: self,
+                        _object_handle: self,
                     }));
                 }
             },
@@ -163,7 +163,7 @@ impl VariableStorable for ObjectHandle {
                 } else {
                     return Ok(Variable::Object(VariableObject {
                         var: variable,
-                        object_handle: self,
+                        _object_handle: self,
                     }));
                 }
             },
@@ -187,7 +187,7 @@ impl VariableStorable for ObjectHandle {
                 } else {
                     return Ok(Variable::Object(VariableObject {
                         var: variable,
-                        object_handle: self,
+                        _object_handle: self,
                     }));
                 }
             },
@@ -205,7 +205,7 @@ impl VariableStorable for ObjectHandle {
                 } else {
                     return Ok(Variable::Object(VariableObject {
                         var: variable,
-                        object_handle: self,
+                        _object_handle: self,
                     }));
                 }
             },
@@ -222,7 +222,7 @@ impl VariableStorable for ObjectHandle {
                 } else {
                     return Ok(Variable::Object(VariableObject {
                         var: variable,
-                        object_handle: self,
+                        _object_handle: self,
                     }));
                 }
             },

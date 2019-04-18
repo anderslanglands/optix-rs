@@ -93,6 +93,74 @@ impl Context {
         }
     }
 
+    pub fn geometry_instance_set_geometry(
+        &mut self,
+        geoinst: &GeometryInstanceHandle,
+        geometry_type: GeometryType,
+    ) -> Result<()> {
+        match &geometry_type {
+            GeometryType::Geometry(geo) => {
+                self.geometry_validate(&geo)?;
+                let result = unsafe {
+                    rtGeometryInstanceSetGeometry(
+                        geoinst.borrow().rt_geoinst,
+                        geo.borrow().rt_geo,
+                    )
+                };
+                if result != RtResult::SUCCESS {
+                    return Err(self
+                        .optix_error("rtGeometryInstanceSetGeometry", result));
+                }
+            }
+        }
+
+        geoinst.borrow_mut().geo = geometry_type;
+
+        Ok(())
+    }
+
+    pub fn geometry_instance_set_materials(
+        &mut self,
+        geoinst: &GeometryInstanceHandle,
+        materials: &Vec<MaterialHandle>,
+    ) -> Result<()> {
+        for mat in materials {
+            self.material_validate(mat)?;
+        }
+
+        let result = unsafe {
+            rtGeometryInstanceSetMaterialCount(
+                geoinst.borrow().rt_geoinst,
+                materials.len() as u32,
+            )
+        };
+
+        if result != RtResult::SUCCESS {
+            return Err(
+                self.optix_error("rtGeometryInstanceSetMaterialCount", result)
+            );
+        };
+
+        for (i, mat) in materials.iter().enumerate() {
+            let result = unsafe {
+                rtGeometryInstanceSetMaterial(
+                    geoinst.borrow().rt_geoinst,
+                    i as u32,
+                    mat.borrow().rt_mat,
+                )
+            };
+            if result != RtResult::SUCCESS {
+                return Err(
+                    self.optix_error("rtGeometryInstanceSetMaterial", result)
+                );
+            }
+        }
+
+        geoinst.borrow_mut().materials = materials.clone();
+
+        Ok(())
+    }
+
     /// Set the Variable referred to by `name` to the given `data`. Any objects
     /// previously assigned to the variable will be destroyed.
     pub fn geometry_instance_set_variable<T: VariableStorable>(

@@ -74,8 +74,10 @@ impl Context {
                         )
                     };
                     if result != RtResult::SUCCESS {
-                        return Err(self
-                            .optix_error("rtMaterialSetAnyHitProgram", result));
+                        return Err(self.optix_error(
+                            "rtMaterialSetAnyHitProgram",
+                            result,
+                        ));
                     }
                 }
             }
@@ -91,25 +93,6 @@ impl Context {
             Ok(hnd)
         }
     }
-
-    /*
-    /// Destroys this Material an all objects attached to it. Note that the
-    /// Material will not actually be destroyed until all references to it from
-    /// other scene graph objects are released.
-    /// # Panics
-    /// If mat is not a valid MaterialHandle
-    pub fn material_destroy(&mut self, mat: MaterialHandle) {
-        let _vars = self.gd_material_variables.remove(mat);
-
-        // destroy material programs
-        let _programs = self.gd_material_programs.remove(mat);
-
-        let rt_mat = self.ga_material_obj.remove(mat).unwrap();
-        if unsafe { rtMaterialDestroy(rt_mat) } != RtResult::SUCCESS {
-            panic!("Error destroying material {:?}", mat);
-        }
-    }
-    */
 
     /// Check that the Material and all objects attached to it are correctly
     /// set up.
@@ -178,6 +161,76 @@ impl Context {
 
             // if it's a new variable, push it to the context storage
             self.variables.push(var)
+        }
+
+        Ok(())
+    }
+
+    pub fn material_set_any_hit_program(
+        &mut self,
+        mat: &MaterialHandle,
+        ray_type: RayType,
+        prg: ProgramHandle,
+    ) -> Result<()> {
+        self.program_validate(&prg)?;
+
+        let result = unsafe {
+            rtMaterialSetAnyHitProgram(
+                mat.borrow().rt_mat,
+                ray_type.ray_type,
+                prg.borrow().rt_prg,
+            )
+        };
+        if result != RtResult::SUCCESS {
+            return Err(self.optix_error("rtMaterialSetAnyHitProgram", result));
+        }
+
+        if let Some(matprg) = mat.borrow_mut().programs.get_mut(&ray_type) {
+            matprg.any = Some(prg);
+        } else {
+            mat.borrow_mut().programs.insert(
+                ray_type,
+                MaterialProgram {
+                    closest: None,
+                    any: Some(prg),
+                },
+            );
+        }
+
+        Ok(())
+    }
+
+    pub fn material_set_closest_hit_program(
+        &mut self,
+        mat: &MaterialHandle,
+        ray_type: RayType,
+        prg: ProgramHandle,
+    ) -> Result<()> {
+        self.program_validate(&prg)?;
+
+        let result = unsafe {
+            rtMaterialSetClosestHitProgram(
+                mat.borrow().rt_mat,
+                ray_type.ray_type,
+                prg.borrow().rt_prg,
+            )
+        };
+        if result != RtResult::SUCCESS {
+            return Err(
+                self.optix_error("rtMaterialSetClosestHitProgram", result)
+            );
+        }
+
+        if let Some(matprg) = mat.borrow_mut().programs.get_mut(&ray_type) {
+            matprg.closest = Some(prg);
+        } else {
+            mat.borrow_mut().programs.insert(
+                ray_type,
+                MaterialProgram {
+                    any: None,
+                    closest: Some(prg),
+                },
+            );
         }
 
         Ok(())

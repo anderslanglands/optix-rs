@@ -43,8 +43,8 @@ pub struct EntryPointHandle {
 }
 
 pub struct EntryPoint {
-    ray_generation_program: ProgramHandle,
-    exception_program: Option<ProgramHandle>,
+    _ray_generation_program: ProgramHandle,
+    _exception_program: Option<ProgramHandle>,
 }
 
 /// An OptiX context provides an interface for controlling the setup and
@@ -149,7 +149,9 @@ impl Context {
                 rtContextSetRayTypeCount(self.rt_ctx, self.max_ray_type)
             };
             if result != RtResult::SUCCESS {
-                return Err(self.optix_error("rtContextSetRayTypeCount", result));
+                return Err(
+                    self.optix_error("rtContextSetRayTypeCount", result)
+                );
             }
         }
 
@@ -252,8 +254,8 @@ impl Context {
         }
 
         self.entry_points.push(EntryPoint {
-            ray_generation_program,
-            exception_program,
+            _ray_generation_program: ray_generation_program,
+            _exception_program: exception_program,
         });
 
         Ok(EntryPointHandle { index })
@@ -304,7 +306,9 @@ impl Context {
                 (rt_var, result)
             };
             if result != RtResult::SUCCESS {
-                return Err(self.optix_error("rtContextDeclareVariable", result));
+                return Err(
+                    self.optix_error("rtContextDeclareVariable", result)
+                );
             }
 
             let var =
@@ -356,7 +360,9 @@ impl Context {
         let result =
             unsafe { rtContextSetPrintLaunchIndex(self.rt_ctx, x, y, z) };
         if result != RtResult::SUCCESS {
-            return Err(self.optix_error("rtContextSetPrintLaunchIndex", result));
+            return Err(
+                self.optix_error("rtContextSetPrintLaunchIndex", result)
+            );
         }
         Ok(())
     }

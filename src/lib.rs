@@ -29,7 +29,8 @@ pub use self::context::*;
 pub use crate::error::Error;
 use crate::error::Result;
 pub use crate::optix_bindings::{
-    rtGetVersion, rtVariableSetUserData, RTsize, RTvariable, RtResult,
+    rtGetVersion, rtVariableSetUserData, MotionKeyType, RTsize, RTvariable,
+    RtResult,
 };
 
 /// Returns the version of the OptiX library in use.

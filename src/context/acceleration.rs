@@ -51,19 +51,17 @@ impl Context {
         }
     }
 
-    /// Destroys this Acceleration an all objects attached to it. Note that the
-    /// Acceleration will not actually be destroyed until all references to it from
-    /// other scene graph objects are released.
-    /// # Panics
-    /// If mat is not a valid AccelerationHandle
-    /*
-    pub fn acceleration_destroy(&mut self, acc: AccelerationHandle) {
-        let rt_acc = self.ga_acceleration_obj.remove(acc).unwrap();
-        if unsafe { rtAccelerationDestroy(rt_acc) } != RtResult::SUCCESS {
-            panic!("Error destroying acceleration: {:?}", acc);
+    pub fn acceleration_mark_dirty(
+        &mut self,
+        acc: &AccelerationHandle,
+    ) -> Result<()> {
+        let result = unsafe { rtAccelerationMarkDirty(acc.borrow().rt_acc) };
+        if result != RtResult::SUCCESS {
+            Err(self.optix_error("rtAccelerationMarkDirty", result))
+        } else {
+            Ok(())
         }
     }
-    */
 
     /// Check that the Acceleration and all objects attached to it are correctly
     /// set up.

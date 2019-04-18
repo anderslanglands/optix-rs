@@ -70,20 +70,6 @@ impl Context {
         }
     }
 
-    /*
-    pub fn geometry_destroy(&mut self, geo: GeometryHandle) {
-        let _vars = self.gd_geometry_variables.remove(geo);
-
-        let _prg_bounding_box = self.gd_geometry_bounding_box.remove(geo);
-        let _prg_intersection = self.gd_geometry_intersection.remove(geo);
-
-        let rt_geo = self.ga_geometry_obj.remove(geo).unwrap();
-        if unsafe { rtGeometryDestroy(rt_geo) } != RtResult::SUCCESS {
-            panic!("Error destroying Geometry");
-        }
-    }
-    */
-
     pub fn geometry_validate(&self, geo: &GeometryHandle) -> Result<()> {
         let result = unsafe { rtGeometryValidate(geo.borrow().rt_geo) };
         if result != RtResult::SUCCESS {
@@ -207,5 +193,51 @@ impl Context {
         } else {
             Ok(())
         }
+    }
+
+    pub fn geometry_set_intersection_program(
+        &mut self,
+        geo: &GeometryHandle,
+        prg: &ProgramHandle,
+    ) -> Result<()> {
+        self.program_validate(&prg)?;
+        let result = unsafe {
+            rtGeometrySetIntersectionProgram(
+                geo.borrow().rt_geo,
+                prg.borrow().rt_prg,
+            )
+        };
+        if result != RtResult::SUCCESS {
+            return Err(
+                self.optix_error("rtGeometrySetIntersectionProgram", result)
+            );
+        }
+
+        geo.borrow_mut().prg_intersection = Rc::clone(prg);
+
+        Ok(())
+    }
+
+    pub fn geometry_set_bounding_box_program(
+        &mut self,
+        geo: &GeometryHandle,
+        prg: &ProgramHandle,
+    ) -> Result<()> {
+        self.program_validate(&prg)?;
+        let result = unsafe {
+            rtGeometrySetBoundingBoxProgram(
+                geo.borrow().rt_geo,
+                prg.borrow().rt_prg,
+            )
+        };
+        if result != RtResult::SUCCESS {
+            return Err(
+                self.optix_error("rtGeometrySetBoundingBoxProgram", result)
+            );
+        }
+
+        geo.borrow_mut().prg_bounding_box = Rc::clone(prg);
+
+        Ok(())
     }
 }

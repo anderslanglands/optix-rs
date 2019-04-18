@@ -5,7 +5,7 @@ use std::rc::Rc;
 
 pub struct Transform {
     pub(crate) rt_xform: RTtransform,
-    pub(crate) child: TransformChild,
+    pub child: TransformChild,
 }
 
 pub type TransformHandle = Rc<RefCell<Transform>>;
@@ -65,7 +65,9 @@ impl Context {
                     )
                 };
                 if result != RtResult::SUCCESS {
-                    return Err(self.optix_error("rtTransformSetMatrix", result));
+                    return Err(
+                        self.optix_error("rtTransformSetMatrix", result)
+                    );
                 }
             }
             MatrixFormat::ColumnMajor(m) => {
@@ -78,7 +80,9 @@ impl Context {
                     )
                 };
                 if result != RtResult::SUCCESS {
-                    return Err(self.optix_error("rtTransformSetMatrix", result));
+                    return Err(
+                        self.optix_error("rtTransformSetMatrix", result)
+                    );
                 }
             }
         }
@@ -211,16 +215,6 @@ impl Context {
         Ok(xform)
     }
 
-    /*
-    pub fn transform_destroy(&mut self, xform: TransformHandle) {
-        let rt_xform = self.ga_transform_obj.remove(xform).unwrap();
-        let _child = self.gd_transform_child.remove(xform);
-        if unsafe { rtTransformDestroy(rt_xform) } != RtResult::SUCCESS {
-            panic!("Error destroying transform {:?}", xform);
-        }
-    }
-    */
-
     pub fn transform_validate(&self, xform: &TransformHandle) -> Result<()> {
         let result = unsafe { rtTransformValidate(xform.borrow().rt_xform) };
         if result != RtResult::SUCCESS {
@@ -228,6 +222,47 @@ impl Context {
         } else {
             Ok(())
         }
+    }
+
+    pub fn transform_set_matrix(
+        &mut self,
+        xform: &TransformHandle,
+        matrix: MatrixFormat,
+    ) -> Result<()> {
+        match matrix {
+            MatrixFormat::RowMajor(m) => {
+                let result = unsafe {
+                    rtTransformSetMatrix(
+                        xform.borrow().rt_xform,
+                        0,
+                        &m as *const M4f32 as *const f32,
+                        std::ptr::null(),
+                    )
+                };
+                if result != RtResult::SUCCESS {
+                    return Err(
+                        self.optix_error("rtTransformSetMatrix", result)
+                    );
+                }
+            }
+            MatrixFormat::ColumnMajor(m) => {
+                let result = unsafe {
+                    rtTransformSetMatrix(
+                        xform.borrow().rt_xform,
+                        1,
+                        &m as *const M4f32 as *const f32,
+                        std::ptr::null(),
+                    )
+                };
+                if result != RtResult::SUCCESS {
+                    return Err(
+                        self.optix_error("rtTransformSetMatrix", result)
+                    );
+                }
+            }
+        }
+
+        Ok(())
     }
 
     pub fn transform_set_motion_keys(

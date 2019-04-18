@@ -44,7 +44,9 @@ impl Context {
             rtGeometryGroupSetChildCount(rt_geogrp, children.len() as u32)
         };
         if result != RtResult::SUCCESS {
-            return Err(self.optix_error("rtGeometryGroupSetChildCount", result));
+            return Err(
+                self.optix_error("rtGeometryGroupSetChildCount", result)
+            );
         }
 
         for (i, geoinst) in children.iter().enumerate() {
@@ -71,22 +73,6 @@ impl Context {
         Ok(geogrp)
     }
 
-    /*
-    pub fn geometry_group_destroy(&mut self, geogrp: GeometryGroupHandle) {
-        let rt_geogrp = self.ga_geometry_group_obj.remove(geogrp).unwrap();
-        // acceleration will just dangle here
-        let _acc = self.gd_geometry_group_acceleration.remove(geogrp).unwrap();
-        let children = self.gd_geometry_group_children.remove(geogrp).unwrap();
-        for child in children {
-            self.geometry_instance_destroy(child);
-        }
-
-        if unsafe { rtGeometryGroupDestroy(rt_geogrp) } != RtResult::SUCCESS {
-            panic!("Error destroying geometry_group {:?}", geogrp);
-        }
-    }
-    */
-
     pub fn geometry_group_validate(
         &self,
         geogrp: &GeometryGroupHandle,
@@ -98,5 +84,69 @@ impl Context {
         } else {
             Ok(())
         }
+    }
+
+    pub fn geometry_group_set_acceleration(
+        &mut self,
+        geogrp: &GeometryGroupHandle,
+        accel: AccelerationHandle,
+    ) -> Result<()> {
+        self.acceleration_validate(&accel)?;
+
+        let result = unsafe {
+            rtGeometryGroupSetAcceleration(
+                geogrp.borrow().rt_geogrp,
+                accel.borrow().rt_acc,
+            )
+        };
+
+        if result != RtResult::SUCCESS {
+            return Err(
+                self.optix_error("rtGeometryGroupSetAcceleration", result)
+            );
+        }
+
+        geogrp.borrow_mut().acc = accel;
+
+        Ok(())
+    }
+
+    pub fn geometry_group_set_children(
+        &mut self,
+        geogrp: &GeometryGroupHandle,
+        children: Vec<GeometryInstanceHandle>,
+    ) -> Result<()> {
+        for child in &children {
+            self.geometry_instance_validate(child)?;
+        }
+
+        let result = unsafe {
+            rtGeometryGroupSetChildCount(
+                geogrp.borrow().rt_geogrp,
+                children.len() as u32,
+            )
+        };
+        if result != RtResult::SUCCESS {
+            return Err(
+                self.optix_error("rtGeometryGroupSetChildCount", result)
+            );
+        }
+
+        for (i, geoinst) in children.iter().enumerate() {
+            let result = unsafe {
+                rtGeometryGroupSetChild(
+                    geogrp.borrow().rt_geogrp,
+                    i as u32,
+                    geoinst.borrow().rt_geoinst,
+                )
+            };
+            if result != RtResult::SUCCESS {
+                return Err(self.optix_error("rtGeometryGroupSetChild", result));
+            }
+        }
+
+        geogrp.borrow_mut().children = children;
+
+        Ok(())
     }
 }
