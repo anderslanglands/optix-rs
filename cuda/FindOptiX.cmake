@@ -16,6 +16,7 @@ set_target_properties(OptiX::optix PROPERTIES
     IMPORTED_LOCATION ${OptiX_optix_LIBRARY}
     IMPORTED_LINK_INTERFACE_LIBRARIES "CUDA::cudart"
 )
+message("OPTIX INCLUDE: ${OptiX_INCLUDE_DIR}")
 
 find_package_handle_standard_args(OptiX
   REQUIRED_VARS OptiX_INCLUDE_DIR OptiX_optix_LIBRARY

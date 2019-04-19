@@ -1,4 +1,5 @@
 use crate::context::*;
+use cfg_if::cfg_if;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -12,9 +13,17 @@ pub struct Geometry {
 
 pub type GeometryHandle = Rc<RefCell<Geometry>>;
 
-pub enum GeometryType {
-    Geometry(GeometryHandle),
-    // GeometryTriangles(GeometryTrianglesHandle),
+cfg_if! {
+if #[cfg(feature="optix5")] {
+    pub enum GeometryType {
+        Geometry(GeometryHandle),
+    }
+} else {
+    pub enum GeometryType {
+        Geometry(GeometryHandle),
+        GeometryTriangles(GeometryTrianglesHandle),
+    }
+}
 }
 
 impl Context {

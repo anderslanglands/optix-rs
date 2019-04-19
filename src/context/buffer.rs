@@ -64,6 +64,18 @@ impl BufferElement for V4i32 {
     const FORMAT: Format = Format::INT4;
 }
 
+impl BufferElement for V2u32 {
+    const FORMAT: Format = Format::UNSIGNED_INT2;
+}
+
+impl BufferElement for V3u32 {
+    const FORMAT: Format = Format::UNSIGNED_INT3;
+}
+
+impl BufferElement for V4u32 {
+    const FORMAT: Format = Format::UNSIGNED_INT4;
+}
+
 impl BufferElement for i16 {
     const FORMAT: Format = Format::SHORT;
 }

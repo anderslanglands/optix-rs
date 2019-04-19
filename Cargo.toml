@@ -13,11 +13,13 @@ exclude = [
 
 [features]
 colorspace_support = ["colorspace"]
+optix5 = []
 
 [dependencies]
 config = "0.9"
 nalgebra = "0.16"
 colorspace = {path="../colorspace-rs", optional = true}
+cfg-if = "0.1"
 
 [build-dependencies]
 bindgen = "0.41"

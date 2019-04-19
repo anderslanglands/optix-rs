@@ -29,6 +29,11 @@ use self::group::*;
 pub mod texture_sampler;
 use self::texture_sampler::*;
 
+#[cfg(not(feature = "optix5"))]
+pub mod geometry_triangles;
+#[cfg(not(feature = "optix5"))]
+use self::geometry_triangles::*;
+
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -83,6 +88,8 @@ pub struct Context {
     buffer2ds: Vec<Buffer2dHandle>,
     buffer3ds: Vec<Buffer3dHandle>,
     geometrys: Vec<GeometryHandle>,
+    #[cfg(not(feature = "optix5"))]
+    geometry_triangles: Vec<GeometryTrianglesHandle>,
     materials: Vec<MaterialHandle>,
     texture_samplers: Vec<TextureSamplerHandle>,
     geometry_instances: Vec<GeometryInstanceHandle>,
@@ -122,6 +129,8 @@ impl Context {
             buffer2ds: Vec::new(),
             buffer3ds: Vec::new(),
             geometrys: Vec::new(),
+            #[cfg(not(feature = "optix5"))]
+            geometry_triangles: Vec::new(),
             materials: Vec::new(),
             texture_samplers: Vec::new(),
             geometry_instances: Vec::new(),

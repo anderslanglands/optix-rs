@@ -37,6 +37,9 @@ pub fn v4f64(x: f64, y: f64, z: f64, w: f64) -> V4f64 {
 pub type V2i32 = Vector2<i32>;
 pub type V3i32 = Vector3<i32>;
 pub type V4i32 = Vector4<i32>;
+pub type V2u32 = Vector2<u32>;
+pub type V3u32 = Vector3<u32>;
+pub type V4u32 = Vector4<u32>;
 
 // short constructors
 pub fn v2i32(x: i32, y: i32) -> V2i32 {
@@ -49,6 +52,19 @@ pub fn v3i32(x: i32, y: i32, z: i32) -> V3i32 {
 
 pub fn v4i32(x: i32, y: i32, z: i32, w: i32) -> V4i32 {
     V4i32::new(x, y, z, w)
+}
+
+// short constructors
+pub fn v2u32(x: u32, y: u32) -> V2u32 {
+    V2u32::new(x, y)
+}
+
+pub fn v3u32(x: u32, y: u32, z: u32) -> V3u32 {
+    V3u32::new(x, y, z)
+}
+
+pub fn v4u32(x: u32, y: u32, z: u32, w: u32) -> V4u32 {
+    V4u32::new(x, y, z, w)
 }
 
 // matrix constructors

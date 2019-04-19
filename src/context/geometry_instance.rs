@@ -90,6 +90,72 @@ impl Context {
                     Ok(hnd)
                 }
             }
+            #[cfg(not(feature = "optix5"))]
+            GeometryType::GeometryTriangles(geotri) => {
+                self.geometry_triangles_validate(&geotri)?;
+
+                let (geoinst, result) = unsafe {
+                    let mut geoinst: RTgeometryinstance = std::mem::zeroed();
+                    let result =
+                        rtGeometryInstanceCreate(self.rt_ctx, &mut geoinst);
+                    (geoinst, result)
+                };
+                if result != RtResult::SUCCESS {
+                    Err(self.optix_error("rtGeometryInstanceCreate", result))
+                } else {
+                    let result = unsafe {
+                        rtGeometryInstanceSetGeometryTriangles(
+                            geoinst,
+                            geotri.borrow().rt_geotri,
+                        )
+                    };
+                    if result != RtResult::SUCCESS {
+                        return Err(self.optix_error(
+                            "rtGeometryInstanceSetGeometryTriangles",
+                            result,
+                        ));
+                    }
+
+                    let result = unsafe {
+                        rtGeometryInstanceSetMaterialCount(
+                            geoinst,
+                            materials.len() as u32,
+                        )
+                    };
+                    if result != RtResult::SUCCESS {
+                        return Err(self.optix_error(
+                            "rtGeometryInstanceSetMaterialCount",
+                            result,
+                        ));
+                    };
+                    for (i, mat) in materials.iter().enumerate() {
+                        let result = unsafe {
+                            rtGeometryInstanceSetMaterial(
+                                geoinst,
+                                i as u32,
+                                mat.borrow().rt_mat,
+                            )
+                        };
+                        if result != RtResult::SUCCESS {
+                            return Err(self.optix_error(
+                                "rtGeometryInstanceSetMaterial",
+                                result,
+                            ));
+                        }
+                    }
+
+                    let hnd = Rc::new(RefCell::new(GeometryInstance {
+                        rt_geoinst: geoinst,
+                        variables: HashMap::new(),
+                        geo: geometry_type,
+                        materials,
+                    }));
+
+                    self.geometry_instances.push(Rc::clone(&hnd));
+
+                    Ok(hnd)
+                }
+            }
         }
     }
 
@@ -110,6 +176,22 @@ impl Context {
                 if result != RtResult::SUCCESS {
                     return Err(self
                         .optix_error("rtGeometryInstanceSetGeometry", result));
+                }
+            }
+            #[cfg(not(feature = "optix5"))]
+            GeometryType::GeometryTriangles(geotri) => {
+                self.geometry_triangles_validate(&geotri)?;
+                let result = unsafe {
+                    rtGeometryInstanceSetGeometryTriangles(
+                        geoinst.borrow().rt_geoinst,
+                        geotri.borrow().rt_geotri,
+                    )
+                };
+                if result != RtResult::SUCCESS {
+                    return Err(self.optix_error(
+                        "rtGeometryInstanceSetGeometryTriangles",
+                        result,
+                    ));
                 }
             }
         }
