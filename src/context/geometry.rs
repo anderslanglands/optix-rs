@@ -23,6 +23,15 @@ if #[cfg(feature="optix5")] {
         Geometry(GeometryHandle),
         GeometryTriangles(GeometryTrianglesHandle),
     }
+
+    impl GeometryType {
+        pub fn clone(&self) -> GeometryType {
+            match &self {
+                GeometryType::Geometry(geo) => GeometryType::Geometry(Rc::clone(geo)),
+                GeometryType::GeometryTriangles(geo) => GeometryType::GeometryTriangles(Rc::clone(geo)),
+            }
+        }
+    }
 }
 }
 

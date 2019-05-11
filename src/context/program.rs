@@ -13,6 +13,26 @@ pub struct Program {
 
 pub type ProgramHandle = Rc<RefCell<Program>>;
 
+pub struct ProgramID {
+    pub prg: ProgramHandle,
+    pub id: i32,
+}
+
+impl Clone for ProgramID {
+    fn clone(&self) -> ProgramID {
+        ProgramID {
+            prg: Rc::clone(&self.prg),
+            id: self.id,
+        }
+    }
+}
+
+impl Drop for ProgramID {
+    fn drop(&mut self) {
+        println!("DROPPING PROGRAM ID {}", self.id);
+    }
+}
+
 impl Context {
     /// Destroys the Program referred to by `prg` and all its attached objects.
     /// The underlying program will remain alive until all references to it
@@ -148,7 +168,9 @@ impl Context {
                 (rt_var, result)
             };
             if result != RtResult::SUCCESS {
-                return Err(self.optix_error("rtProgramDeclareVariable", result));
+                return Err(
+                    self.optix_error("rtProgramDeclareVariable", result)
+                );
             }
 
             let var =
@@ -162,5 +184,23 @@ impl Context {
         }
 
         Ok(())
+    }
+
+    pub fn program_get_id(
+        &mut self,
+        handle: &ProgramHandle,
+    ) -> Result<ProgramID> {
+        unsafe {
+            let mut id: i32 = 0;
+            let result = rtProgramGetId(handle.borrow().rt_prg, &mut id);
+            if result == RtResult::SUCCESS {
+                Ok(ProgramID {
+                    prg: Rc::clone(handle),
+                    id,
+                })
+            } else {
+                Err(self.optix_error("rtProgramGetId", result))
+            }
+        }
     }
 }

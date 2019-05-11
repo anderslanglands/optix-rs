@@ -31,8 +31,8 @@ macro(compile_optix_ptx SOURCES)
         TARGET_PATH ${CMAKE_CURRENT_DIR}
         GENERATED_FILES PTX_SOURCES
         NVCC_OPTIONS
-            -arch=sm_30
-            # --use_fast_math
+            -arch=sm_70
+            --use_fast_math
             --relocatable-device-code=true
             -std=c++14
             -I${OPTIX_INCLUDE_DIR}

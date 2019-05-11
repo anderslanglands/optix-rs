@@ -14,7 +14,7 @@ pub enum ObjectHandle {
     GeometryGroup(GeometryGroupHandle),
     Group(GroupHandle),
     Program(ProgramHandle),
-    ProgramID(ProgramHandle),
+    ProgramID(ProgramID),
     // Selector(SelectorHandle),
     TextureSampler(TextureSamplerHandle),
     Transform(TransformHandle),
@@ -167,18 +167,8 @@ impl VariableStorable for ObjectHandle {
                     }));
                 }
             },
-            ObjectHandle::ProgramID(program_handle) => unsafe {
-                let mut id: i32 = std::mem::uninitialized();
-                let result =
-                    rtProgramGetId(program_handle.borrow().rt_prg, &mut id);
-
-                if result != RtResult::SUCCESS {
-                    return Err(ctx.optix_error(
-                        "rtProgramGetId(Program)".into(),
-                        result,
-                    ));
-                }
-                let result = rtVariableSet1i(variable, id);
+            ObjectHandle::ProgramID(program_id) => unsafe {
+                let result = rtVariableSet1i(variable, program_id.id);
                 if result != RtResult::SUCCESS {
                     return Err(ctx.optix_error(
                         "rtVariableSet1i(ProgramID)".into(),

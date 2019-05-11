@@ -20,6 +20,7 @@ config = "0.9"
 nalgebra = "0.16"
 colorspace = {path="../colorspace-rs", optional = true}
 cfg-if = "0.1"
+nalgebra-glm = "0.4.0"
 
 [build-dependencies]
 bindgen = "0.41"

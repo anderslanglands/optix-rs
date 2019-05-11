@@ -36,6 +36,7 @@ pub use self::context::geometry_triangles::*;
 pub use self::context::group::*;
 pub use self::context::material::*;
 pub use self::context::program::*;
+pub use self::context::texture_sampler::*;
 pub use self::context::transform::*;
 pub use self::context::variable::*;
 pub use self::context::*;
@@ -44,7 +45,7 @@ pub use crate::error::Error;
 use crate::error::Result;
 pub use crate::optix_bindings::{
     rtGetVersion, rtVariableSetUserData, MotionKeyType, RTsize, RTvariable,
-    RtResult,
+    RtResult, WrapMode,
 };
 
 /// Returns the version of the OptiX library in use.

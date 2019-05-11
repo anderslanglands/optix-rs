@@ -11,14 +11,17 @@ use colorspace::rgb::RGBf32;
 #[derive(Clone, Copy)]
 pub struct BufferId(pub(crate) i32);
 
+#[repr(C)]
 pub struct Buffer1d {
     pub(crate) rt_buf: RTbuffer,
 }
 
+#[repr(C)]
 pub struct Buffer2d {
     pub(crate) rt_buf: RTbuffer,
 }
 
+#[repr(C)]
 pub struct Buffer3d {
     pub(crate) rt_buf: RTbuffer,
 }

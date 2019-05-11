@@ -8,7 +8,37 @@ pub struct TextureSampler {
     pub(crate) buffer: BufferHandle,
 }
 
+impl Drop for TextureSampler {
+    fn drop(&mut self) {
+        let mut id = 0i32;
+        unsafe {
+            rtTextureSamplerGetId(self.rt_ts, &mut id);
+        }
+        println!("Dropping texture sampler {}", id);
+    }
+}
+
 pub type TextureSamplerHandle = Rc<RefCell<TextureSampler>>;
+
+pub struct TextureID {
+    pub(crate) ts: TextureSamplerHandle,
+    pub id: i32,
+}
+
+impl Drop for TextureID {
+    fn drop(&mut self) {
+        println!("Dropping texture ID {}", self.id);
+    }
+}
+
+impl Clone for TextureID {
+    fn clone(&self) -> TextureID {
+        TextureID {
+            ts: Rc::clone(&self.ts),
+            id: self.id,
+        }
+    }
+}
 
 pub enum BufferHandle {
     Buffer1d(Buffer1dHandle),
@@ -37,7 +67,9 @@ impl Context {
         };
 
         if result != RtResult::SUCCESS {
-            return Err(self.optix_error("rtTextureSamplerSetBuffer 1d", result));
+            return Err(
+                self.optix_error("rtTextureSamplerSetBuffer 1d", result)
+            );
         }
 
         let ts = Rc::new(RefCell::new(TextureSampler {
@@ -71,7 +103,9 @@ impl Context {
         };
 
         if result != RtResult::SUCCESS {
-            return Err(self.optix_error("rtTextureSamplerSetBuffer 2d", result));
+            return Err(
+                self.optix_error("rtTextureSamplerSetBuffer 2d", result)
+            );
         }
 
         let ts = Rc::new(RefCell::new(TextureSampler {
@@ -83,18 +117,6 @@ impl Context {
 
         Ok(ts)
     }
-
-    /*
-    pub fn texture_sampler_destroy(&mut self, ts: TextureSamplerHandle) {
-        let rt_ts = self.ga_texture_sampler_obj.get(ts).unwrap();
-
-        let result = unsafe { rtTextureSamplerDestroy(*rt_ts) };
-
-        if result != RtResult::SUCCESS {
-            panic!("rtTextureSamplerDestroy");
-        }
-    }
-    */
 
     pub fn texture_sampler_validate(
         &mut self,
@@ -126,7 +148,9 @@ impl Context {
         };
 
         if result != RtResult::SUCCESS {
-            return Err(self.optix_error("rtTextureSamplerSetBuffer 1d", result));
+            return Err(
+                self.optix_error("rtTextureSamplerSetBuffer 1d", result)
+            );
         }
 
         ts.borrow_mut().buffer = BufferHandle::Buffer1d(buf);
@@ -151,7 +175,9 @@ impl Context {
         };
 
         if result != RtResult::SUCCESS {
-            return Err(self.optix_error("rtTextureSamplerSetBuffer 1d", result));
+            return Err(
+                self.optix_error("rtTextureSamplerSetBuffer 1d", result)
+            );
         }
 
         ts.borrow_mut().buffer = BufferHandle::Buffer2d(buf);
@@ -286,6 +312,26 @@ impl Context {
             return Err(self.optix_error("rtTextureSamplerSetWrapMode", result));
         } else {
             Ok(())
+        }
+    }
+
+    pub fn texture_sampler_get_id(
+        &mut self,
+        ts: &TextureSamplerHandle,
+    ) -> Result<TextureID> {
+        let mut id = 0i32;
+        let result =
+            unsafe { rtTextureSamplerGetId(ts.borrow().rt_ts, &mut id) };
+        if result != RtResult::SUCCESS {
+            return Err(Error::Optix((
+                result,
+                "rtTextureSamplerGetId".to_owned(),
+            )));
+        } else {
+            Ok(TextureID {
+                ts: Rc::clone(&ts),
+                id,
+            })
         }
     }
 }

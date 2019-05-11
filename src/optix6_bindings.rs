@@ -9709,7 +9709,7 @@ extern "C" {
    pub fn rtGeometryTrianglesSetMotionVerticesMultiBuffer(
       geometrytriangles: RTgeometrytriangles,
       vertexCount: ::std::os::raw::c_uint,
-      vertexBuffers: *mut RTbuffer,
+      vertexBuffers: *const RTbuffer,
       vertexBufferCount: ::std::os::raw::c_uint,
       vertexBufferByteOffset: RTsize,
       vertexByteStride: RTsize,

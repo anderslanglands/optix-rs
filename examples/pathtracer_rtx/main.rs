@@ -15,6 +15,10 @@ use optix::math::*;
 
 use std::rc::Rc;
 
+fn float_secs(t: std::time::Duration) -> f32 {
+    (t.as_secs() as f32) + (t.as_nanos() as f32) * 1e-9
+}
+
 fn main() -> Result<(), String> {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
     glfw.window_hint(glfw::WindowHint::ContextVersion(4, 1));
@@ -72,6 +76,8 @@ fn main() -> Result<(), String> {
             let mut time_max = std::time::Duration::from_secs(0);
             let mut time_total = std::time::Duration::from_secs(0);
             let mut time_samples = 0;
+            let mut rays_per_s_min = std::f32::MAX;
+            let mut rays_per_s_max = 0f32;
 
             // block until we receive a command message
             match rx_render.recv() {
@@ -123,6 +129,8 @@ fn main() -> Result<(), String> {
                                     time_total.as_secs(),
                                     time_total.subsec_millis()
                                 );
+                                println!("RPS min: {}", rays_per_s_min);
+                                println!("RPS max: {}", rays_per_s_max);
 
                                 let buffer_mem = ctx.mem_report();
                                 for (name, size) in buffer_mem.iter() {
@@ -151,6 +159,7 @@ fn main() -> Result<(), String> {
                         }
 
                         // update the shared buffer
+                        let mut num_rays = 0f32;
                         {
                             let buffer_map = ctx
                                 .buffer_map_2d::<V4f32>(&result_buffer)
@@ -158,9 +167,10 @@ fn main() -> Result<(), String> {
                             let mut output =
                                 mtx_image_data_render.lock().unwrap();
 
-                            // output.clone_from_slice(buffer_map.as_slice());
                             for i in 0..output.len() {
                                 output[i] += buffer_map.as_slice()[i];
+                                num_rays +=
+                                    buffer_map.as_slice()[i].w * 2.0 + 1.0;
                             }
                         }
                         // let the ui thread know there's new image data to
@@ -178,6 +188,10 @@ fn main() -> Result<(), String> {
                             }
                             time_total += duration;
                             time_samples += 1;
+
+                            let rays_per_s = num_rays / float_secs(duration);
+                            rays_per_s_min = rays_per_s_min.min(rays_per_s);
+                            rays_per_s_max = rays_per_s_max.max(rays_per_s);
                         }
 
                         if progression % 10 == 0 {

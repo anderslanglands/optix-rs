@@ -88,7 +88,7 @@ RT_PROGRAM void generate_ray() {
         origin = prd.p;
         direction = prd.w;
     }
-    float alpha = prd.depth > 0 ? 1.0f : 0.0f;
+    float alpha = prd.depth;
 
     result_buffer[launch_index] = make_float4(result, alpha);
 }
