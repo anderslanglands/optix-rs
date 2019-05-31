@@ -530,6 +530,29 @@ impl Context {
             })
     }
 
+    /// Create a new `Buffer2d` and fill it with the given data.
+    pub fn buffer_create_from_slice_2d<T: BufferElement>(
+        &mut self,
+        data: &[T],
+        width: usize,
+        height: usize,
+        buffer_type: BufferType,
+        flags: BufferFlag,
+    ) -> Result<Buffer2dHandle> {
+        let hnd = self.buffer_create_2d(
+            width,
+            height,
+            T::FORMAT,
+            buffer_type,
+            flags,
+        )?;
+        {
+            let mut map = self.buffer_map_2d_mut::<T>(&hnd).unwrap();
+            map.as_slice_mut().clone_from_slice(data);
+        }
+        Ok(hnd)
+    }
+
     /// Creates an unsized `Buffer2d` on this Context, returning a `Buffer2dHandle`
     /// that can be used to access it later. The size of the buffer must be set
     /// before it is used

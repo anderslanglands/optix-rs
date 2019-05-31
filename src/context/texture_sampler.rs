@@ -118,6 +118,52 @@ impl Context {
         Ok(ts)
     }
 
+    pub fn texture_sampler_create_from_slice_2d<T: BufferElement>(
+        &mut self,
+        data: &[T],
+        width: usize,
+        height: usize,
+    ) -> Result<TextureSamplerHandle> {
+        let buf = self.buffer_create_from_slice_2d(
+            data,
+            width,
+            height,
+            BufferType::INPUT,
+            BufferFlag::NONE,
+        )?;
+
+        self.buffer_validate_2d(&buf)?;
+
+        let (rt_ts, result) = unsafe {
+            let mut rt_ts: RTtexturesampler = std::mem::zeroed();
+            let result = rtTextureSamplerCreate(self.rt_ctx, &mut rt_ts);
+            (rt_ts, result)
+        };
+
+        if result != RtResult::SUCCESS {
+            return Err(self.optix_error("rtTextureSamplerCreate", result));
+        }
+
+        let result = unsafe {
+            rtTextureSamplerSetBuffer(rt_ts, 0, 0, buf.borrow().rt_buf)
+        };
+
+        if result != RtResult::SUCCESS {
+            return Err(
+                self.optix_error("rtTextureSamplerSetBuffer 2d", result)
+            );
+        }
+
+        let ts = Rc::new(RefCell::new(TextureSampler {
+            rt_ts,
+            buffer: BufferHandle::Buffer2d(buf),
+        }));
+
+        self.texture_samplers.push(Rc::clone(&ts));
+
+        Ok(ts)
+    }
+
     pub fn texture_sampler_validate(
         &mut self,
         ts: &TextureSamplerHandle,

@@ -127,6 +127,7 @@ impl Context {
                 match &*ex_var_c {
                     Variable::Pod(vp) => vp.var,
                     Variable::Object(vo) => vo.var,
+                    Variable::User(vo) => vo.var,
                 }
             };
 
@@ -152,6 +153,62 @@ impl Context {
 
             let var =
                 Rc::new(RefCell::new(data.set_optix_variable(self, rt_var)?));
+            geo.borrow_mut()
+                .variables
+                .insert(name.into(), Rc::clone(&var));
+
+            // if it's a new variable, push it to the context storage
+            self.variables.push(var)
+        }
+
+        Ok(())
+    }
+
+    /// Set the Variable referred to by `name` to the given `data`. Any objects
+    /// previously assigned to the variable will be destroyed.
+    pub fn geometry_set_user_variable(
+        &mut self,
+        geo: &GeometryHandle,
+        name: &str,
+        data: Box<dyn UserVariable>,
+    ) -> Result<()> {
+        // check if the variable exists first
+        if let Some(ex_var) = geo.borrow_mut().variables.remove(name) {
+            let var = {
+                let ex_var_c = ex_var.borrow();
+                match &*ex_var_c {
+                    Variable::Pod(vp) => vp.var,
+                    Variable::Object(vo) => vo.var,
+                    Variable::User(vu) => vu.var,
+                }
+            };
+
+            data.set_user_variable(self, var)?;
+            ex_var.replace(Variable::User(UserData { var, data }));
+            geo.borrow_mut().variables.insert(name.into(), ex_var);
+        } else {
+            let (rt_var, result) = unsafe {
+                let mut rt_var: RTvariable = ::std::mem::uninitialized();
+                let c_name = std::ffi::CString::new(name).unwrap();
+                let result = rtContextDeclareVariable(
+                    self.rt_ctx,
+                    c_name.as_ptr(),
+                    &mut rt_var,
+                );
+                (rt_var, result)
+            };
+            if result != RtResult::SUCCESS {
+                return Err(
+                    self.optix_error("rtContextDeclareVariable", result)
+                );
+            }
+
+            data.set_user_variable(self, rt_var)?;
+            let var = Rc::new(RefCell::new(Variable::User(UserData {
+                var: rt_var,
+                data,
+            })));
+
             geo.borrow_mut()
                 .variables
                 .insert(name.into(), Rc::clone(&var));

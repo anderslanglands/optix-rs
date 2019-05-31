@@ -17,6 +17,7 @@ pub enum ObjectHandle {
     ProgramID(ProgramID),
     // Selector(SelectorHandle),
     TextureSampler(TextureSamplerHandle),
+    TextureID(TextureID),
     Transform(TransformHandle),
 }
 
@@ -35,9 +36,23 @@ impl VariablePod {
     }
 }
 
+pub struct UserData {
+    pub var: RTvariable,
+    pub data: Box<dyn UserVariable>,
+}
+
 pub enum Variable {
     Pod(VariablePod),
     Object(VariableObject),
+    User(UserData),
+}
+
+pub trait UserVariable {
+    fn set_user_variable(
+        &self,
+        ctx: &mut Context,
+        variable: RTvariable,
+    ) -> Result<()>;
 }
 
 pub type VariableHandle = Rc<RefCell<Variable>>;
@@ -216,6 +231,27 @@ impl VariableStorable for ObjectHandle {
                     }));
                 }
             },
+            ObjectHandle::TextureID(ref tex_id) => unsafe {
+                let result = rtVariableSetUserData(
+                    variable,
+                    std::mem::size_of::<i32>() as RTsize,
+                    &tex_id.id as *const i32 as *const std::ffi::c_void,
+                );
+                if result != RtResult::SUCCESS {
+                    return Err(ctx.optix_error(
+                        &format!(
+                            "rtVariableSetUserData<TextureID>  {:?}",
+                            tex_id.id
+                        ),
+                        result,
+                    ));
+                } else {
+                    return Ok(Variable::Object(VariableObject {
+                        var: variable,
+                        _object_handle: self,
+                    }));
+                }
+            },
         };
     }
 }
@@ -235,6 +271,21 @@ impl VariableStorable for u32 {
     }
 }
 
+impl VariableStorable for u64 {
+    fn set_optix_variable(
+        self,
+        ctx: &mut Context,
+        variable: RTvariable,
+    ) -> Result<Variable> {
+        let result = unsafe { rtVariableSet1ull(variable, self) };
+        if result != RtResult::SUCCESS {
+            Err(ctx.optix_error("rtVariableSet1ull", result))
+        } else {
+            Ok(Variable::Pod(VariablePod { var: variable }))
+        }
+    }
+}
+
 impl VariableStorable for f32 {
     fn set_optix_variable(
         self,
@@ -244,6 +295,21 @@ impl VariableStorable for f32 {
         let result = unsafe { rtVariableSet1f(variable, self) };
         if result != RtResult::SUCCESS {
             Err(ctx.optix_error("rtVariableSet1f", result))
+        } else {
+            Ok(Variable::Pod(VariablePod { var: variable }))
+        }
+    }
+}
+
+impl VariableStorable for i32 {
+    fn set_optix_variable(
+        self,
+        ctx: &mut Context,
+        variable: RTvariable,
+    ) -> Result<Variable> {
+        let result = unsafe { rtVariableSet1i(variable, self) };
+        if result != RtResult::SUCCESS {
+            Err(ctx.optix_error("rtVariableSet1i", result))
         } else {
             Ok(Variable::Pod(VariablePod { var: variable }))
         }
@@ -306,7 +372,7 @@ impl VariableStorable for MatrixFormat {
             },
         };
         if result != RtResult::SUCCESS {
-            Err(ctx.optix_error("rtVariableSet3f", result))
+            Err(ctx.optix_error("rtVariableSetMatrix4x4fv", result))
         } else {
             Ok(Variable::Pod(VariablePod { var: variable }))
         }
