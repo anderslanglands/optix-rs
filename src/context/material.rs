@@ -176,7 +176,8 @@ impl Context {
         data: Box<dyn UserVariable>,
     ) -> Result<()> {
         // check if the variable exists first
-        if let Some(ex_var) = mat.borrow_mut().variables.remove(name) {
+        let ex_var = mat.borrow_mut().variables.remove(name);
+        if let Some(ex_var) = ex_var {
             let var = {
                 let ex_var_c = ex_var.borrow();
                 match &*ex_var_c {
@@ -193,8 +194,8 @@ impl Context {
             let (rt_var, result) = unsafe {
                 let mut rt_var: RTvariable = ::std::mem::uninitialized();
                 let c_name = std::ffi::CString::new(name).unwrap();
-                let result = rtContextDeclareVariable(
-                    self.rt_ctx,
+                let result = rtMaterialDeclareVariable(
+                    mat.borrow_mut().rt_mat,
                     c_name.as_ptr(),
                     &mut rt_var,
                 );

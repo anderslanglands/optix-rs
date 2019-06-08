@@ -11561,6 +11561,13 @@ extern "C" {
       bufferdesc: ::std::os::raw::c_uint,
       buffer: *mut RTbuffer,
    ) -> RtResult;
+
+   pub fn rtBufferCreateFromGLBO(
+      context: RTcontext,
+      bufferdesc: ::std::os::raw::c_uint,
+      gl_id: ::std::os::raw::c_uint,
+      buffer: *mut RTbuffer,
+   ) -> RtResult;
 }
 extern "C" {
    /// @brief Destroys a buffer object

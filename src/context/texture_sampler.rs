@@ -8,16 +8,6 @@ pub struct TextureSampler {
     pub(crate) buffer: BufferHandle,
 }
 
-impl Drop for TextureSampler {
-    fn drop(&mut self) {
-        let mut id = 0i32;
-        unsafe {
-            rtTextureSamplerGetId(self.rt_ts, &mut id);
-        }
-        println!("Dropping texture sampler {}", id);
-    }
-}
-
 pub type TextureSamplerHandle = Rc<RefCell<TextureSampler>>;
 
 pub struct TextureID {

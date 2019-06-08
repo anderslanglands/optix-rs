@@ -9,7 +9,7 @@ use std::rc::Rc;
 use colorspace::rgb::RGBf32;
 
 #[derive(Clone, Copy)]
-pub struct BufferId(pub(crate) i32);
+pub struct BufferId(pub i32);
 
 #[repr(C)]
 pub struct Buffer1d {
@@ -347,6 +347,46 @@ impl Context {
         Ok(buf)
     }
 
+    pub fn buffer_create_from_glbo_1d(
+        &mut self,
+        width: usize,
+        format: Format,
+        buffer_type: BufferType,
+        gl_id: u32,
+    ) -> Result<Buffer1dHandle> {
+        let (rt_buf, result) = unsafe {
+            let mut rt_buf: RTbuffer = std::mem::uninitialized();
+            let result = rtBufferCreateFromGLBO(
+                self.rt_ctx,
+                buffer_type as u32,
+                gl_id,
+                &mut rt_buf,
+            );
+            (rt_buf, result)
+        };
+        if result != RtResult::SUCCESS {
+            return Err(self.optix_error("rtBufferCreateFromGLBO", result));
+        }
+
+        let result = unsafe { rtBufferSetFormat(rt_buf, format) };
+        if result != RtResult::SUCCESS {
+            return Err(self.optix_error("rtBufferSetFormat", result));
+        }
+
+        let result = unsafe { rtBufferSetSize1D(rt_buf, width as u64) };
+        if result != RtResult::SUCCESS {
+            return Err(self.optix_error("rtBufferSetSize1D", result));
+        }
+
+        let buf = Rc::new(RefCell::new(Buffer1d { rt_buf }));
+        self.buffer1ds.push(Rc::clone(&buf));
+
+        self.buffer_mem
+            .insert(rt_buf, format_get_size(format) * width);
+
+        Ok(buf)
+    }
+
     pub fn buffer_create_1d_named<S: Into<String>>(
         &mut self,
         width: usize,
@@ -486,6 +526,48 @@ impl Context {
             let result = rtBufferCreate(
                 self.rt_ctx,
                 buffer_type as u32 | flags as u32,
+                &mut rt_buf,
+            );
+            (rt_buf, result)
+        };
+        if result != RtResult::SUCCESS {
+            return Err(self.optix_error("rtBufferCreate", result));
+        }
+
+        let result = unsafe { rtBufferSetFormat(rt_buf, format) };
+        if result != RtResult::SUCCESS {
+            return Err(self.optix_error("rtBufferSetFormat", result));
+        }
+
+        let result =
+            unsafe { rtBufferSetSize2D(rt_buf, width as u64, height as u64) };
+        if result != RtResult::SUCCESS {
+            return Err(self.optix_error("rtBufferSetSize2D", result));
+        }
+
+        let buf = Rc::new(RefCell::new(Buffer2d { rt_buf }));
+        self.buffer2ds.push(Rc::clone(&buf));
+
+        self.buffer_mem
+            .insert(rt_buf, format_get_size(format) * width * height);
+
+        Ok(buf)
+    }
+
+    pub fn buffer_create_from_glbo_2d(
+        &mut self,
+        width: usize,
+        height: usize,
+        format: Format,
+        buffer_type: BufferType,
+        gl_id: u32,
+    ) -> Result<Buffer2dHandle> {
+        let (rt_buf, result) = unsafe {
+            let mut rt_buf: RTbuffer = std::mem::uninitialized();
+            let result = rtBufferCreateFromGLBO(
+                self.rt_ctx,
+                buffer_type as u32,
+                gl_id,
                 &mut rt_buf,
             );
             (rt_buf, result)

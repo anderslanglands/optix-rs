@@ -57,6 +57,30 @@ pub trait UserVariable {
 
 pub type VariableHandle = Rc<RefCell<Variable>>;
 
+impl Context {
+    pub fn variable_set_user_data<T: Sized>(
+        &self,
+        var: RTvariable,
+        data: &T,
+    ) -> Result<()> {
+        let result = unsafe {
+            rtVariableSetUserData(
+                var,
+                std::mem::size_of::<T>() as RTsize,
+                data as *const T as *const std::os::raw::c_void,
+            )
+        };
+
+        if result != RtResult::SUCCESS {
+            return Err(
+                self.optix_error(&format!("rtVariableSetUserData",), result)
+            );
+        }
+
+        Ok(())
+    }
+}
+
 pub trait VariableStorable {
     fn set_optix_variable(
         self,
