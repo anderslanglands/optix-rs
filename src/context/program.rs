@@ -27,12 +27,6 @@ impl Clone for ProgramID {
     }
 }
 
-impl Drop for ProgramID {
-    fn drop(&mut self) {
-        println!("DROPPING PROGRAM ID {}", self.id);
-    }
-}
-
 impl From<ProgramHandle> for ProgramID {
     fn from(prg: ProgramHandle) -> ProgramID {
         unsafe {

@@ -9,7 +9,7 @@ use std::rc::Rc;
 pub struct Material {
     pub(crate) rt_mat: RTmaterial,
     pub(crate) variables: HashMap<String, VariableHandle>,
-    pub(crate) programs: HashMap<RayType, MaterialProgram>,
+    pub programs: HashMap<RayType, MaterialProgram>,
 }
 
 pub type MaterialHandle = Rc<RefCell<Material>>;
