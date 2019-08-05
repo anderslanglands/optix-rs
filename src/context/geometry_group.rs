@@ -149,4 +149,24 @@ impl Context {
 
         Ok(())
     }
+
+    pub fn geometry_group_set_visibility_mask(
+        &mut self,
+        geogrp: &GeometryGroupHandle,
+        visibility: u32,
+    ) -> Result<()> {
+        let result = unsafe {
+            rtGeometryGroupSetVisibilityMask(
+                geogrp.borrow().rt_geogrp,
+                visibility,
+            )
+        };
+        if result != RtResult::SUCCESS {
+            return Err(
+                self.optix_error("rtGeometryGroupSetVisibilityMask", result)
+            );
+        }
+
+        Ok(())
+    }
 }
