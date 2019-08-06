@@ -8,8 +8,42 @@ use std::rc::Rc;
 #[cfg(feature = "colorspace")]
 use colorspace::rgb::RGBf32;
 
-#[derive(Clone, Copy)]
-pub struct BufferId(pub i32);
+pub enum BufferHandle {
+    Buffer1d(Buffer1dHandle),
+    Buffer2d(Buffer2dHandle),
+}
+
+impl Clone for BufferHandle {
+    fn clone(&self) -> BufferHandle {
+        match &self {
+            BufferHandle::Buffer1d(buf) => {
+                BufferHandle::Buffer1d(Rc::clone(buf))
+            }
+            BufferHandle::Buffer2d(buf) => {
+                BufferHandle::Buffer2d(Rc::clone(buf))
+            }
+        }
+    }
+}
+
+pub struct BufferID {
+    pub(crate) buf: BufferHandle,
+    pub id: i32,
+}
+
+impl Clone for BufferID {
+    fn clone(&self) -> BufferID {
+        BufferID {
+            buf: self.buf.clone(),
+            id: self.id,
+        }
+    }
+}
+
+pub struct BufferIDBuffer {
+    pub buf: Buffer1dHandle,
+    pub(crate) buffers: Vec<BufferID>,
+}
 
 #[repr(C)]
 pub struct Buffer1d {
@@ -91,12 +125,16 @@ impl BufferElement for i32 {
     const FORMAT: Format = Format::INT;
 }
 
-impl BufferElement for BufferId {
-    const FORMAT: Format = Format::BUFFER_ID;
-}
-
 impl BufferElement for u32 {
     const FORMAT: Format = Format::UNSIGNED_INT;
+}
+
+#[repr(C)]
+#[derive(Clone)]
+pub struct BufferIdProxy(i32);
+
+impl BufferElement for BufferIdProxy {
+    const FORMAT: Format = Format::BUFFER_ID;
 }
 
 /// A wrapper for a read-only mapping of a `Buffer1d` to host memory. The buffer
@@ -484,6 +522,32 @@ impl Context {
             map.as_slice_mut().clone_from_slice(data);
         }
         Ok(hnd)
+    }
+
+    /// Create a new buffer of buffer ids and fill it with the given data.
+    pub fn buffer_create_id_buffer(
+        &mut self,
+        data: Vec<BufferID>,
+        buffer_type: BufferType,
+        flags: BufferFlag,
+    ) -> Result<BufferIDBuffer> {
+        let hnd = self.buffer_create_1d(
+            data.len(),
+            Format::BUFFER_ID,
+            buffer_type,
+            flags,
+        )?;
+        {
+            let mut map =
+                self.buffer_map_1d_mut::<BufferIdProxy>(&hnd).unwrap();
+            for (m, b) in map.as_slice_mut().iter_mut().zip(data.iter()) {
+                m.0 = b.id;
+            }
+        }
+        Ok(BufferIDBuffer {
+            buf: hnd,
+            buffers: data,
+        })
     }
 
     /// Create a new named `Buffer1d` and fill it with the given data.
@@ -999,28 +1063,34 @@ impl Context {
     pub fn buffer_get_id_1d(
         &mut self,
         buffer_handle: &Buffer1dHandle,
-    ) -> Result<BufferId> {
+    ) -> Result<BufferID> {
         let mut id = 0i32;
         let result =
             unsafe { rtBufferGetId(buffer_handle.borrow().rt_buf, &mut id) };
         if result != RtResult::SUCCESS {
             return Err(Error::Optix((result, "rtBufferGetId".to_owned())));
         } else {
-            Ok(BufferId(id))
+            Ok(BufferID {
+                buf: BufferHandle::Buffer1d(Rc::clone(buffer_handle)),
+                id,
+            })
         }
     }
 
     pub fn buffer_get_id_2d(
         &mut self,
         buffer_handle: &Buffer2dHandle,
-    ) -> Result<BufferId> {
+    ) -> Result<BufferID> {
         let mut id = 0i32;
         let result =
             unsafe { rtBufferGetId(buffer_handle.borrow().rt_buf, &mut id) };
         if result != RtResult::SUCCESS {
             return Err(Error::Optix((result, "rtBufferGetId".to_owned())));
         } else {
-            Ok(BufferId(id))
+            Ok(BufferID {
+                buf: BufferHandle::Buffer2d(Rc::clone(buffer_handle)),
+                id,
+            })
         }
     }
 
