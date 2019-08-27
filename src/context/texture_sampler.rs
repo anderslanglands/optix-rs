@@ -1,3 +1,4 @@
+use super::buffer::BufferHandle;
 use crate::context::*;
 
 use std::cell::RefCell;
@@ -28,11 +29,6 @@ impl Clone for TextureID {
             id: self.id,
         }
     }
-}
-
-pub enum BufferHandle {
-    Buffer1d(Buffer1dHandle),
-    Buffer2d(Buffer2dHandle),
 }
 
 impl Context {

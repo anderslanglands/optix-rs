@@ -301,7 +301,7 @@ impl Context {
         &mut self,
         geotri: &GeometryTrianglesHandle,
         name: &str,
-        data: Box<dyn UserVariable>,
+        data: Rc<dyn UserVariable>,
     ) -> Result<()> {
         // check if the variable exists first
         let ex_var = geotri.borrow_mut().variables.remove(name);
