@@ -173,7 +173,7 @@ impl Context {
         &mut self,
         mat: &MaterialHandle,
         name: &str,
-        data: Box<dyn UserVariable>,
+        data: Rc<dyn UserVariable>,
     ) -> Result<()> {
         // check if the variable exists first
         let ex_var = mat.borrow_mut().variables.remove(name);

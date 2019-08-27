@@ -45,6 +45,18 @@ pub struct BufferIDBuffer {
     pub(crate) buffers: Vec<BufferID>,
 }
 
+pub struct BufferIDBufferID {
+    pub buffer: BufferIDBuffer,
+    pub id: BufferID,
+}
+
+impl BufferIDBufferID {
+    pub fn new(ctx: &mut Context, buffer: BufferIDBuffer) -> BufferIDBufferID {
+        let id = ctx.buffer_get_id_1d(&buffer.buf).unwrap();
+        BufferIDBufferID { buffer, id }
+    }
+}
+
 #[repr(C)]
 pub struct Buffer1d {
     pub(crate) rt_buf: RTbuffer,
@@ -111,6 +123,10 @@ impl BufferElement for V3u32 {
 
 impl BufferElement for V4u32 {
     const FORMAT: Format = Format::UNSIGNED_INT4;
+}
+
+impl BufferElement for V4u8 {
+    const FORMAT: Format = Format::UNSIGNED_BYTE4;
 }
 
 impl BufferElement for i16 {

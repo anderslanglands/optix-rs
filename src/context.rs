@@ -3,7 +3,9 @@ use std::collections::HashMap;
 
 pub use crate::math::*;
 use crate::optix_bindings::*;
-pub use crate::optix_bindings::{BufferFlag, BufferType, Format};
+pub use crate::optix_bindings::{
+    BufferFlag, BufferType, FilterMode, Format, TextureReadMode, WrapMode,
+};
 pub use crate::search_path::SearchPath;
 
 pub mod program;
@@ -335,7 +337,7 @@ impl Context {
     pub fn set_user_variable(
         &mut self,
         name: &str,
-        data: Box<dyn UserVariable>,
+        data: Rc<dyn UserVariable>,
     ) -> Result<()> {
         // check if the variable exists first
         if let Some(ex_var) = self.context_variables.remove(name) {
@@ -453,6 +455,31 @@ impl Context {
         }
 
         Ok(())
+    }
+
+    pub fn set_stack_size(&mut self, bytes: usize) -> Result<()> {
+        let result =
+            unsafe { rtContextSetStackSize(self.rt_ctx, bytes as RTsize) };
+        if result != RtResult::SUCCESS {
+            return Err(self.optix_error("rtContextSetStackSize", result));
+        }
+
+        Ok(())
+    }
+
+    pub fn get_stack_size(&mut self) -> Result<usize> {
+        let mut bytes: usize = 0;
+        let result = unsafe {
+            rtContextGetStackSize(
+                self.rt_ctx,
+                &mut bytes as *mut usize as *mut RTsize,
+            )
+        };
+        if result != RtResult::SUCCESS {
+            return Err(self.optix_error("rtContextGetStackSize", result));
+        }
+
+        Ok(bytes)
     }
 
     /// Garbage-collect any scene objects that have no more (external) references

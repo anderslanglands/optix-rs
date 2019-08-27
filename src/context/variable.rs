@@ -9,6 +9,7 @@ use colorspace::rgb::RGBf32;
 pub enum ObjectHandle {
     BufferID(BufferID),
     BufferIDBuffer(BufferIDBuffer),
+    BufferIDBufferID(BufferIDBufferID),
     Buffer1d(Buffer1dHandle),
     Buffer2d(Buffer2dHandle),
     // Buffer3d(Buffer3dHandle),
@@ -39,7 +40,7 @@ impl VariablePod {
 
 pub struct UserData {
     pub var: RTvariable,
-    pub data: Box<dyn UserVariable>,
+    pub data: Rc<dyn UserVariable>,
 }
 
 pub enum Variable {
@@ -126,6 +127,27 @@ impl VariableStorable for ObjectHandle {
                 if result != RtResult::SUCCESS {
                     return Err(ctx.optix_error(
                         "rtVariableSetObject {BufferIDBuffer}".into(),
+                        result,
+                    ));
+                } else {
+                    return Ok(Variable::Object(VariableObject {
+                        var: variable,
+                        _object_handle: self,
+                    }));
+                }
+            },
+            ObjectHandle::BufferIDBufferID(ref buf_id) => unsafe {
+                let result = rtVariableSetUserData(
+                    variable,
+                    std::mem::size_of::<i32>() as RTsize,
+                    &buf_id.id.id as *const i32 as *const std::ffi::c_void,
+                );
+                if result != RtResult::SUCCESS {
+                    return Err(ctx.optix_error(
+                        &format!(
+                            "rtVariableSetUserData<BufferIdBufferId>  {:?}",
+                            buf_id.id.id
+                        ),
                         result,
                     ));
                 } else {

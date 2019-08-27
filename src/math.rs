@@ -1,7 +1,7 @@
 use nalgebra_glm as glm;
 use nalgebra_glm::{
     DMat4x4, DVec2, DVec3, DVec4, IVec2, IVec3, IVec4, Mat4x4, U32Vec2,
-    U32Vec3, U32Vec4, Vec2, Vec3, Vec4,
+    U32Vec3, U32Vec4, U8Vec4, Vec2, Vec3, Vec4,
 };
 
 pub type V2f32 = Vec2;
@@ -10,6 +10,7 @@ pub type V4f32 = Vec4;
 pub type V2f64 = DVec2;
 pub type V3f64 = DVec3;
 pub type V4f64 = DVec4;
+pub type V4u8 = U8Vec4;
 pub type M4f32 = Mat4x4;
 pub type M4f64 = DMat4x4;
 
@@ -36,6 +37,10 @@ pub fn v3f64(x: f64, y: f64, z: f64) -> V3f64 {
 
 pub fn v4f64(x: f64, y: f64, z: f64, w: f64) -> V4f64 {
     V4f64::new(x, y, z, w)
+}
+
+pub fn v4u8(x: u8, y: u8, z: u8, w: u8) -> V4u8 {
+    V4u8::new(x, y, z, w)
 }
 
 pub type V2i32 = IVec2;
