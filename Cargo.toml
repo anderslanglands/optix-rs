@@ -1,35 +1,6 @@
-[package]
-name = "optix"
-version = "0.2.0"
-authors = ["Anders Langlands <anderslanglands@gmail.com>"]
-edition = "2018"
-repository = "https://github.com/anderslanglands/optix-rs"
-description = "A Rust wrapper for NVidia's OptiX raytracing library"
-license = "MIT/Apache-2.0"
-exclude = [
-    "ptx_path.toml",
-    "rustfmt.toml",
+[workspace]
+
+members = [
+    "optix-sys",
+    "optix"
 ]
-
-[features]
-colorspace_support = ["colorspace"]
-optix5 = []
-
-[dependencies]
-config = "0.9"
-nalgebra = "0.16"
-colorspace = {path="../colorspace-rs", optional = true}
-cfg-if = "0.1"
-nalgebra-glm = "0.4.0"
-
-[build-dependencies]
-bindgen = "0.41"
-config = "0.9"
-cmake = "0.1"
-
-[dev-dependencies]
-image = "0.19"
-glfw = "0.23"
-gl = "0.10"
-crossbeam-channel = "0.2.6"
-rand = "0.5"

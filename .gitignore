@@ -5,3 +5,20 @@ Cargo.lock
 build-settings.toml
 ptx_path.toml
 .ccls-cache
+
+
+#Added by cargo
+#
+#already existing elements are commented out
+
+#/target
+#**/*.rs.bk
+
+
+#Added by cargo
+#
+#already existing elements are commented out
+
+#/target
+#**/*.rs.bk
+#Cargo.lock
