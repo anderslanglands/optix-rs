@@ -11,7 +11,6 @@ cuda-sys = {path="../../cuda-rs/cuda-sys"}
 
 [dev-dependencies]
 nalgebra-glm = "0.4.0"
-cc = "1.0.41"
 cuda = {path="../../cuda-rs/cuda"}
 
 [build-dependencies]

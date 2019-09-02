@@ -1,18 +1,15 @@
 [package]
-name = "optix"
+name = "optix-derive"
 version = "0.1.0"
 authors = ["Anders Langlands <anderslanglands@gmail.com>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+proc-macro = true
 
 [dependencies]
+syn = "1.0.5"
+quote = "1.0.2"
+proc-macro2 = "1.0.1"
 optix-sys = {path="../optix-sys"}
-cuda = {path="../../cuda-rs/cuda"}
-derive_more = "0.15.0"
-bitflags = "1.1.0"
-
-[dev-dependencies]
-nalgebra-glm = "0.4.0"
-optix-derive = {path="../optix-derive"}
-
