@@ -11,8 +11,11 @@ optix-sys = {path="../optix-sys"}
 cuda = {path="../../cuda-rs/cuda"}
 derive_more = "0.15.0"
 bitflags = "1.1.0"
+gl = "0.13.0"
+image = "0.22.1"
 
 [dev-dependencies]
 nalgebra-glm = "0.4.0"
 optix-derive = {path="../optix-derive"}
+glfw = "0.32.0"
 
