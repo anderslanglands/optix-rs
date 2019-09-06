@@ -144,8 +144,8 @@ impl TypedBuffer {
 
 use super::DeviceShareable;
 impl DeviceShareable for TypedBuffer {
-    type DeviceType = cuda::CUdeviceptr;
-    fn to_device(&self) -> Self::DeviceType {
+    type Target = cuda::CUdeviceptr;
+    fn to_device(&self) -> Self::Target {
         self.buffer.as_device_ptr()
     }
 }
@@ -435,8 +435,8 @@ pub struct TraversableHandle {
 }
 
 impl super::DeviceShareable for TraversableHandle {
-    type DeviceType = sys::OptixTraversableHandle;
-    fn to_device(&self) -> Self::DeviceType {
+    type Target = sys::OptixTraversableHandle;
+    fn to_device(&self) -> Self::Target {
         self.hnd
     }
 }

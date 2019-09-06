@@ -54,19 +54,19 @@ pub trait SbtRecord: Sized {
 /// Trait to represent a type that can convert itself to a CUDA-compatible
 /// target type.
 pub trait DeviceShareable {
-    type DeviceType: Copy;
-    fn to_device(&self) -> Self::DeviceType;
+    type Target: Copy;
+    fn to_device(&self) -> Self::Target;
 }
 
 impl DeviceShareable for cuda::Buffer {
-    type DeviceType = cuda::CUdeviceptr;
-    fn to_device(&self) -> Self::DeviceType {
+    type Target = cuda::CUdeviceptr;
+    fn to_device(&self) -> Self::Target {
         self.as_device_ptr()
     }
 }
 
 impl DeviceShareable for i32 {
-    type DeviceType = i32;
+    type Target = i32;
     fn to_device(&self) -> i32 {
         *self
     }
@@ -142,8 +142,8 @@ macro_rules! wrap_copyable_for_device {
         struct $newtype($ty);
 
         impl DeviceShareable for $newtype {
-            type DeviceType = $newtype;
-            fn to_device(&self) -> Self::DeviceType {
+            type Target = $newtype;
+            fn to_device(&self) -> Self::Target {
                 *self
             }
         }

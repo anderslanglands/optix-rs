@@ -323,7 +323,7 @@ pub struct LaunchParamsD {
 }
 
 impl DeviceShareable for LaunchParams {
-    type DeviceType = LaunchParamsD;
+    type Target = LaunchParamsD;
     fn to_device(&self) -> LaunchParamsD {
         LaunchParamsD {
             frame_id: self.frame_id.to_device(),
