@@ -29,6 +29,14 @@ pub struct Pipeline {
     pub(crate) pipeline: sys::OptixPipeline,
 }
 
+impl Drop for Pipeline {
+    fn drop(&mut self) {
+        unsafe {
+            sys::optixPipelineDestroy(self.pipeline);
+        }
+    }
+}
+
 pub type PipelineRef = super::Ref<Pipeline>;
 
 impl DeviceContext {

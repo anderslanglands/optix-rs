@@ -23,6 +23,20 @@ pub enum Error {
     LaunchFailed { cerr: sys::Error },
     #[display(fmt = "CUDA error")]
     CudaError { cerr: cuda::Error },
+    #[display(fmt = "Incorrect vertex buffer format: {:?}", format)]
+    IncorrectVertexBufferFormat {
+        format: super::acceleration::BufferFormat,
+    },
+    #[display(fmt = "Incorrect index buffer format: {:?}", format)]
+    IncorrectIndexBufferFormat {
+        format: super::acceleration::BufferFormat,
+    },
+    #[display(fmt = "Failed to compute accel memory usage")]
+    AccelComputeMemoryUsageFailed { cerr: sys::Error },
+    #[display(fmt = "Failed to build accel")]
+    AccelBuildFailed { cerr: sys::Error },
+    #[display(fmt = "Failed to compact accel")]
+    AccelCompactFailed { cerr: sys::Error },
 }
 
 impl From<cuda::Error> for Error {

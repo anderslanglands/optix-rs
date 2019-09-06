@@ -1,6 +1,7 @@
 #![allow(non_upper_case_globals)]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
+#![feature(untagged_unions)]
 
 use cuda_sys::{CUcontext, CUdeviceptr, CUstream};
 
@@ -26,6 +27,37 @@ impl Default for SbtRecordHeader {
         SbtRecordHeader {
             header: [0u8; OptixSbtRecordHeaderSize],
         }
+    }
+}
+
+#[repr(C)]
+pub union OptixBuildInputUnion {
+    pub triangle_array: OptixBuildInputTriangleArray,
+    pub aabb_array: OptixBuildInputCustomPrimitiveArray,
+    pub instance_array: OptixBuildInputInstanceArray,
+    pad: [std::os::raw::c_char; 1024],
+}
+
+impl Default for OptixBuildInputUnion {
+    fn default() -> OptixBuildInputUnion {
+        OptixBuildInputUnion { pad: [0i8; 1024] }
+    }
+}
+
+#[repr(C)]
+pub struct OptixBuildInput {
+    pub type_: OptixBuildInputType,
+    pub input: OptixBuildInputUnion,
+}
+
+fn _size_check() {
+    unsafe {
+        std::mem::transmute::<OptixBuildInput, [u8; 1024 + 8]>(
+            OptixBuildInput {
+                type_: OptixBuildInputType_OPTIX_BUILD_INPUT_TYPE_TRIANGLES,
+                input: { OptixBuildInputUnion { pad: [0; 1024] } },
+            },
+        );
     }
 }
 

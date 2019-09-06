@@ -13,6 +13,7 @@ fn main() {
         .whitelist_type("RaygenRecord")
         .whitelist_type("MissRecord")
         .whitelist_type("HitgroupRecord")
+        .blacklist_type("OptixBuildInput")
         .whitelist_function("optix.*")
         .whitelist_var("OptixSbtRecordHeaderSize")
         .whitelist_var("OptixSbtRecordAlignment")
@@ -24,6 +25,12 @@ fn main() {
         .constified_enum_module("OptixTraversableGraphFlags")
         .constified_enum_module("OptixExceptionFlags")
         .constified_enum_module("OptixProgramGroupKind")
+        .rustified_enum("GeometryFlags")
+        .rustified_enum("OptixGeometryFlags")
+        .rustified_enum("OptixVertexFormat")
+        .rustified_enum("OptixIndicesFormat")
+        .rust_target(bindgen::RustTarget::Nightly)
+        .rustfmt_bindings(true)
         .generate()
         .expect("Unable to generate optix bindings");
 

@@ -2,7 +2,7 @@
 extern crate derive_more;
 
 mod sample_renderer;
-use sample_renderer::SampleRenderer;
+use sample_renderer::*;
 
 use glfw::{Action, Context, Key};
 pub mod gl_util;
@@ -21,14 +21,25 @@ fn main() {
     let mut width = 960u32;
     let mut height = 540u32;
 
+    let mut mesh = TriangleMesh::new();
+    mesh.add_cube(v3f32(0.0, -1.5, 0.0), v3f32(10.0, 1.0, 10.0));
+    mesh.add_cube(v3f32(0.0, 0.0, 0.0), v3f32(2.0, 2.0, 2.0));
+
+    let camera = Camera {
+        from: v3f32(-10.0, 2.0, -12.0),
+        at: v3f32(0.0, 0.0, 0.0),
+        up: v3f32(0.0, 1.0, 0.0),
+    };
+
     let mut sample =
-        SampleRenderer::new(v2i32(width as i32, height as i32)).unwrap();
+        SampleRenderer::new(v2i32(width as i32, height as i32), camera, mesh)
+            .unwrap();
 
     let (mut window, events) = glfw
         .create_window(
             width,
             height,
-            "Example 03: in window",
+            "Example 04: first mesh",
             glfw::WindowMode::Windowed,
         )
         .expect("failed to create glfw window");
@@ -62,7 +73,7 @@ fn main() {
         let (w, h) = window.get_framebuffer_size();
         let w = w as u32;
         let h = h as u32;
-        if (w != width || h != height) {
+        if w != width || h != height {
             fsq.resize(w, h);
             sample.resize(v2i32(w as i32, h as i32));
             width = w;

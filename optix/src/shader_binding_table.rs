@@ -28,6 +28,12 @@ pub struct ShaderBindingTableBuilder {
     cl_count: u32,
 }
 
+impl ShaderBindingTable {
+    pub fn new<RG: SbtRecord>(rec_rg: &RG) -> ShaderBindingTableBuilder {
+        ShaderBindingTableBuilder::new(rec_rg)
+    }
+}
+
 impl ShaderBindingTableBuilder {
     pub fn new<RG: SbtRecord>(rec_rg: &RG) -> ShaderBindingTableBuilder {
         ShaderBindingTableBuilder {

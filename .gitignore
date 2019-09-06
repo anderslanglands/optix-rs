@@ -5,6 +5,7 @@ Cargo.lock
 build-settings.toml
 ptx_path.toml
 .ccls-cache
+.vscode
 
 
 #Added by cargo

@@ -31,6 +31,9 @@ pub use pipeline::{PipelineLinkOptions, PipelineRef};
 pub mod shader_binding_table;
 pub use shader_binding_table::{ShaderBindingTable, ShaderBindingTableBuilder};
 
+pub mod acceleration;
+pub use acceleration::*;
+
 pub fn init() -> Result<()> {
     unsafe {
         let res = sys::optixInit();

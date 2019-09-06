@@ -1,4 +1,4 @@
-use nalgebra_glm::*;
+use imath::*;
 
 type Result<T, E = Error> = std::result::Result<T, E>;
 
@@ -40,7 +40,7 @@ pub struct SampleRenderer {
 }
 
 impl SampleRenderer {
-    pub fn new(fb_size: IVec2) -> Result<SampleRenderer> {
+    pub fn new(fb_size: V2i32) -> Result<SampleRenderer> {
         // Make sure CUDA context is initialized
         cuda::init();
         // Check that we've got available devices
@@ -189,7 +189,7 @@ impl SampleRenderer {
             .build();
 
         let mut color_buffer = cuda::Buffer::new(
-            (fb_size.x * fb_size.y) as usize * std::mem::size_of::<Vec4>(),
+            (fb_size.x * fb_size.y) as usize * std::mem::size_of::<V4f32>(),
         )
         .unwrap();
 
@@ -239,17 +239,17 @@ impl SampleRenderer {
         cuda::device_synchronize().unwrap();
     }
 
-    pub fn resize(&mut self, size: IVec2) {
+    pub fn resize(&mut self, size: V2i32) {
         self.launch_params.fb_size = size;
         self.color_buffer = cuda::Buffer::new(
-            (size.x * size.y) as usize * std::mem::size_of::<Vec4>(),
+            (size.x * size.y) as usize * std::mem::size_of::<V4f32>(),
         )
         .unwrap();
         self.launch_params.color_buffer =
             self.color_buffer.as_mut_ptr() as *mut f32;
     }
 
-    pub fn download_pixels(&self, pixels: &mut [Vec4]) -> Result<()> {
+    pub fn download_pixels(&self, pixels: &mut [V4f32]) -> Result<()> {
         self.color_buffer.download(pixels)?;
         Ok(())
     }
@@ -318,5 +318,5 @@ fn compile_to_ptx(src: &str) -> String {
 pub struct LaunchParams {
     frame_id: i32,
     color_buffer: *mut f32,
-    fb_size: IVec2,
+    fb_size: V2i32,
 }

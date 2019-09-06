@@ -36,6 +36,14 @@ impl ProgramGroup {
     }
 }
 
+impl Drop for ProgramGroup {
+    fn drop(&mut self) {
+        unsafe {
+            sys::optixProgramGroupDestroy(self.pg);
+        }
+    }
+}
+
 impl DeviceContext {
     pub fn program_group_create(
         &mut self,

@@ -15,7 +15,7 @@ gl = "0.13.0"
 image = "0.22.1"
 
 [dev-dependencies]
-nalgebra-glm = "0.4.0"
+imath = {path="../../imath-rs"}
 optix-derive = {path="../optix-derive"}
 glfw = "0.32.0"
 

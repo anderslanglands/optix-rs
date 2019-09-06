@@ -44,19 +44,19 @@ impl From<ModuleCompileOptions> for sys::OptixModuleCompileOptions {
 
 bitflags! {
     pub struct TraversableGraphFlags: u32 {
-        const AllowAny = sys::OptixTraversableGraphFlags::OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY;
-        const AllowSingleGas = sys::OptixTraversableGraphFlags::OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
-        const AllowSingleLevelInstancing = sys::OptixTraversableGraphFlags::OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING;
+        const ALLOW_ANY = sys::OptixTraversableGraphFlags::OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY;
+        const ALLOW_SINGLE_GAS = sys::OptixTraversableGraphFlags::OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
+        const ALLOW_SINGLE_LEVEL_INSTANCING = sys::OptixTraversableGraphFlags::OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING;
     }
 }
 
 bitflags! {
     pub struct ExceptionFlags: u32 {
-        const None = sys::OptixExceptionFlags::OPTIX_EXCEPTION_FLAG_NONE;
-        const StackOverflow = sys::OptixExceptionFlags::OPTIX_EXCEPTION_FLAG_STACK_OVERFLOW;
-        const TraceDepth = sys::OptixExceptionFlags::OPTIX_EXCEPTION_FLAG_TRACE_DEPTH;
-        const User = sys::OptixExceptionFlags::OPTIX_EXCEPTION_FLAG_USER;
-        const Debug = sys::OptixExceptionFlags::OPTIX_EXCEPTION_FLAG_DEBUG;
+        const NONE = sys::OptixExceptionFlags::OPTIX_EXCEPTION_FLAG_NONE;
+        const STACK_OVERFLOW = sys::OptixExceptionFlags::OPTIX_EXCEPTION_FLAG_STACK_OVERFLOW;
+        const TRACE_DEPTH = sys::OptixExceptionFlags::OPTIX_EXCEPTION_FLAG_TRACE_DEPTH;
+        const USER = sys::OptixExceptionFlags::OPTIX_EXCEPTION_FLAG_USER;
+        const DEBUG = sys::OptixExceptionFlags::OPTIX_EXCEPTION_FLAG_DEBUG;
     }
 }
 

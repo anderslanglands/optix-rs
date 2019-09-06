@@ -36,11 +36,23 @@ pub struct SampleRenderer {
     launch_params: LaunchParams,
     launch_params_buffer: cuda::Buffer,
 
+    last_set_camera: Camera,
+
+    mesh: TriangleMesh,
+    vertex_buffers: optix::acceleration::TypedBufferArray,
+    index_buffer: optix::acceleration::TypedBuffer,
+    as_buffer: cuda::Buffer,
+    as_handle: optix::TraversableHandle,
+
     ctx: optix::DeviceContext,
 }
 
 impl SampleRenderer {
-    pub fn new(fb_size: V2i32) -> Result<SampleRenderer> {
+    pub fn new(
+        fb_size: V2i32,
+        camera: Camera,
+        mesh: TriangleMesh,
+    ) -> Result<SampleRenderer> {
         // Make sure CUDA context is initialized
         cuda::init();
         // Check that we've got available devices
@@ -85,10 +97,10 @@ impl SampleRenderer {
         let pipeline_compile_options = optix::PipelineCompileOptions {
             uses_motion_blur: false,
             traversable_graph_flags:
-                optix::module::TraversableGraphFlags::AllowAny,
+                optix::module::TraversableGraphFlags::ALLOW_ANY,
             num_payload_values: 2,
             num_attribute_values: 2,
-            exception_flags: optix::module::ExceptionFlags::None,
+            exception_flags: optix::module::ExceptionFlags::NONE,
             pipeline_launch_params_variable_name: "optixLaunchParams".into(),
         };
 
@@ -137,6 +149,94 @@ impl SampleRenderer {
                 }),
                 is: None,
             })?;
+
+        // build accel
+        // upload the model data and create the triangle array build input
+        let vertex_buffer =
+            optix::TypedBuffer::new(&mesh.vertex, optix::BufferFormat::F32x3)
+                .unwrap();
+        let index_buffer =
+            optix::TypedBuffer::new(&mesh.index, optix::BufferFormat::I32x3)
+                .unwrap();
+        let vertex_buffers =
+            optix::TypedBufferArray::new(vec![vertex_buffer]).unwrap();
+        let build_input =
+            optix::BuildInput::Triangle(optix::TriangleArray::new(
+                &vertex_buffers,
+                &index_buffer,
+                optix::GeometryFlags::NONE,
+            ));
+
+        // BLAS setup
+        let accel_build_options = optix::AccelBuildOptions {
+            build_flags: optix::BuildFlags::NONE
+                | optix::BuildFlags::ALLOW_COMPACTION,
+            operation: optix::BuildOperation::Build,
+            motion_options: optix::MotionOptions {
+                num_keys: 1,
+                flags: optix::MotionFlags::NONE,
+                time_begin: 0.0,
+                time_end: 0.0,
+            },
+        };
+
+        let blas_buffer_sizes = ctx.accel_compute_memory_usage(
+            &accel_build_options,
+            std::slice::from_ref(&build_input),
+        )?;
+
+        let compacted_size_buffer =
+            cuda::Buffer::new(std::mem::size_of::<usize>())?;
+
+        let compacted_size_desc = optix::AccelEmitDesc::new(
+            &compacted_size_buffer,
+            optix::AccelPropertyType::CompactedSize,
+        );
+
+        // allocate and execute build
+        let temp_buffer =
+            cuda::Buffer::new(blas_buffer_sizes[0].temp_size_in_bytes)?;
+        let output_buffer =
+            cuda::Buffer::new(blas_buffer_sizes[0].output_size_in_bytes)?;
+
+        let as_handle = ctx.accel_build(
+            &cuda::Stream::default(),
+            &accel_build_options,
+            std::slice::from_ref(&build_input),
+            &temp_buffer,
+            &output_buffer,
+            std::slice::from_ref(&compacted_size_desc),
+        )?;
+
+        // ultimately we'd want to do something more complex with async streams
+        // here rather than a stop-the-world sync, but this will do for now.
+        match cuda::device_synchronize() {
+            Ok(_) => (),
+            Err(e) => {
+                println!("build sync failed");
+                return Err(e.into());
+            }
+        };
+
+        // now compact the acceleration structure
+        let compacted_size =
+            compacted_size_buffer.download_primitive::<usize>()?;
+
+        let mut as_buffer = cuda::Buffer::new(compacted_size)?;
+        let as_handle = ctx.accel_compact(
+            &cuda::Stream::default(),
+            as_handle,
+            &mut as_buffer,
+        )?;
+
+        // sync again
+        match cuda::device_synchronize() {
+            Ok(_) => (),
+            Err(e) => {
+                println!("compact sync failed");
+                return Err(e.into());
+            }
+        };
 
         // Create the pipeline
         let pipeline_link_options = optix::PipelineLinkOptions {
@@ -189,14 +289,28 @@ impl SampleRenderer {
             .build();
 
         let mut color_buffer = cuda::Buffer::new(
-            (fb_size.x * fb_size.y) as usize * std::mem::size_of::<u32>(),
+            (fb_size.x * fb_size.y) as usize * std::mem::size_of::<V4f32>(),
         )
         .unwrap();
 
+        let cos_fovy = 0.66f32;
+        let aspect = fb_size.x as f32 / fb_size.y as f32;
+        let direction = (camera.at - camera.from).normalized();
+        let horizontal =
+            cos_fovy * aspect * direction.cross(camera.up).normalized();
+        let vertical = cos_fovy * horizontal.cross(direction).normalized();
         let launch_params = LaunchParams {
-            frame_id: 0,
-            color_buffer: color_buffer.as_mut_ptr() as *mut u32,
-            fb_size,
+            frame: LpFrame {
+                color_buffer: color_buffer.as_mut_ptr() as *mut f32,
+                size: fb_size,
+            },
+            camera: LpCamera {
+                position: camera.from,
+                direction,
+                horizontal,
+                vertical,
+            },
+            traversable: as_handle.hnd,
         };
 
         let launch_params_buffer =
@@ -213,6 +327,12 @@ impl SampleRenderer {
             color_buffer,
             launch_params,
             launch_params_buffer,
+            last_set_camera: camera,
+            mesh,
+            vertex_buffers,
+            index_buffer,
+            as_buffer,
+            as_handle,
             ctx,
         })
     }
@@ -221,7 +341,6 @@ impl SampleRenderer {
         self.launch_params_buffer
             .upload(std::slice::from_ref(&self.launch_params))
             .unwrap();
-        self.launch_params.frame_id += 1;
 
         self.ctx
             .launch(
@@ -229,8 +348,8 @@ impl SampleRenderer {
                 &self.stream,
                 &self.launch_params_buffer,
                 &self.sbt,
-                self.launch_params.fb_size.x as u32,
-                self.launch_params.fb_size.y as u32,
+                self.launch_params.frame.size.x as u32,
+                self.launch_params.frame.size.y as u32,
                 1,
             )
             .unwrap();
@@ -238,6 +357,21 @@ impl SampleRenderer {
         // we'll want to do something clever with streams ultimately, but
         // for now do a brute-force sync
         cuda::device_synchronize().unwrap();
+    }
+
+    pub fn resize(&mut self, size: V2i32) {
+        self.launch_params.frame.size = size;
+        self.color_buffer = cuda::Buffer::new(
+            (size.x * size.y) as usize * std::mem::size_of::<V4f32>(),
+        )
+        .unwrap();
+        self.launch_params.frame.color_buffer =
+            self.color_buffer.as_mut_ptr() as *mut f32;
+    }
+
+    pub fn download_pixels(&self, pixels: &mut [V4f32]) -> Result<()> {
+        self.color_buffer.download(pixels)?;
+        Ok(())
     }
 }
 
@@ -262,7 +396,7 @@ fn compile_to_ptx(src: &str) -> String {
     let optix_inc = format!("-I{}/include", optix_root);
     let cuda_inc = format!("-I{}/include", cuda_root);
     let source_inc = format!(
-        "-I{}/examples/02_pipeline",
+        "-I{}/examples/04_mesh",
         std::env::var("CARGO_MANIFEST_DIR").unwrap()
     );
     let common_inc = format!(
@@ -300,9 +434,69 @@ fn compile_to_ptx(src: &str) -> String {
     ptx
 }
 
+pub struct Camera {
+    pub from: V3f32,
+    pub at: V3f32,
+    pub up: V3f32,
+}
+
+pub struct TriangleMesh {
+    pub vertex: Vec<V3f32>,
+    pub index: Vec<V3i32>,
+}
+
+impl TriangleMesh {
+    pub fn new() -> TriangleMesh {
+        TriangleMesh {
+            vertex: Vec::new(),
+            index: Vec::new(),
+        }
+    }
+
+    pub fn add_cube(&mut self, center: V3f32, size: V3f32) {
+        let start_index = self.vertex.len() as i32;
+
+        self.vertex.push((v3f32(0.0, 0.0, 0.0) + center) * size);
+        self.vertex.push((v3f32(1.0, 0.0, 0.0) + center) * size);
+        self.vertex.push((v3f32(0.0, 1.0, 0.0) + center) * size);
+        self.vertex.push((v3f32(1.0, 1.0, 0.0) + center) * size);
+        self.vertex.push((v3f32(0.0, 0.0, 1.0) + center) * size);
+        self.vertex.push((v3f32(1.0, 0.0, 1.0) + center) * size);
+        self.vertex.push((v3f32(0.0, 1.0, 1.0) + center) * size);
+        self.vertex.push((v3f32(1.0, 1.0, 1.0) + center) * size);
+
+        const indices: [i32; 36] = [
+            0, 1, 3, 2, 3, 0, 5, 7, 6, 5, 6, 4, 0, 4, 5, 0, 5, 1, 2, 3, 7, 2,
+            7, 6, 1, 5, 6, 1, 7, 3, 4, 0, 2, 4, 2, 6,
+        ];
+
+        for c in indices.chunks(3) {
+            self.index.push(v3i32(
+                c[0] + start_index,
+                c[1] + start_index,
+                c[2] + start_index,
+            ));
+        }
+    }
+}
+
+#[repr(C)]
+struct LpCamera {
+    position: V3f32,
+    direction: V3f32,
+    horizontal: V3f32,
+    vertical: V3f32,
+}
+
+#[repr(C)]
+struct LpFrame {
+    color_buffer: *mut f32,
+    size: V2i32,
+}
+
 #[repr(C)]
 pub struct LaunchParams {
-    frame_id: i32,
-    color_buffer: *mut std::os::raw::c_uint,
-    fb_size: V2i32,
+    frame: LpFrame,
+    camera: LpCamera,
+    traversable: optix_sys::OptixTraversableHandle,
 }
