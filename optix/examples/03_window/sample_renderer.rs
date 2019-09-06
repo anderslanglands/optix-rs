@@ -107,7 +107,7 @@ impl SampleRenderer {
         }
 
         // Create raygen program(s)
-        let (raygen_pg, log) = ctx.program_group_create(
+        let (raygen_pg, _log) = ctx.program_group_create(
             optix::ProgramGroupDesc::Raygen(optix::ProgramGroupModule {
                 module: module.clone(),
                 entry_function_name: "__raygen__renderFrame".into(),
@@ -115,7 +115,7 @@ impl SampleRenderer {
         )?;
 
         // Create miss program(s)
-        let (miss_pg, log) = ctx.program_group_create(
+        let (miss_pg, _log) = ctx.program_group_create(
             optix::ProgramGroupDesc::Miss(optix::ProgramGroupModule {
                 module: module.clone(),
                 entry_function_name: "__miss__radiance".into(),
@@ -123,7 +123,7 @@ impl SampleRenderer {
         )?;
 
         // Create hitgroup programs
-        let (hitgroup_pg, log) =
+        let (hitgroup_pg, _log) =
             ctx.program_group_create(optix::ProgramGroupDesc::Hitgroup {
                 ch: Some(optix::ProgramGroupModule {
                     module: module.clone(),
@@ -186,7 +186,7 @@ impl SampleRenderer {
             .hitgroup_records(std::slice::from_ref(&hg_rec))
             .build();
 
-        let mut color_buffer = cuda::Buffer::new(
+        let color_buffer = cuda::Buffer::new(
             (fb_size.x * fb_size.y) as usize * std::mem::size_of::<V4f32>(),
         )
         .unwrap();
@@ -220,7 +220,7 @@ impl SampleRenderer {
             .launch(
                 &self.pipeline,
                 &self.stream,
-                &self.launch_params.buffer,
+                self.launch_params.variable_buffer(),
                 &self.sbt,
                 self.launch_params.fb_size.x as u32,
                 self.launch_params.fb_size.y as u32,
@@ -306,51 +306,7 @@ fn compile_to_ptx(src: &str) -> String {
     ptx
 }
 
-use optix::DeviceShareable;
-
-struct SharedVariable<T>
-where
-    T: DeviceShareable,
-{
-    var: T,
-    buffer: cuda::Buffer,
-}
-
-impl<T> SharedVariable<T>
-where
-    T: DeviceShareable,
-{
-    pub fn new(var: T) -> Result<SharedVariable<T>> {
-        let cvar = var.to_device();
-        let buffer = cuda::Buffer::with_data(std::slice::from_ref(&cvar))?;
-        Ok(SharedVariable { var, buffer })
-    }
-
-    pub fn upload(&mut self) -> Result<()> {
-        let cvar = self.var.to_device();
-        self.buffer.upload(std::slice::from_ref(&cvar))?;
-        Ok(())
-    }
-}
-
-impl<T> std::ops::Deref for SharedVariable<T>
-where
-    T: DeviceShareable,
-{
-    type Target = T;
-    fn deref(&self) -> &T {
-        &self.var
-    }
-}
-
-impl<T> std::ops::DerefMut for SharedVariable<T>
-where
-    T: DeviceShareable,
-{
-    fn deref_mut(&mut self) -> &mut T {
-        &mut self.var
-    }
-}
+use optix::{DeviceShareable, SharedVariable};
 
 pub struct LaunchParams {
     frame_id: i32,
