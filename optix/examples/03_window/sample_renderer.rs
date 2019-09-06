@@ -32,9 +32,7 @@ pub struct SampleRenderer {
     program_groups: Vec<optix::ProgramGroupRef>,
     sbt: optix::ShaderBindingTable,
 
-    color_buffer: cuda::Buffer,
-    launch_params: LaunchParams,
-    launch_params_buffer: cuda::Buffer,
+    launch_params: SharedVariable<LaunchParams>,
 
     ctx: optix::DeviceContext,
 }
@@ -85,10 +83,10 @@ impl SampleRenderer {
         let pipeline_compile_options = optix::PipelineCompileOptions {
             uses_motion_blur: false,
             traversable_graph_flags:
-                optix::module::TraversableGraphFlags::AllowAny,
+                optix::module::TraversableGraphFlags::ALLOW_ANY,
             num_payload_values: 2,
             num_attribute_values: 2,
-            exception_flags: optix::module::ExceptionFlags::None,
+            exception_flags: optix::module::ExceptionFlags::NONE,
             pipeline_launch_params_variable_name: "optixLaunchParams".into(),
         };
 
@@ -195,12 +193,11 @@ impl SampleRenderer {
 
         let launch_params = LaunchParams {
             frame_id: 0,
-            color_buffer: color_buffer.as_mut_ptr() as *mut f32,
-            fb_size,
+            color_buffer,
+            fb_size: V2i32D(fb_size),
         };
 
-        let launch_params_buffer =
-            cuda::Buffer::with_data(std::slice::from_ref(&launch_params))?;
+        let launch_params = SharedVariable::new(launch_params)?;
 
         Ok(SampleRenderer {
             cuda_context,
@@ -210,23 +207,20 @@ impl SampleRenderer {
             module,
             program_groups,
             sbt,
-            color_buffer,
             launch_params,
-            launch_params_buffer,
             ctx,
         })
     }
 
     pub fn render(&mut self) {
-        self.launch_params_buffer
-            .upload(std::slice::from_ref(&self.launch_params));
+        self.launch_params.upload().unwrap();
         self.launch_params.frame_id += 1;
 
         self.ctx
             .launch(
                 &self.pipeline,
                 &self.stream,
-                &self.launch_params_buffer,
+                &self.launch_params.buffer,
                 &self.sbt,
                 self.launch_params.fb_size.x as u32,
                 self.launch_params.fb_size.y as u32,
@@ -240,17 +234,15 @@ impl SampleRenderer {
     }
 
     pub fn resize(&mut self, size: V2i32) {
-        self.launch_params.fb_size = size;
-        self.color_buffer = cuda::Buffer::new(
+        *self.launch_params.fb_size = size;
+        self.launch_params.color_buffer = cuda::Buffer::new(
             (size.x * size.y) as usize * std::mem::size_of::<V4f32>(),
         )
         .unwrap();
-        self.launch_params.color_buffer =
-            self.color_buffer.as_mut_ptr() as *mut f32;
     }
 
     pub fn download_pixels(&self, pixels: &mut [V4f32]) -> Result<()> {
-        self.color_buffer.download(pixels)?;
+        self.launch_params.color_buffer.download(pixels)?;
         Ok(())
     }
 }
@@ -314,9 +306,96 @@ fn compile_to_ptx(src: &str) -> String {
     ptx
 }
 
-#[repr(C)]
+use optix::DeviceShareable;
+
+struct SharedVariable<T>
+where
+    T: DeviceShareable,
+{
+    var: T,
+    buffer: cuda::Buffer,
+}
+
+impl<T> SharedVariable<T>
+where
+    T: DeviceShareable,
+{
+    pub fn new(var: T) -> Result<SharedVariable<T>> {
+        let cvar = var.to_device();
+        let buffer = cuda::Buffer::with_data(std::slice::from_ref(&cvar))?;
+        Ok(SharedVariable { var, buffer })
+    }
+
+    pub fn upload(&mut self) -> Result<()> {
+        let cvar = self.var.to_device();
+        self.buffer.upload(std::slice::from_ref(&cvar))?;
+        Ok(())
+    }
+}
+
+impl<T> std::ops::Deref for SharedVariable<T>
+where
+    T: DeviceShareable,
+{
+    type Target = T;
+    fn deref(&self) -> &T {
+        &self.var
+    }
+}
+
+impl<T> std::ops::DerefMut for SharedVariable<T>
+where
+    T: DeviceShareable,
+{
+    fn deref_mut(&mut self) -> &mut T {
+        &mut self.var
+    }
+}
+
 pub struct LaunchParams {
     frame_id: i32,
-    color_buffer: *mut f32,
-    fb_size: V2i32,
+    color_buffer: cuda::Buffer,
+    fb_size: V2i32D,
+}
+
+#[derive(Copy, Clone)]
+struct V2i32D(imath::V2i32);
+
+impl DeviceShareable for V2i32D {
+    type DeviceType = V2i32D;
+    fn to_device(&self) -> Self::DeviceType {
+        *self
+    }
+}
+
+impl std::ops::Deref for V2i32D {
+    type Target = V2i32;
+    fn deref(&self) -> &V2i32 {
+        &self.0
+    }
+}
+
+impl std::ops::DerefMut for V2i32D {
+    fn deref_mut(&mut self) -> &mut V2i32 {
+        &mut self.0
+    }
+}
+
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct LaunchParamsD {
+    frame_id: i32,
+    color_buffer: cuda::CUdeviceptr,
+    fb_size: V2i32D,
+}
+
+impl DeviceShareable for LaunchParams {
+    type DeviceType = LaunchParamsD;
+    fn to_device(&self) -> LaunchParamsD {
+        LaunchParamsD {
+            frame_id: self.frame_id.to_device(),
+            color_buffer: self.color_buffer.to_device(),
+            fb_size: self.fb_size.to_device(),
+        }
+    }
 }

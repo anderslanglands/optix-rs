@@ -97,7 +97,9 @@ inline DEVICE auto dot(const Vec2<T>& a, const Vec2<T>& b) -> Vec2<T> {
 }
 
 using V2i32 = Vec2<i32>;
+using V2u32 = Vec2<u32>;
 using V2f32 = Vec2<f32>;
+using V2f64 = Vec2<f64>;
 
 /// Vec3
 template <typename T> struct Vec3 {
@@ -189,6 +191,105 @@ inline DEVICE auto dot(const Vec3<T>& a, const Vec3<T>& b) -> Vec3<T> {
     return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
+using V3i32 = Vec3<i32>;
+using V3u32 = Vec3<u32>;
 using V3f32 = Vec3<f32>;
+using V3f64 = Vec3<f64>;
+
+/// Vec4
+template <typename T> struct Vec4 {
+    T x;
+    T y;
+    T z;
+    T w;
+
+    DEVICE Vec4(T x, T y, T z, T w) : x(x), y(y), z(z), w(w) {}
+    DEVICE explicit Vec4(T v) : x(v), y(v), z(v), w(v) {}
+
+    inline DEVICE auto operator[](size_t dim) -> T& { return (&x)[dim]; }
+    inline DEVICE auto operator[](size_t dim) const -> const T& {
+        return (&x)[dim];
+    }
+
+    inline DEVICE auto length2() const -> T {
+        return x * x + y * y + z * z + w * w;
+    }
+    inline DEVICE auto length() const -> T { return sqrtf(length2()); }
+};
+
+template <typename T>
+inline DEVICE auto operator+(const Vec4<T>& a, const Vec4<T>& b) -> Vec4<T> {
+    return Vec4<T>(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);
+}
+
+template <typename T>
+inline DEVICE auto operator-(const Vec4<T>& a, const Vec4<T>& b) -> Vec4<T> {
+    return Vec4<T>(a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w);
+}
+
+template <typename T>
+inline DEVICE auto operator*(const Vec4<T>& a, const Vec4<T>& b) -> Vec4<T> {
+    return Vec4<T>(a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w);
+}
+
+template <typename T>
+inline DEVICE auto operator/(const Vec4<T>& a, const Vec4<T>& b) -> Vec4<T> {
+    return Vec4<T>(a.x / b.x, a.y / b.y, a.z / b.z, a.w / b.w);
+}
+
+template <typename T>
+inline DEVICE auto operator+(T a, const Vec4<T>& b) -> Vec4<T> {
+    return Vec4<T>(a + b.x, a + b.y, a + b.z, a + b.w);
+}
+
+template <typename T>
+inline DEVICE auto operator-(T a, const Vec4<T>& b) -> Vec4<T> {
+    return Vec4<T>(a - b.x, a - b.y, a - b.z, a - b.w);
+}
+
+template <typename T>
+inline DEVICE auto operator*(T a, const Vec4<T>& b) -> Vec4<T> {
+    return Vec4<T>(a * b.x, a * b.y, a * b.z, a * b.w);
+}
+
+template <typename T>
+inline DEVICE auto operator/(T a, const Vec4<T>& b) -> Vec4<T> {
+    return Vec4<T>(a / b.x, a / b.y, a / b.z, a / b.w);
+}
+
+template <typename T>
+inline DEVICE auto operator+(const Vec4<T>& a, T b) -> Vec4<T> {
+    return Vec4<T>(a.x + b, a.y + b, a.z + b, a.w + b);
+}
+
+template <typename T>
+inline DEVICE auto operator-(const Vec4<T>& a, T b) -> Vec4<T> {
+    return Vec4<T>(a.x - b, a.y - b, a.z - b, a.w - b);
+}
+
+template <typename T>
+inline DEVICE auto operator*(const Vec4<T>& a, T b) -> Vec4<T> {
+    return Vec4<T>(a.x * b, a.y * b, a.z * b, a.w * b);
+}
+
+template <typename T>
+inline DEVICE auto operator/(const Vec4<T>& a, T b) -> Vec4<T> {
+    return Vec4<T>(a.x / b, a.y / b, a.z / b, a.w / b);
+}
+
+template <typename T>
+inline DEVICE auto normalize(const Vec4<T>& v) -> Vec4<T> {
+    return v / v.length();
+}
+
+template <typename T>
+inline DEVICE auto dot(const Vec4<T>& a, const Vec4<T>& b) -> Vec4<T> {
+    return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
+}
+
+using V4i32 = Vec4<i32>;
+using V4u32 = Vec4<u32>;
+using V4f32 = Vec4<f32>;
+using V4f64 = Vec4<f64>;
 
 } // namespace osc

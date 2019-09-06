@@ -49,6 +49,25 @@ pub trait SbtRecord: Sized {
     fn pack(&mut self, pg: &ProgramGroupRef);
 }
 
+pub trait DeviceShareable {
+    type DeviceType: Copy;
+    fn to_device(&self) -> Self::DeviceType;
+}
+
+impl DeviceShareable for cuda::Buffer {
+    type DeviceType = cuda::CUdeviceptr;
+    fn to_device(&self) -> Self::DeviceType {
+        self.as_device_ptr()
+    }
+}
+
+impl DeviceShareable for i32 {
+    type DeviceType = i32;
+    fn to_device(&self) -> i32 {
+        *self
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #[test]

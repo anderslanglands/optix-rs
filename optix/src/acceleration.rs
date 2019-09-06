@@ -136,6 +136,18 @@ impl TypedBuffer {
             format,
         })
     }
+
+    pub fn as_ptr(&self) -> *const std::os::raw::c_void {
+        self.buffer.as_ptr()
+    }
+}
+
+use super::DeviceShareable;
+impl DeviceShareable for TypedBuffer {
+    type DeviceType = cuda::CUdeviceptr;
+    fn to_device(&self) -> Self::DeviceType {
+        self.buffer.as_device_ptr()
+    }
 }
 
 pub struct TypedBufferArray {
@@ -323,7 +335,7 @@ impl DeviceContext {
         accel_options: &AccelBuildOptions,
         build_inputs: &[BuildInput],
         temp_buffer: &cuda::Buffer,
-        output_buffer: &cuda::Buffer,
+        output_buffer: cuda::Buffer,
         emitted_properties: &[AccelEmitDesc],
     ) -> Result<TraversableHandle> {
         let build_inputs: Vec<sys::OptixBuildInput> =
@@ -359,7 +371,10 @@ impl DeviceContext {
                 return Err(Error::AccelBuildFailed { cerr: res.into() });
             }
 
-            Ok(TraversableHandle { hnd })
+            Ok(TraversableHandle {
+                hnd,
+                buffer: output_buffer,
+            })
         }
     }
 
@@ -367,7 +382,7 @@ impl DeviceContext {
         &self,
         stream: &cuda::Stream,
         input_handle: TraversableHandle,
-        output_buffer: &mut cuda::Buffer,
+        output_buffer: cuda::Buffer,
     ) -> Result<TraversableHandle> {
         unsafe {
             let mut hnd = 0;
@@ -384,7 +399,10 @@ impl DeviceContext {
                 return Err(Error::AccelCompactFailed { cerr: res.into() });
             }
 
-            Ok(TraversableHandle { hnd })
+            Ok(TraversableHandle {
+                hnd,
+                buffer: output_buffer,
+            })
         }
     }
 }
@@ -413,4 +431,12 @@ impl<'b> AccelEmitDesc<'b> {
 
 pub struct TraversableHandle {
     pub hnd: sys::OptixTraversableHandle,
+    buffer: cuda::Buffer,
+}
+
+impl super::DeviceShareable for TraversableHandle {
+    type DeviceType = sys::OptixTraversableHandle;
+    fn to_device(&self) -> Self::DeviceType {
+        self.hnd
+    }
 }
