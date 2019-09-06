@@ -150,7 +150,7 @@ printf("raydir: %f %f %f\n", rayDir.x, rayDir.y, rayDir.z);
     // and write to frame buffer ...
     const u32 fbIndex = ix + iy * optixLaunchParams.frame.size.x;
     optixLaunchParams.frame.colorBuffer[fbIndex] =
-        make_float4(pixelColorPRD.x, pixelColorPRD.y, pixelColorPRD.z, 1.0f);
+        V4f32(pixelColorPRD.x, pixelColorPRD.y, pixelColorPRD.z, 1.0f);
 }
 
 } // namespace osc

@@ -191,13 +191,11 @@ impl SampleRenderer {
         )
         .unwrap();
 
-        let launch_params = LaunchParams {
+        let launch_params = SharedVariable::new(LaunchParams {
             frame_id: 0,
             color_buffer,
-            fb_size: V2i32D(fb_size),
-        };
-
-        let launch_params = SharedVariable::new(launch_params)?;
+            fb_size: fb_size.into(),
+        })?;
 
         Ok(SampleRenderer {
             cuda_context,
@@ -314,28 +312,7 @@ pub struct LaunchParams {
     fb_size: V2i32D,
 }
 
-#[derive(Copy, Clone)]
-struct V2i32D(imath::V2i32);
-
-impl DeviceShareable for V2i32D {
-    type DeviceType = V2i32D;
-    fn to_device(&self) -> Self::DeviceType {
-        *self
-    }
-}
-
-impl std::ops::Deref for V2i32D {
-    type Target = V2i32;
-    fn deref(&self) -> &V2i32 {
-        &self.0
-    }
-}
-
-impl std::ops::DerefMut for V2i32D {
-    fn deref_mut(&mut self) -> &mut V2i32 {
-        &mut self.0
-    }
-}
+optix::wrap_copyable_for_device! {V2i32, V2i32D}
 
 #[repr(C)]
 #[derive(Copy, Clone)]

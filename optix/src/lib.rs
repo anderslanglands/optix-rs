@@ -51,8 +51,8 @@ pub trait SbtRecord: Sized {
     fn pack(&mut self, pg: &ProgramGroupRef);
 }
 
-/// Trait to define a type that can convert itself to a CUDA-compatible target
-/// type.
+/// Trait to represent a type that can convert itself to a CUDA-compatible
+/// target type.
 pub trait DeviceShareable {
     type DeviceType: Copy;
     fn to_device(&self) -> Self::DeviceType;
@@ -131,6 +131,42 @@ where
     fn deref_mut(&mut self) -> &mut T {
         &mut self.var
     }
+}
+
+/// Macro to generate a newtype wrapper with DeviceShareable and Deref
+/// implemented
+#[macro_export]
+macro_rules! wrap_copyable_for_device {
+    ($ty:ty, $newtype:ident) => {
+        #[derive(Copy, Clone)]
+        struct $newtype($ty);
+
+        impl DeviceShareable for $newtype {
+            type DeviceType = $newtype;
+            fn to_device(&self) -> Self::DeviceType {
+                *self
+            }
+        }
+
+        impl std::ops::Deref for $newtype {
+            type Target = $ty;
+            fn deref(&self) -> &$ty {
+                &self.0
+            }
+        }
+
+        impl std::ops::DerefMut for $newtype {
+            fn deref_mut(&mut self) -> &mut $ty {
+                &mut self.0
+            }
+        }
+
+        impl From<$ty> for $newtype {
+            fn from(v: $ty) -> $newtype {
+                $newtype(v)
+            }
+        }
+    };
 }
 
 #[cfg(test)]

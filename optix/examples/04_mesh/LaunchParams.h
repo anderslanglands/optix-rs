@@ -22,7 +22,7 @@
 namespace osc {
 struct LaunchParams {
     struct {
-        float4* colorBuffer;
+        V4f32* colorBuffer;
         V2i32 size;
     } frame;
 
