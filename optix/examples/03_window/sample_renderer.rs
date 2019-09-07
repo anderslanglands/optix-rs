@@ -3,7 +3,7 @@ use imath::*;
 type Result<T, E = Error> = std::result::Result<T, E>;
 
 use optix::{DeviceShareable, SbtRecord, SharedVariable};
-use optix_derive::{device_shared, sbt_record};
+use optix_derive::device_shared;
 
 // Wrap math types in a newtype that we can share with the device
 optix::wrap_copyable_for_device! {V2i32, V2i32D}
@@ -18,6 +18,7 @@ pub struct LaunchParams {
     fb_size: V2i32D,
 }
 
+/*
 #[sbt_record]
 pub struct RaygenRecord {
     data: *mut std::os::raw::c_void,
@@ -32,6 +33,7 @@ pub struct MissRecord {
 pub struct HitgroupRecord {
     object_id: i32,
 }
+*/
 
 pub struct SampleRenderer {
     cuda_context: cuda::ContextRef,
@@ -176,23 +178,14 @@ impl SampleRenderer {
         );
 
         // Build Shader Binding Table
-        let mut rg_rec = RaygenRecord {
-            header: optix_sys::SbtRecordHeader::default(),
-            data: std::ptr::null_mut(),
-        };
-        rg_rec.pack(&program_groups[0]);
+        let rg_rec =
+            SbtRecord::new(0i32, std::sync::Arc::clone(&program_groups[0]));
 
-        let mut miss_rec = MissRecord {
-            header: optix_sys::SbtRecordHeader::default(),
-            data: std::ptr::null_mut(),
-        };
-        miss_rec.pack(&program_groups[1]);
+        let miss_rec =
+            SbtRecord::new(0i32, std::sync::Arc::clone(&program_groups[1]));
 
-        let mut hg_rec = HitgroupRecord {
-            header: optix_sys::SbtRecordHeader::default(),
-            object_id: 0,
-        };
-        hg_rec.pack(&program_groups[2]);
+        let hg_rec =
+            SbtRecord::new(0i32, std::sync::Arc::clone(&program_groups[2]));
 
         let sbt = optix::ShaderBindingTableBuilder::new(&rg_rec)
             .miss_records(std::slice::from_ref(&miss_rec))

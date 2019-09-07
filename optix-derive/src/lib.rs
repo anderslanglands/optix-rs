@@ -5,6 +5,7 @@ use proc_macro::{Diagnostic, TokenStream};
 use quote::{quote, ToTokens};
 use syn::{parse2, Data, DataStruct, DeriveInput, Fields};
 
+/*
 #[proc_macro_attribute]
 pub fn sbt_record(attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(item as DeriveInput);
@@ -73,6 +74,7 @@ mod d2 {
         panic!("{}", ident);
     }
 }
+*/
 
 #[proc_macro_attribute]
 pub fn device_shared(attr: TokenStream, item: TokenStream) -> TokenStream {

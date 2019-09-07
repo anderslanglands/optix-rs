@@ -29,7 +29,9 @@ pub mod pipeline;
 pub use pipeline::{PipelineLinkOptions, PipelineRef};
 
 pub mod shader_binding_table;
-pub use shader_binding_table::{ShaderBindingTable, ShaderBindingTableBuilder};
+pub use shader_binding_table::{
+    SbtRecord, ShaderBindingTable, ShaderBindingTableBuilder,
+};
 
 pub mod acceleration;
 pub use acceleration::*;
@@ -45,10 +47,6 @@ pub fn init() -> Result<()> {
 
         Ok(())
     }
-}
-
-pub trait SbtRecord: Sized {
-    fn pack(&mut self, pg: &ProgramGroupRef);
 }
 
 /// Trait to represent a type that can convert itself to a CUDA-compatible

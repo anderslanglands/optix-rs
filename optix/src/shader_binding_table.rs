@@ -3,7 +3,7 @@ use optix_sys as sys;
 use super::error::Error;
 type Result<T, E = Error> = std::result::Result<T, E>;
 
-use super::SbtRecord;
+use super::{DeviceShareable, ProgramGroupRef};
 
 pub struct ShaderBindingTable {
     pub(crate) sbt: sys::OptixShaderBindingTable,
@@ -29,15 +29,23 @@ pub struct ShaderBindingTableBuilder {
 }
 
 impl ShaderBindingTable {
-    pub fn new<RG: SbtRecord>(rec_rg: &RG) -> ShaderBindingTableBuilder {
+    pub fn new<T>(rec_rg: &SbtRecord<T>) -> ShaderBindingTableBuilder
+    where
+        T: DeviceShareable,
+    {
         ShaderBindingTableBuilder::new(rec_rg)
     }
 }
 
 impl ShaderBindingTableBuilder {
-    pub fn new<RG: SbtRecord>(rec_rg: &RG) -> ShaderBindingTableBuilder {
+    pub fn new<T>(rec_rg: &SbtRecord<T>) -> ShaderBindingTableBuilder
+    where
+        T: DeviceShareable,
+    {
+        let rec_rg_d = rec_rg.to_device_record();
         ShaderBindingTableBuilder {
-            rg: cuda::Buffer::with_data(std::slice::from_ref(rec_rg)).unwrap(),
+            rg: cuda::Buffer::with_data(std::slice::from_ref(&rec_rg_d))
+                .unwrap(),
             ex: None,
             ms: None,
             ms_stride: 0,
@@ -51,46 +59,68 @@ impl ShaderBindingTableBuilder {
         }
     }
 
-    pub fn exception_record<EX: SbtRecord>(
+    pub fn exception_record<T>(
         mut self,
-        rec_ex: &EX,
-    ) -> ShaderBindingTableBuilder {
+        rec_ex: &SbtRecord<T>,
+    ) -> ShaderBindingTableBuilder
+    where
+        T: DeviceShareable,
+    {
+        let rec_ex_d = rec_ex.to_device_record();
         self.ex = Some(
-            cuda::Buffer::with_data(std::slice::from_ref(rec_ex)).unwrap(),
+            cuda::Buffer::with_data(std::slice::from_ref(&rec_ex_d)).unwrap(),
         );
 
         self
     }
 
-    pub fn miss_records<MS: SbtRecord>(
+    pub fn miss_records<T>(
         mut self,
-        rec_miss: &[MS],
-    ) -> ShaderBindingTableBuilder {
-        self.ms = Some(cuda::Buffer::with_data(rec_miss).unwrap());
-        self.ms_stride = std::mem::size_of::<MS>() as u32;
+        rec_miss: &[SbtRecord<T>],
+    ) -> ShaderBindingTableBuilder
+    where
+        T: DeviceShareable,
+    {
+        let rec_miss_d: Vec<SbtRecordDevice<T::Target>> =
+            rec_miss.iter().map(|r| r.to_device_record()).collect();
+        self.ms = Some(cuda::Buffer::with_data(&rec_miss_d).unwrap());
+        self.ms_stride =
+            std::mem::size_of::<SbtRecordDevice<T::Target>>() as u32;
         self.ms_count = rec_miss.len() as u32;
 
         self
     }
 
-    pub fn hitgroup_records<HG: SbtRecord>(
+    pub fn hitgroup_records<T>(
         mut self,
-        rec_hg: &[HG],
-    ) -> ShaderBindingTableBuilder {
-        self.hg = Some(cuda::Buffer::with_data(rec_hg).unwrap());
-        self.hg_stride = std::mem::size_of::<HG>() as u32;
+        rec_hg: &[SbtRecord<T>],
+    ) -> ShaderBindingTableBuilder
+    where
+        T: DeviceShareable,
+    {
+        let rec_hg_d: Vec<SbtRecordDevice<T::Target>> =
+            rec_hg.iter().map(|r| r.to_device_record()).collect();
+        self.hg = Some(cuda::Buffer::with_data(&rec_hg_d).unwrap());
+        self.hg_stride =
+            std::mem::size_of::<SbtRecordDevice<T::Target>>() as u32;
         self.hg_count = rec_hg.len() as u32;
 
         self
     }
 
-    pub fn callables_records<CL: SbtRecord>(
+    pub fn callables_records<T>(
         mut self,
-        rec_callables: &[CL],
-    ) -> ShaderBindingTableBuilder {
-        self.cl = Some(cuda::Buffer::with_data(rec_callables).unwrap());
-        self.cl_stride = std::mem::size_of::<CL>() as u32;
-        self.cl_count = rec_callables.len() as u32;
+        rec_cl: &[SbtRecord<T>],
+    ) -> ShaderBindingTableBuilder
+    where
+        T: DeviceShareable,
+    {
+        let rec_cl_d: Vec<SbtRecordDevice<T::Target>> =
+            rec_cl.iter().map(|r| r.to_device_record()).collect();
+        self.cl = Some(cuda::Buffer::with_data(&rec_cl_d).unwrap());
+        self.cl_stride =
+            std::mem::size_of::<SbtRecordDevice<T::Target>>() as u32;
+        self.cl_count = rec_cl.len() as u32;
 
         self
     }
@@ -133,4 +163,51 @@ impl ShaderBindingTableBuilder {
             cl: self.cl,
         }
     }
+}
+
+pub struct SbtRecord<T>
+where
+    T: DeviceShareable,
+{
+    program_group: ProgramGroupRef,
+    data: T,
+}
+
+impl<T> SbtRecord<T>
+where
+    T: DeviceShareable,
+{
+    pub fn new(data: T, program_group: ProgramGroupRef) -> SbtRecord<T> {
+        SbtRecord {
+            program_group,
+            data,
+        }
+    }
+
+    pub fn to_device_record(&self) -> SbtRecordDevice<T::Target> {
+        let mut rec = SbtRecordDevice {
+            header: [0u8; 32],
+            data: self.data.to_device(),
+        };
+
+        let res = unsafe {
+            optix_sys::optixSbtRecordPackHeader(
+                self.program_group.sys_ptr(),
+                rec.header.as_mut_ptr() as *mut std::os::raw::c_void,
+            )
+        };
+        if res != optix_sys::OptixResult::OPTIX_SUCCESS {
+            panic!("optixSbtRecordPackHeader failed");
+        }
+
+        rec
+    }
+}
+
+#[repr(C)]
+#[repr(align(16))]
+pub struct SbtRecordDevice<T> {
+    #[repr(align(16))]
+    header: [u8; 32],
+    data: T,
 }
