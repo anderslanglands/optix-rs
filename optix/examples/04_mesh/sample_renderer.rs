@@ -2,23 +2,8 @@ use imath::*;
 
 type Result<T, E = Error> = std::result::Result<T, E>;
 
-use optix::SbtRecord;
-use optix_derive::sbt_record;
-
-#[sbt_record]
-pub struct RaygenRecord {
-    data: *mut std::os::raw::c_void,
-}
-
-#[sbt_record]
-pub struct MissRecord {
-    data: *mut std::os::raw::c_void,
-}
-
-#[sbt_record]
-pub struct HitgroupRecord {
-    object_id: i32,
-}
+use optix::{DeviceShareable, SbtRecord, SharedVariable};
+use optix_derive::device_shared;
 
 pub struct SampleRenderer {
     cuda_context: cuda::ContextRef,
@@ -32,17 +17,13 @@ pub struct SampleRenderer {
     program_groups: Vec<optix::ProgramGroupRef>,
     sbt: optix::ShaderBindingTable,
 
-    color_buffer: cuda::Buffer,
-    launch_params: LaunchParams,
-    launch_params_buffer: cuda::Buffer,
+    launch_params: SharedVariable<LaunchParams>,
 
     last_set_camera: Camera,
 
     mesh: TriangleMesh,
     vertex_buffers: optix::acceleration::TypedBufferArray,
     index_buffer: optix::acceleration::TypedBuffer,
-    as_buffer: cuda::Buffer,
-    as_handle: optix::TraversableHandle,
 
     ctx: optix::DeviceContext,
 }
@@ -204,7 +185,7 @@ impl SampleRenderer {
             &accel_build_options,
             std::slice::from_ref(&build_input),
             &temp_buffer,
-            &output_buffer,
+            output_buffer,
             std::slice::from_ref(&compacted_size_desc),
         )?;
 
@@ -223,11 +204,8 @@ impl SampleRenderer {
             compacted_size_buffer.download_primitive::<usize>()?;
 
         let mut as_buffer = cuda::Buffer::new(compacted_size)?;
-        let as_handle = ctx.accel_compact(
-            &cuda::Stream::default(),
-            as_handle,
-            &mut as_buffer,
-        )?;
+        let as_handle =
+            ctx.accel_compact(&cuda::Stream::default(), as_handle, as_buffer)?;
 
         // sync again
         match cuda::device_synchronize() {
@@ -265,23 +243,19 @@ impl SampleRenderer {
         );
 
         // Build Shader Binding Table
-        let mut rg_rec = RaygenRecord {
-            header: optix_sys::SbtRecordHeader::default(),
-            data: std::ptr::null_mut(),
-        };
-        rg_rec.pack(&program_groups[0]);
+        let rg_rec =
+            SbtRecord::new(0i32, std::sync::Arc::clone(&program_groups[0]));
 
-        let mut miss_rec = MissRecord {
-            header: optix_sys::SbtRecordHeader::default(),
-            data: std::ptr::null_mut(),
-        };
-        miss_rec.pack(&program_groups[1]);
+        let miss_rec =
+            SbtRecord::new(0i32, std::sync::Arc::clone(&program_groups[1]));
 
-        let mut hg_rec = HitgroupRecord {
-            header: optix_sys::SbtRecordHeader::default(),
-            object_id: 0,
-        };
-        hg_rec.pack(&program_groups[2]);
+        let hg_rec =
+            SbtRecord::new(0i32, std::sync::Arc::clone(&program_groups[2]));
+
+        let sbt = optix::ShaderBindingTableBuilder::new(&rg_rec)
+            .miss_records(std::slice::from_ref(&miss_rec))
+            .hitgroup_records(std::slice::from_ref(&hg_rec))
+            .build();
 
         let sbt = optix::ShaderBindingTableBuilder::new(&rg_rec)
             .miss_records(std::slice::from_ref(&miss_rec))
@@ -299,22 +273,19 @@ impl SampleRenderer {
         let horizontal =
             cos_fovy * aspect * direction.cross(camera.up).normalized();
         let vertical = cos_fovy * horizontal.cross(direction).normalized();
-        let launch_params = LaunchParams {
-            frame: LpFrame {
-                color_buffer: color_buffer.as_mut_ptr() as *mut f32,
-                size: fb_size,
+        let launch_params = SharedVariable::new(LaunchParams {
+            frame: Frame {
+                color_buffer,
+                size: fb_size.into(),
             },
-            camera: LpCamera {
-                position: camera.from,
-                direction,
-                horizontal,
-                vertical,
+            camera: RenderCamera {
+                position: camera.from.into(),
+                direction: direction.into(),
+                horizontal: horizontal.into(),
+                vertical: vertical.into(),
             },
-            traversable: as_handle.hnd,
-        };
-
-        let launch_params_buffer =
-            cuda::Buffer::with_data(std::slice::from_ref(&launch_params))?;
+            traversable: as_handle,
+        })?;
 
         Ok(SampleRenderer {
             cuda_context,
@@ -324,29 +295,23 @@ impl SampleRenderer {
             module,
             program_groups,
             sbt,
-            color_buffer,
             launch_params,
-            launch_params_buffer,
             last_set_camera: camera,
             mesh,
             vertex_buffers,
             index_buffer,
-            as_buffer,
-            as_handle,
             ctx,
         })
     }
 
     pub fn render(&mut self) {
-        self.launch_params_buffer
-            .upload(std::slice::from_ref(&self.launch_params))
-            .unwrap();
+        self.launch_params.upload().unwrap();
 
         self.ctx
             .launch(
                 &self.pipeline,
                 &self.stream,
-                &self.launch_params_buffer,
+                self.launch_params.variable_buffer(),
                 &self.sbt,
                 self.launch_params.frame.size.x as u32,
                 self.launch_params.frame.size.y as u32,
@@ -360,17 +325,15 @@ impl SampleRenderer {
     }
 
     pub fn resize(&mut self, size: V2i32) {
-        self.launch_params.frame.size = size;
-        self.color_buffer = cuda::Buffer::new(
+        self.launch_params.frame.size = size.into();
+        self.launch_params.frame.color_buffer = cuda::Buffer::new(
             (size.x * size.y) as usize * std::mem::size_of::<V4f32>(),
         )
         .unwrap();
-        self.launch_params.frame.color_buffer =
-            self.color_buffer.as_mut_ptr() as *mut f32;
     }
 
     pub fn download_pixels(&self, pixels: &mut [V4f32]) -> Result<()> {
-        self.color_buffer.download(pixels)?;
+        self.launch_params.frame.color_buffer.download(pixels)?;
         Ok(())
     }
 }
@@ -480,6 +443,7 @@ impl TriangleMesh {
     }
 }
 
+/*
 #[repr(C)]
 struct LpCamera {
     position: V3f32,
@@ -499,4 +463,30 @@ pub struct LaunchParams {
     frame: LpFrame,
     camera: LpCamera,
     traversable: optix_sys::OptixTraversableHandle,
+}
+*/
+
+// Wrap math types in a newtype that we can share with the device
+optix::wrap_copyable_for_device! {V2i32, V2i32D}
+optix::wrap_copyable_for_device! {V3f32, V3f32D}
+
+#[device_shared]
+pub struct Frame {
+    color_buffer: cuda::Buffer,
+    size: V2i32D,
+}
+
+#[device_shared]
+pub struct RenderCamera {
+    position: V3f32D,
+    direction: V3f32D,
+    horizontal: V3f32D,
+    vertical: V3f32D,
+}
+
+#[device_shared]
+pub struct LaunchParams {
+    frame: Frame,
+    camera: RenderCamera,
+    traversable: optix::TraversableHandle,
 }
