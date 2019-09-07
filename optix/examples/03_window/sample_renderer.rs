@@ -2,8 +2,21 @@ use imath::*;
 
 type Result<T, E = Error> = std::result::Result<T, E>;
 
-use optix::SbtRecord;
-use optix_derive::sbt_record;
+use optix::{DeviceShareable, SbtRecord, SharedVariable};
+use optix_derive::{device_shared, sbt_record};
+
+// Wrap math types in a newtype that we can share with the device
+optix::wrap_copyable_for_device! {V2i32, V2i32D}
+
+// device_shared macro creates the device-compatible type and impls
+// DeviceShareable to enable automatic copying from the original type to the
+// device-compatible version.
+#[device_shared]
+pub struct LaunchParams {
+    frame_id: i32,
+    color_buffer: cuda::Buffer,
+    fb_size: V2i32D,
+}
 
 #[sbt_record]
 pub struct RaygenRecord {
@@ -302,33 +315,4 @@ fn compile_to_ptx(src: &str) -> String {
 
     let ptx = prg.get_ptx().unwrap();
     ptx
-}
-
-use optix::{DeviceShareable, SharedVariable};
-
-pub struct LaunchParams {
-    frame_id: i32,
-    color_buffer: cuda::Buffer,
-    fb_size: V2i32D,
-}
-
-optix::wrap_copyable_for_device! {V2i32, V2i32D}
-
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub struct LaunchParamsD {
-    frame_id: i32,
-    color_buffer: cuda::CUdeviceptr,
-    fb_size: V2i32D,
-}
-
-impl DeviceShareable for LaunchParams {
-    type Target = LaunchParamsD;
-    fn to_device(&self) -> LaunchParamsD {
-        LaunchParamsD {
-            frame_id: self.frame_id.to_device(),
-            color_buffer: self.color_buffer.to_device(),
-            fb_size: self.fb_size.to_device(),
-        }
-    }
 }
