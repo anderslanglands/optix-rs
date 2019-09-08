@@ -5,6 +5,17 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 use optix::{DeviceShareable, SbtRecord, SharedVariable};
 use optix_derive::device_shared;
 
+// Wrap math types in a newtype that we can share with the device
+optix::wrap_copyable_for_device! {V2i32, V2i32D}
+optix::wrap_copyable_for_device! {V3f32, V3f32D}
+
+#[device_shared]
+struct TriangleMeshSBTData {
+    color: V3f32D,
+    vertex: optix::TypedBuffer,
+    index: optix::TypedBuffer,
+}
+
 pub struct SampleRenderer {
     cuda_context: cuda::ContextRef,
     stream: cuda::Stream,
@@ -22,8 +33,6 @@ pub struct SampleRenderer {
     last_set_camera: Camera,
 
     mesh: TriangleMesh,
-    vertex_buffers: optix::acceleration::TypedBufferArray,
-    index_buffer: optix::acceleration::TypedBuffer,
 
     ctx: optix::DeviceContext,
 }
@@ -139,14 +148,14 @@ impl SampleRenderer {
         let index_buffer =
             optix::TypedBuffer::new(&mesh.index, optix::BufferFormat::I32x3)
                 .unwrap();
-        let vertex_buffers =
-            optix::TypedBufferArray::new(vec![vertex_buffer]).unwrap();
-        let build_input =
-            optix::BuildInput::Triangle(optix::TriangleArray::new(
-                &vertex_buffers,
+        let build_input = optix::BuildInput::Triangle(
+            optix::TriangleArray::new(
+                std::slice::from_ref(&vertex_buffer),
                 &index_buffer,
                 optix::GeometryFlags::NONE,
-            ));
+            )
+            .unwrap(),
+        );
 
         // BLAS setup
         let accel_build_options = optix::AccelBuildOptions {
@@ -203,7 +212,7 @@ impl SampleRenderer {
         let compacted_size =
             compacted_size_buffer.download_primitive::<usize>()?;
 
-        let mut as_buffer = cuda::Buffer::new(compacted_size)?;
+        let as_buffer = cuda::Buffer::new(compacted_size)?;
         let as_handle =
             ctx.accel_compact(&cuda::Stream::default(), as_handle, as_buffer)?;
 
@@ -245,17 +254,19 @@ impl SampleRenderer {
         // Build Shader Binding Table
         let rg_rec =
             SbtRecord::new(0i32, std::sync::Arc::clone(&program_groups[0]));
-
         let miss_rec =
             SbtRecord::new(0i32, std::sync::Arc::clone(&program_groups[1]));
 
-        let hg_rec =
-            SbtRecord::new(0i32, std::sync::Arc::clone(&program_groups[2]));
+        let mesh_sbt_data = TriangleMeshSBTData {
+            color: V3f32D(v3f32(0.8, 0.2, 0.1)),
+            vertex: vertex_buffer,
+            index: index_buffer,
+        };
 
-        let sbt = optix::ShaderBindingTableBuilder::new(&rg_rec)
-            .miss_records(std::slice::from_ref(&miss_rec))
-            .hitgroup_records(std::slice::from_ref(&hg_rec))
-            .build();
+        let hg_rec = SbtRecord::new(
+            mesh_sbt_data,
+            std::sync::Arc::clone(&program_groups[2]),
+        );
 
         let sbt = optix::ShaderBindingTableBuilder::new(&rg_rec)
             .miss_records(std::slice::from_ref(&miss_rec))
@@ -273,7 +284,7 @@ impl SampleRenderer {
         let horizontal =
             cos_fovy * aspect * direction.cross(camera.up).normalized();
         let vertical = cos_fovy * horizontal.cross(direction).normalized();
-        let launch_params = SharedVariable::new(LaunchParams {
+        let launch_params = LaunchParams {
             frame: Frame {
                 color_buffer,
                 size: fb_size.into(),
@@ -285,7 +296,9 @@ impl SampleRenderer {
                 vertical: vertical.into(),
             },
             traversable: as_handle,
-        })?;
+        };
+
+        let launch_params = SharedVariable::<LaunchParams>::new(launch_params)?;
 
         Ok(SampleRenderer {
             cuda_context,
@@ -298,8 +311,6 @@ impl SampleRenderer {
             launch_params,
             last_set_camera: camera,
             mesh,
-            vertex_buffers,
-            index_buffer,
             ctx,
         })
     }
@@ -311,7 +322,7 @@ impl SampleRenderer {
             .launch(
                 &self.pipeline,
                 &self.stream,
-                self.launch_params.variable_buffer(),
+                &self.launch_params.variable_buffer(),
                 &self.sbt,
                 self.launch_params.frame.size.x as u32,
                 self.launch_params.frame.size.y as u32,
@@ -359,7 +370,7 @@ fn compile_to_ptx(src: &str) -> String {
     let optix_inc = format!("-I{}/include", optix_root);
     let cuda_inc = format!("-I{}/include", cuda_root);
     let source_inc = format!(
-        "-I{}/examples/04_mesh",
+        "-I{}/examples/05_sbtdata",
         std::env::var("CARGO_MANIFEST_DIR").unwrap()
     );
     let common_inc = format!(
@@ -443,22 +454,18 @@ impl TriangleMesh {
     }
 }
 
-// Wrap math types in a newtype that we can share with the device
-optix::wrap_copyable_for_device! {V2i32, V2i32D}
-optix::wrap_copyable_for_device! {V3f32, V3f32D}
-
 #[device_shared]
-pub struct Frame {
-    color_buffer: cuda::Buffer,
-    size: V2i32D,
-}
-
-#[device_shared]
-pub struct RenderCamera {
+struct RenderCamera {
     position: V3f32D,
     direction: V3f32D,
     horizontal: V3f32D,
     vertical: V3f32D,
+}
+
+#[device_shared]
+struct Frame {
+    color_buffer: cuda::Buffer,
+    size: V2i32D,
 }
 
 #[device_shared]

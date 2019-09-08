@@ -109,6 +109,7 @@ template <typename T> struct Vec3 {
 
     DEVICE Vec3(T x, T y, T z) : x(x), y(y), z(z) {}
     DEVICE explicit Vec3(T v) : x(v), y(v), z(v) {}
+    DEVICE Vec3(float3 f) : x(f.x), y(f.y), z(f.z) {}
 
     DEVICE operator float3() const { return make_float3(x, y, z); }
 
@@ -187,8 +188,14 @@ inline DEVICE auto normalize(const Vec3<T>& v) -> Vec3<T> {
 }
 
 template <typename T>
-inline DEVICE auto dot(const Vec3<T>& a, const Vec3<T>& b) -> Vec3<T> {
+inline DEVICE auto dot(const Vec3<T>& a, const Vec3<T>& b) -> T {
     return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+template <typename T>
+inline DEVICE auto cross(const Vec3<T>& a, const Vec3<T>& b) -> Vec3<T> {
+    return Vec3<T>(a.y * b.z - b.y * a.z, a.z * b.x - b.z * a.x,
+                   a.x * b.y - b.x * a.y);
 }
 
 using V3i32 = Vec3<i32>;

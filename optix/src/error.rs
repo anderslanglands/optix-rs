@@ -1,5 +1,7 @@
 use optix_sys as sys;
 
+use super::acceleration::BufferFormat;
+
 #[derive(Display, Debug)]
 pub enum Error {
     #[display(fmt = "OptiX initialization failed")]
@@ -37,6 +39,15 @@ pub enum Error {
     AccelBuildFailed { cerr: sys::Error },
     #[display(fmt = "Failed to compact accel")]
     AccelCompactFailed { cerr: sys::Error },
+    #[display(
+        fmt = "Buffer shape mismatch. Expected {:?}x{}",
+        e_format,
+        e_count
+    )]
+    BufferShapeMismatch {
+        e_format: BufferFormat,
+        e_count: usize,
+    },
 }
 
 impl From<cuda::Error> for Error {

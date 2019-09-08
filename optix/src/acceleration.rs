@@ -32,22 +32,40 @@ impl<'b> From<&BuildInput<'b>> for sys::OptixBuildInput {
 }
 
 pub struct TriangleArray<'b> {
-    vertex_buffers: &'b TypedBufferArray,
+    vertex_buffers: &'b [TypedBuffer],
+    vertex_buffers_d: Vec<cuda::CUdeviceptr>,
     index_buffer: &'b TypedBuffer,
     flags: GeometryFlags,
 }
 
 impl<'b> TriangleArray<'b> {
     pub fn new(
-        vertex_buffers: &'b TypedBufferArray,
+        vertex_buffers: &'b [TypedBuffer],
         index_buffer: &'b TypedBuffer,
         flags: GeometryFlags,
-    ) -> TriangleArray<'b> {
-        TriangleArray {
+    ) -> Result<TriangleArray<'b>> {
+        let vertex_buffers_d: Vec<cuda::CUdeviceptr> =
+            vertex_buffers.iter().map(|b| b.as_device_ptr()).collect();
+
+        // simple sanity check to make sure the buffer shapes match
+        let format = vertex_buffers[0].format;
+        let count = vertex_buffers[0].count;
+        if !vertex_buffers
+            .iter()
+            .all(|b| b.format == format && b.count == count)
+        {
+            return Err(Error::BufferShapeMismatch {
+                e_format: format,
+                e_count: count,
+            });
+        }
+
+        Ok(TriangleArray {
             vertex_buffers,
+            vertex_buffers_d,
             index_buffer,
             flags,
-        }
+        })
     }
 }
 
@@ -58,9 +76,9 @@ impl<'b> TryFrom<&TriangleArray<'b>> for sys::OptixBuildInputTriangleArray {
     fn try_from(
         ta: &TriangleArray,
     ) -> Result<sys::OptixBuildInputTriangleArray> {
-        let vertexBuffers = ta.vertex_buffers.buffers.as_device_ptr();
-        let numVertices = ta.vertex_buffers.count as u32;
-        let vertexFormat = match &ta.vertex_buffers.format {
+        let vertexBuffers = ta.vertex_buffers_d.as_ptr();
+        let numVertices = ta.vertex_buffers[0].count as u32;
+        let vertexFormat = match &ta.vertex_buffers[0].format {
             BufferFormat::F32x2 => {
                 sys::OptixVertexFormat::OPTIX_VERTEX_FORMAT_FLOAT2
             }
@@ -75,7 +93,7 @@ impl<'b> TryFrom<&TriangleArray<'b>> for sys::OptixBuildInputTriangleArray {
             }
             _ => {
                 return Err(Error::IncorrectVertexBufferFormat {
-                    format: ta.vertex_buffers.format,
+                    format: ta.vertex_buffers[0].format,
                 })
             }
         };
@@ -99,11 +117,10 @@ impl<'b> TryFrom<&TriangleArray<'b>> for sys::OptixBuildInputTriangleArray {
             vertexBuffers,
             numVertices,
             vertexFormat,
-            vertexStrideInBytes: format_byte_size(ta.vertex_buffers.format)
-                as u32,
+            vertexStrideInBytes: ta.vertex_buffers[0].format.byte_size() as u32,
             indexBuffer,
             numIndexTriplets,
-            indexStrideInBytes: format_byte_size(ta.index_buffer.format) as u32,
+            indexStrideInBytes: ta.index_buffer.format.byte_size() as u32,
             indexFormat,
             preTransform: 0,
             flags: &ta.flags as *const GeometryFlags as *const u32,
@@ -140,6 +157,22 @@ impl TypedBuffer {
     pub fn as_ptr(&self) -> *const std::os::raw::c_void {
         self.buffer.as_ptr()
     }
+
+    pub fn as_device_ptr(&self) -> cuda::CUdeviceptr {
+        self.buffer.as_device_ptr()
+    }
+
+    pub fn len(&self) -> usize {
+        self.count
+    }
+
+    pub fn format(&self) -> BufferFormat {
+        self.format
+    }
+
+    pub fn byte_size(&self) -> usize {
+        self.buffer.byte_size()
+    }
 }
 
 use super::DeviceShareable;
@@ -150,6 +183,7 @@ impl DeviceShareable for TypedBuffer {
     }
 }
 
+/*
 pub struct TypedBufferArray {
     buffers: cuda::BufferArray,
     count: usize,
@@ -170,9 +204,10 @@ impl TypedBufferArray {
         })
     }
 }
+*/
 
 #[repr(u32)]
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum BufferFormat {
     U8,
     U8x2,
@@ -196,31 +231,32 @@ pub enum BufferFormat {
     I32x4,
 }
 
-fn format_byte_size(f: BufferFormat) -> usize {
-    match f {
-        BufferFormat::U8 => 1,
-        BufferFormat::U8x2 => 2,
-        BufferFormat::U8x3 => 3,
-        BufferFormat::U8x4 => 4,
-        BufferFormat::U16 => 2,
-        BufferFormat::U16x2 => 4,
-        BufferFormat::U16x3 => 6,
-        BufferFormat::U16x4 => 8,
-        BufferFormat::F16 => 2,
-        BufferFormat::F16x2 => 4,
-        BufferFormat::F16x3 => 6,
-        BufferFormat::F16x4 => 8,
-        BufferFormat::F32 => 4,
-        BufferFormat::F32x2 => 8,
-        BufferFormat::F32x3 => 12,
-        BufferFormat::F32x4 => 16,
-        BufferFormat::I32 => 4,
-        BufferFormat::I32x2 => 8,
-        BufferFormat::I32x3 => 12,
-        BufferFormat::I32x4 => 16,
+impl BufferFormat {
+    pub fn byte_size(&self) -> usize {
+        match self {
+            BufferFormat::U8 => 1,
+            BufferFormat::U8x2 => 2,
+            BufferFormat::U8x3 => 3,
+            BufferFormat::U8x4 => 4,
+            BufferFormat::U16 => 2,
+            BufferFormat::U16x2 => 4,
+            BufferFormat::U16x3 => 6,
+            BufferFormat::U16x4 => 8,
+            BufferFormat::F16 => 2,
+            BufferFormat::F16x2 => 4,
+            BufferFormat::F16x3 => 6,
+            BufferFormat::F16x4 => 8,
+            BufferFormat::F32 => 4,
+            BufferFormat::F32x2 => 8,
+            BufferFormat::F32x3 => 12,
+            BufferFormat::F32x4 => 16,
+            BufferFormat::I32 => 4,
+            BufferFormat::I32x2 => 8,
+            BufferFormat::I32x3 => 12,
+            BufferFormat::I32x4 => 16,
+        }
     }
 }
-
 bitflags! {
     pub struct GeometryFlags: u32 {
         const NONE = sys::OptixGeometryFlags::None as u32;
