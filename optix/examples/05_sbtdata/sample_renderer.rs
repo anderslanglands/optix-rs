@@ -12,8 +12,8 @@ optix::wrap_copyable_for_device! {V3f32, V3f32D}
 #[device_shared]
 struct TriangleMeshSBTData {
     color: V3f32D,
-    vertex: optix::TypedBuffer,
-    index: optix::TypedBuffer,
+    vertex: optix::RtBuffer,
+    index: optix::RtBuffer,
 }
 
 pub struct SampleRenderer {
@@ -143,10 +143,10 @@ impl SampleRenderer {
         // build accel
         // upload the model data and create the triangle array build input
         let vertex_buffer =
-            optix::TypedBuffer::new(&mesh.vertex, optix::BufferFormat::F32x3)
+            optix::RtBuffer::new(&mesh.vertex, optix::BufferFormat::F32x3)
                 .unwrap();
         let index_buffer =
-            optix::TypedBuffer::new(&mesh.index, optix::BufferFormat::I32x3)
+            optix::RtBuffer::new(&mesh.index, optix::BufferFormat::I32x3)
                 .unwrap();
         let build_input = optix::BuildInput::Triangle(
             optix::TriangleArray::new(

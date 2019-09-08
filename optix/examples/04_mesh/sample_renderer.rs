@@ -22,8 +22,8 @@ pub struct SampleRenderer {
     last_set_camera: Camera,
 
     mesh: TriangleMesh,
-    vertex_buffers: optix::acceleration::TypedBufferArray,
-    index_buffer: optix::acceleration::TypedBuffer,
+    vertex_buffers: optix::acceleration::RtBufferArray,
+    index_buffer: optix::acceleration::RtBuffer,
 
     ctx: optix::DeviceContext,
 }
@@ -134,13 +134,13 @@ impl SampleRenderer {
         // build accel
         // upload the model data and create the triangle array build input
         let vertex_buffer =
-            optix::TypedBuffer::new(&mesh.vertex, optix::BufferFormat::F32x3)
+            optix::RtBuffer::new(&mesh.vertex, optix::BufferFormat::F32x3)
                 .unwrap();
         let index_buffer =
-            optix::TypedBuffer::new(&mesh.index, optix::BufferFormat::I32x3)
+            optix::RtBuffer::new(&mesh.index, optix::BufferFormat::I32x3)
                 .unwrap();
         let vertex_buffers =
-            optix::TypedBufferArray::new(vec![vertex_buffer]).unwrap();
+            optix::RtBufferArray::new(vec![vertex_buffer]).unwrap();
         let build_input =
             optix::BuildInput::Triangle(optix::TriangleArray::new(
                 &vertex_buffers,

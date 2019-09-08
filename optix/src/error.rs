@@ -1,6 +1,6 @@
 use optix_sys as sys;
 
-use super::acceleration::BufferFormat;
+use super::BufferFormat;
 
 #[derive(Display, Debug)]
 pub enum Error {
@@ -26,13 +26,9 @@ pub enum Error {
     #[display(fmt = "CUDA error")]
     CudaError { cerr: cuda::Error },
     #[display(fmt = "Incorrect vertex buffer format: {:?}", format)]
-    IncorrectVertexBufferFormat {
-        format: super::acceleration::BufferFormat,
-    },
+    IncorrectVertexBufferFormat { format: super::BufferFormat },
     #[display(fmt = "Incorrect index buffer format: {:?}", format)]
-    IncorrectIndexBufferFormat {
-        format: super::acceleration::BufferFormat,
-    },
+    IncorrectIndexBufferFormat { format: super::BufferFormat },
     #[display(fmt = "Failed to compute accel memory usage")]
     AccelComputeMemoryUsageFailed { cerr: sys::Error },
     #[display(fmt = "Failed to build accel")]

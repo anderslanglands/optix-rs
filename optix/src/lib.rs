@@ -36,6 +36,9 @@ pub use shader_binding_table::{
 pub mod acceleration;
 pub use acceleration::*;
 
+pub mod buffer;
+pub use buffer::*;
+
 /// Initialize the OptiX library function table. This function *MUST* be called
 /// before any other optix functions.
 pub fn init() -> Result<()> {
