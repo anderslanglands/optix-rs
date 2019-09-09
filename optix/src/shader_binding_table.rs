@@ -170,7 +170,7 @@ where
     T: DeviceShareable,
 {
     program_group: ProgramGroupRef,
-    data: T,
+    pub data: T,
 }
 
 impl<T> SbtRecord<T>

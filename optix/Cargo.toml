@@ -18,4 +18,5 @@ image = "0.22.1"
 imath = {path="../../imath-rs"}
 optix-derive = {path="../optix-derive"}
 glfw = "0.32.0"
+tobj = "0.1.10"
 
