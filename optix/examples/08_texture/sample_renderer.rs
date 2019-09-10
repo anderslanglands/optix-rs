@@ -298,11 +298,6 @@ impl SampleRenderer {
             build_inputs.push(build_input);
         }
 
-        let sbt = optix::ShaderBindingTableBuilder::new(&rg_rec)
-            .miss_records(std::slice::from_ref(&miss_rec))
-            .hitgroup_records(&hg_recs)
-            .build();
-
         // BLAS setup
         let accel_build_options = optix::AccelBuildOptions {
             build_flags: optix::BuildFlags::NONE
@@ -393,6 +388,11 @@ impl SampleRenderer {
             },
             traversable: as_handle,
         };
+
+        let sbt = optix::ShaderBindingTableBuilder::new(rg_rec)
+            .miss_records(vec![miss_rec])
+            .hitgroup_records(hg_recs)
+            .build();
 
         let launch_params = SharedVariable::<LaunchParams>::new(launch_params)?;
 
