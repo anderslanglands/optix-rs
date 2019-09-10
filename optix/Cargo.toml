@@ -12,11 +12,11 @@ cuda = {path="../../cuda-rs/cuda"}
 derive_more = "0.15.0"
 bitflags = "1.1.0"
 gl = "0.13.0"
-image = "0.22.1"
 
 [dev-dependencies]
 imath = {path="../../imath-rs"}
 optix-derive = {path="../optix-derive"}
 glfw = "0.32.0"
 tobj = "0.1.10"
+image = "0.22.2"
 

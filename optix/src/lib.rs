@@ -66,9 +66,43 @@ impl DeviceShareable for cuda::Buffer {
     }
 }
 
+impl DeviceShareable for cuda::TextureObject {
+    type Target = cuda::cudaTextureObject_t;
+    fn to_device(&self) -> Self::Target {
+        self.as_device_ptr()
+    }
+}
+
+impl DeviceShareable for Option<cuda::TextureObject> {
+    type Target = cuda::cudaTextureObject_t;
+    fn to_device(&self) -> Self::Target {
+        match self {
+            Some(t) => t.as_device_ptr(),
+            None => 0,
+        }
+    }
+}
+
+impl DeviceShareable for Option<std::rc::Rc<cuda::TextureObject>> {
+    type Target = cuda::cudaTextureObject_t;
+    fn to_device(&self) -> Self::Target {
+        match self {
+            Some(t) => t.as_device_ptr(),
+            None => 0,
+        }
+    }
+}
+
 impl DeviceShareable for i32 {
     type Target = i32;
     fn to_device(&self) -> i32 {
+        *self
+    }
+}
+
+impl DeviceShareable for bool {
+    type Target = bool;
+    fn to_device(&self) -> bool {
         *self
     }
 }

@@ -212,6 +212,9 @@ template <typename T> struct Vec4 {
 
     DEVICE Vec4(T x, T y, T z, T w) : x(x), y(y), z(z), w(w) {}
     DEVICE explicit Vec4(T v) : x(v), y(v), z(v), w(v) {}
+    DEVICE Vec4(float4 f) : x(f.x), y(f.y), z(f.z), w(f.w) {}
+
+    DEVICE auto xyz() -> Vec3<T> { return Vec3<T>(x, y, z); }
 
     inline DEVICE auto operator[](size_t dim) -> T& { return (&x)[dim]; }
     inline DEVICE auto operator[](size_t dim) const -> const T& {
