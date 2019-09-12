@@ -6,6 +6,7 @@ use optix::{DeviceShareable, SbtRecord, SharedVariable};
 use optix_derive::device_shared;
 
 use std::rc::Rc;
+use std::sync::Arc;
 
 // Wrap math types in a newtype that we can share with the device
 optix::wrap_copyable_for_device! {V2i32, V2i32D}
@@ -15,7 +16,38 @@ optix::wrap_copyable_for_device! {V3f32, V3f32D}
 struct TriangleMeshSBTData {
     color: V3f32D,
     vertex: Rc<optix::RtBuffer>,
+    normal: Rc<optix::RtBuffer>,
+    texcoord: Rc<optix::RtBuffer>,
     index: Rc<optix::RtBuffer>,
+    has_texture: bool,
+    texture: Option<Rc<cuda::TextureObject>>,
+}
+
+pub struct Mesh {
+    pub vertex: Vec<V3f32>,
+    pub normal: Vec<V3f32>,
+    pub texcoord: Vec<V2f32>,
+    pub index: Vec<V3i32>,
+    pub diffuse: V3f32,
+    pub diffuse_texture_id: Option<usize>,
+}
+
+pub struct Texture {
+    pub pixels: Vec<u8>,
+    pub resolution: V2i32,
+}
+
+pub struct Model {
+    pub meshes: Vec<Mesh>,
+    pub textures: Vec<Rc<Texture>>,
+    pub bounds: Box3f32,
+}
+
+pub struct QuadLight {
+    pub origin: V3f32,
+    pub du: V3f32,
+    pub dv: V3f32,
+    pub power: V3f32,
 }
 
 pub struct SampleRenderer {
@@ -34,7 +66,7 @@ pub struct SampleRenderer {
 
     last_set_camera: Camera,
 
-    mesh: TriangleMesh,
+    model: Model,
 
     ctx: optix::DeviceContext,
 }
@@ -43,7 +75,8 @@ impl SampleRenderer {
     pub fn new(
         fb_size: V2i32,
         camera: Camera,
-        mesh: TriangleMesh,
+        model: Model,
+        light: QuadLight,
     ) -> Result<SampleRenderer> {
         // Make sure CUDA context is initialized
         cuda::init();
@@ -121,15 +154,25 @@ impl SampleRenderer {
         )?;
 
         // Create miss program(s)
-        let (miss_pg, log) = ctx.program_group_create(
+        let mut miss_pgs = Vec::new();
+        let (miss_radiance, log) = ctx.program_group_create(
             optix::ProgramGroupDesc::Miss(optix::ProgramGroupModule {
                 module: module.clone(),
                 entry_function_name: "__miss__radiance".into(),
             }),
         )?;
+        miss_pgs.push(miss_radiance);
+        let (miss_shadow, log) = ctx.program_group_create(
+            optix::ProgramGroupDesc::Miss(optix::ProgramGroupModule {
+                module: module.clone(),
+                entry_function_name: "__miss__shadow".into(),
+            }),
+        )?;
+        miss_pgs.push(miss_shadow);
 
         // Create hitgroup programs
-        let (hitgroup_pg, log) =
+        let mut hitgroup_pgs = Vec::new();
+        let (hitgroup_radiance, log) =
             ctx.program_group_create(optix::ProgramGroupDesc::Hitgroup {
                 ch: Some(optix::ProgramGroupModule {
                     module: module.clone(),
@@ -141,25 +184,156 @@ impl SampleRenderer {
                 }),
                 is: None,
             })?;
+        hitgroup_pgs.push(hitgroup_radiance);
+        let (hitgroup_shadow, log) =
+            ctx.program_group_create(optix::ProgramGroupDesc::Hitgroup {
+                ch: Some(optix::ProgramGroupModule {
+                    module: module.clone(),
+                    entry_function_name: "__closesthit__shadow".into(),
+                }),
+                ah: Some(optix::ProgramGroupModule {
+                    module: module.clone(),
+                    entry_function_name: "__anyhit__shadow".into(),
+                }),
+                is: None,
+            })?;
+        hitgroup_pgs.push(hitgroup_shadow);
+
+        // Create the pipeline
+        let pipeline_link_options = optix::PipelineLinkOptions {
+            max_trace_depth: 2,
+            debug_level: optix::CompileDebugLevel::None,
+            override_uses_motion_blur: false,
+        };
+
+        let mut program_groups = vec![Arc::clone(&raygen_pg)];
+        program_groups.extend(miss_pgs.iter().map(|p| Arc::clone(p)));
+        program_groups.extend(hitgroup_pgs.iter().map(|p| Arc::clone(p)));
+        let (mut pipeline, log) = ctx.pipeline_create(
+            &pipeline_compile_options,
+            pipeline_link_options,
+            &program_groups,
+        )?;
+
+        ctx.pipeline_set_stack_size(
+            &mut pipeline,
+            // direct stack size for direct callables invoked for IS or AH
+            2 * 1024,
+            // direct stack size for direct callables invoked from RG, MS or CH
+            2 * 1024,
+            // continuation stack size
+            2 * 1024,
+            // maximum depth of a traversable graph passed to trace
+            3,
+        );
+
+        // load textures
+        let mut texture_objects = Vec::new();
+        for texture in &model.textures {
+            let channel_desc = cuda::ChannelFormatDesc {
+                x: 8,
+                y: 8,
+                z: 8,
+                w: 8,
+                f: cuda::ChannelFormatKind::Unsigned,
+            };
+
+            let array = cuda::Array::new(
+                &texture.pixels,
+                channel_desc,
+                texture.resolution.x as usize,
+                texture.resolution.y as usize,
+                4,
+                cuda::ArrayFlags::DEFAULT,
+            )
+            .unwrap();
+
+            let tex_desc = cuda::TextureDesc::new()
+                .address_mode([cuda::TextureAddressMode::Wrap; 3])
+                .filter_mode(cuda::TextureFilterMode::Linear)
+                .read_mode(cuda::TextureReadMode::NormalizedFloat)
+                .normalized_coords(true)
+                .srgb(true)
+                .build();
+
+            let texture_object = cuda::TextureObject::new(
+                cuda::ResourceDesc::Array(array),
+                &tex_desc,
+            )
+            .unwrap();
+
+            texture_objects.push(Rc::new(texture_object));
+        }
+
+        // Build Shader Binding Table Records
+        let rg_rec = SbtRecord::new(0i32, std::sync::Arc::clone(&raygen_pg));
+        let miss_recs = miss_pgs
+            .iter()
+            .map(|p| SbtRecord::new(0i32, std::sync::Arc::clone(&p)))
+            .collect::<Vec<_>>();
+
+        let mut hg_recs = Vec::new();
 
         // build accel
         // upload the model data and create the triangle array build input
-        let vertex_buffer = Rc::new(
-            optix::RtBuffer::new(&mesh.vertex, optix::BufferFormat::F32x3)
+        let mut build_inputs = Vec::with_capacity(model.meshes.len());
+
+        for mesh in &model.meshes {
+            let vertex_buffer = Rc::new(
+                optix::RtBuffer::new(&mesh.vertex, optix::BufferFormat::F32x3)
+                    .unwrap(),
+            );
+            let index_buffer = Rc::new(
+                optix::RtBuffer::new(&mesh.index, optix::BufferFormat::I32x3)
+                    .unwrap(),
+            );
+            let normal_buffer = Rc::new(
+                optix::RtBuffer::new(&mesh.normal, optix::BufferFormat::F32x3)
+                    .unwrap(),
+            );
+            let texcoord_buffer = Rc::new(
+                optix::RtBuffer::new(
+                    &mesh.texcoord,
+                    optix::BufferFormat::F32x2,
+                )
                 .unwrap(),
-        );
-        let index_buffer = Rc::new(
-            optix::RtBuffer::new(&mesh.index, optix::BufferFormat::I32x3)
+            );
+
+            for pg in &hitgroup_pgs {
+                let (has_texture, texture) =
+                    if let Some(texture_id) = mesh.diffuse_texture_id {
+                        (true, Some(Rc::clone(&texture_objects[texture_id])))
+                    } else {
+                        (false, None)
+                    };
+
+                let mesh_sbt_data = TriangleMeshSBTData {
+                    color: mesh.diffuse.into(),
+                    vertex: Rc::clone(&vertex_buffer),
+                    index: Rc::clone(&index_buffer),
+                    normal: Rc::clone(&normal_buffer),
+                    texcoord: Rc::clone(&texcoord_buffer),
+                    has_texture,
+                    texture,
+                };
+
+                let hg_rec =
+                    SbtRecord::new(mesh_sbt_data, std::sync::Arc::clone(&pg));
+
+                hg_recs.push(hg_rec);
+            }
+
+            let build_input = optix::BuildInput::Triangle(
+                optix::TriangleArray::new(
+                    vec![vertex_buffer],
+                    index_buffer,
+                    optix::GeometryFlags::NONE,
+                )
                 .unwrap(),
-        );
-        let build_input = optix::BuildInput::Triangle(
-            optix::TriangleArray::new(
-                vec![Rc::clone(&vertex_buffer)],
-                Rc::clone(&index_buffer),
-                optix::GeometryFlags::NONE,
-            )
-            .unwrap(),
-        );
+            );
+
+            build_inputs.push(build_input);
+        }
 
         // BLAS setup
         let accel_build_options = optix::AccelBuildOptions {
@@ -174,10 +348,8 @@ impl SampleRenderer {
             },
         };
 
-        let blas_buffer_sizes = ctx.accel_compute_memory_usage(
-            &accel_build_options,
-            std::slice::from_ref(&build_input),
-        )?;
+        let blas_buffer_sizes = ctx
+            .accel_compute_memory_usage(&accel_build_options, &build_inputs)?;
 
         let compacted_size_buffer =
             cuda::Buffer::new(std::mem::size_of::<usize>())?;
@@ -196,7 +368,7 @@ impl SampleRenderer {
         let as_handle = ctx.accel_build(
             &cuda::Stream::default(),
             &accel_build_options,
-            std::slice::from_ref(&build_input),
+            &build_inputs,
             &temp_buffer,
             output_buffer,
             std::slice::from_ref(&compacted_size_desc),
@@ -229,55 +401,7 @@ impl SampleRenderer {
             }
         };
 
-        // Create the pipeline
-        let pipeline_link_options = optix::PipelineLinkOptions {
-            max_trace_depth: 2,
-            debug_level: optix::CompileDebugLevel::None,
-            override_uses_motion_blur: false,
-        };
-
-        let program_groups = vec![raygen_pg, miss_pg, hitgroup_pg];
-        let (mut pipeline, log) = ctx.pipeline_create(
-            &pipeline_compile_options,
-            pipeline_link_options,
-            &program_groups,
-        )?;
-
-        ctx.pipeline_set_stack_size(
-            &mut pipeline,
-            // direct stack size for direct callables invoked for IS or AH
-            2 * 1024,
-            // direct stack size for direct callables invoked from RG, MS or CH
-            2 * 1024,
-            // continuation stack size
-            2 * 1024,
-            // maximum depth of a traversable graph passed to trace
-            3,
-        );
-
-        // Build Shader Binding Table
-        let rg_rec =
-            SbtRecord::new(0i32, std::sync::Arc::clone(&program_groups[0]));
-        let miss_rec =
-            SbtRecord::new(0i32, std::sync::Arc::clone(&program_groups[1]));
-
-        let mesh_sbt_data = TriangleMeshSBTData {
-            color: V3f32D(v3f32(0.8, 0.2, 0.1)),
-            vertex: vertex_buffer,
-            index: index_buffer,
-        };
-
-        let hg_rec = SbtRecord::new(
-            mesh_sbt_data,
-            std::sync::Arc::clone(&program_groups[2]),
-        );
-
-        let sbt = optix::ShaderBindingTableBuilder::new(rg_rec)
-            .miss_records(vec![miss_rec])
-            .hitgroup_records(vec![hg_rec])
-            .build();
-
-        let mut color_buffer = cuda::Buffer::new(
+        let color_buffer = cuda::Buffer::new(
             (fb_size.x * fb_size.y) as usize * std::mem::size_of::<V4f32>(),
         )
         .unwrap();
@@ -292,6 +416,7 @@ impl SampleRenderer {
             frame: Frame {
                 color_buffer,
                 size: fb_size.into(),
+                accum_id: 0,
             },
             camera: RenderCamera {
                 position: camera.from.into(),
@@ -299,8 +424,19 @@ impl SampleRenderer {
                 horizontal: horizontal.into(),
                 vertical: vertical.into(),
             },
+            light: RenderLight {
+                origin: light.origin.into(),
+                du: light.du.into(),
+                dv: light.dv.into(),
+                power: light.power.into(),
+            },
             traversable: as_handle,
         };
+
+        let sbt = optix::ShaderBindingTableBuilder::new(rg_rec)
+            .miss_records(miss_recs)
+            .hitgroup_records(hg_recs)
+            .build();
 
         let launch_params = SharedVariable::<LaunchParams>::new(launch_params)?;
 
@@ -314,12 +450,13 @@ impl SampleRenderer {
             sbt,
             launch_params,
             last_set_camera: camera,
-            mesh,
+            model,
             ctx,
         })
     }
 
     pub fn render(&mut self) {
+        self.launch_params.frame.accum_id += 1;
         self.launch_params.upload().unwrap();
 
         self.ctx
@@ -374,7 +511,7 @@ fn compile_to_ptx(src: &str) -> String {
     let optix_inc = format!("-I{}/include", optix_root);
     let cuda_inc = format!("-I{}/include", cuda_root);
     let source_inc = format!(
-        "-I{}/examples/05_sbtdata",
+        "-I{}/examples/10_softshadow",
         std::env::var("CARGO_MANIFEST_DIR").unwrap()
     );
     let common_inc = format!(
@@ -421,11 +558,13 @@ pub struct Camera {
 pub struct TriangleMesh {
     pub vertex: Vec<V3f32>,
     pub index: Vec<V3i32>,
+    pub color: V3f32,
 }
 
 impl TriangleMesh {
-    pub fn new() -> TriangleMesh {
+    pub fn new(color: V3f32) -> TriangleMesh {
         TriangleMesh {
+            color,
             vertex: Vec::new(),
             index: Vec::new(),
         }
@@ -470,11 +609,21 @@ struct RenderCamera {
 struct Frame {
     color_buffer: cuda::Buffer,
     size: V2i32D,
+    accum_id: i32,
+}
+
+#[device_shared]
+struct RenderLight {
+    origin: V3f32D,
+    du: V3f32D,
+    dv: V3f32D,
+    power: V3f32D,
 }
 
 #[device_shared]
 pub struct LaunchParams {
     frame: Frame,
     camera: RenderCamera,
+    light: RenderLight,
     traversable: optix::TraversableHandle,
 }

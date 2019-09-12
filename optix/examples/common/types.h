@@ -1,5 +1,11 @@
 #pragma once
 
+#if __CUDACC__
+#define DEVICE __device__
+#else
+#define DEVICE
+#endif
+
 namespace osc {
 using f32 = float;
 using f64 = double;

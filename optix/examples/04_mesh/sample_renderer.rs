@@ -2,6 +2,8 @@ use imath::*;
 
 type Result<T, E = Error> = std::result::Result<T, E>;
 
+use std::rc::Rc;
+
 use optix::{DeviceShareable, SbtRecord, SharedVariable};
 use optix_derive::device_shared;
 
@@ -22,8 +24,8 @@ pub struct SampleRenderer {
     last_set_camera: Camera,
 
     mesh: TriangleMesh,
-    vertex_buffers: optix::acceleration::RtBufferArray,
-    index_buffer: optix::acceleration::RtBuffer,
+    vertex_buffer: Rc<optix::RtBuffer>,
+    index_buffer: Rc<optix::RtBuffer>,
 
     ctx: optix::DeviceContext,
 }
@@ -133,20 +135,23 @@ impl SampleRenderer {
 
         // build accel
         // upload the model data and create the triangle array build input
-        let vertex_buffer =
+        let vertex_buffer = Rc::new(
             optix::RtBuffer::new(&mesh.vertex, optix::BufferFormat::F32x3)
-                .unwrap();
-        let index_buffer =
+                .unwrap(),
+        );
+        let index_buffer = Rc::new(
             optix::RtBuffer::new(&mesh.index, optix::BufferFormat::I32x3)
-                .unwrap();
-        let vertex_buffers =
-            optix::RtBufferArray::new(vec![vertex_buffer]).unwrap();
-        let build_input =
-            optix::BuildInput::Triangle(optix::TriangleArray::new(
-                &vertex_buffers,
-                &index_buffer,
+                .unwrap(),
+        );
+
+        let build_input = optix::BuildInput::Triangle(
+            optix::TriangleArray::new(
+                vec![Rc::clone(&vertex_buffer)],
+                Rc::clone(&index_buffer),
                 optix::GeometryFlags::NONE,
-            ));
+            )
+            .unwrap(),
+        );
 
         // BLAS setup
         let accel_build_options = optix::AccelBuildOptions {
@@ -252,14 +257,9 @@ impl SampleRenderer {
         let hg_rec =
             SbtRecord::new(0i32, std::sync::Arc::clone(&program_groups[2]));
 
-        let sbt = optix::ShaderBindingTableBuilder::new(&rg_rec)
-            .miss_records(std::slice::from_ref(&miss_rec))
-            .hitgroup_records(std::slice::from_ref(&hg_rec))
-            .build();
-
-        let sbt = optix::ShaderBindingTableBuilder::new(&rg_rec)
-            .miss_records(std::slice::from_ref(&miss_rec))
-            .hitgroup_records(std::slice::from_ref(&hg_rec))
+        let sbt = optix::ShaderBindingTableBuilder::new(rg_rec)
+            .miss_records(vec![miss_rec])
+            .hitgroup_records(vec![hg_rec])
             .build();
 
         let mut color_buffer = cuda::Buffer::new(
@@ -298,7 +298,7 @@ impl SampleRenderer {
             launch_params,
             last_set_camera: camera,
             mesh,
-            vertex_buffers,
+            vertex_buffer,
             index_buffer,
             ctx,
         })

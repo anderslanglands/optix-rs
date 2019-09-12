@@ -10,13 +10,15 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 use std::convert::{TryFrom, TryInto};
 use std::ffi::{CStr, CString};
 
-pub enum BuildInput<'b> {
-    Triangle(TriangleArray<'b>),
+use std::rc::Rc;
+
+pub enum BuildInput {
+    Triangle(TriangleArray),
     CustomPrimitive(CustomPrimitiveArray),
     Instance(InstanceArray),
 }
 
-impl<'b> From<&BuildInput<'b>> for sys::OptixBuildInput {
+impl From<&BuildInput> for sys::OptixBuildInput {
     fn from(b: &BuildInput) -> sys::OptixBuildInput {
         let mut input = sys::OptixBuildInputUnion::default();
         match b {
@@ -33,19 +35,19 @@ impl<'b> From<&BuildInput<'b>> for sys::OptixBuildInput {
     }
 }
 
-pub struct TriangleArray<'b> {
-    vertex_buffers: &'b [RtBuffer],
+pub struct TriangleArray {
+    vertex_buffers: Vec<Rc<RtBuffer>>,
     vertex_buffers_d: Vec<cuda::CUdeviceptr>,
-    index_buffer: &'b RtBuffer,
+    index_buffer: Rc<RtBuffer>,
     flags: GeometryFlags,
 }
 
-impl<'b> TriangleArray<'b> {
+impl TriangleArray {
     pub fn new(
-        vertex_buffers: &'b [RtBuffer],
-        index_buffer: &'b RtBuffer,
+        vertex_buffers: Vec<Rc<RtBuffer>>,
+        index_buffer: Rc<RtBuffer>,
         flags: GeometryFlags,
-    ) -> Result<TriangleArray<'b>> {
+    ) -> Result<TriangleArray> {
         let vertex_buffers_d: Vec<cuda::CUdeviceptr> =
             vertex_buffers.iter().map(|b| b.as_device_ptr()).collect();
 
@@ -71,7 +73,7 @@ impl<'b> TriangleArray<'b> {
     }
 }
 
-impl<'b> TryFrom<&TriangleArray<'b>> for sys::OptixBuildInputTriangleArray {
+impl TryFrom<&TriangleArray> for sys::OptixBuildInputTriangleArray {
     type Error = Error;
 
     #[allow(non_snake_case)]

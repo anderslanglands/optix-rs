@@ -14,10 +14,10 @@ optix::wrap_copyable_for_device! {V3f32, V3f32D}
 #[device_shared]
 struct TriangleMeshSBTData {
     color: V3f32D,
-    vertex: optix::RtBuffer,
-    normal: optix::RtBuffer,
-    texcoord: optix::RtBuffer,
-    index: optix::RtBuffer,
+    vertex: Rc<optix::RtBuffer>,
+    normal: Rc<optix::RtBuffer>,
+    texcoord: Rc<optix::RtBuffer>,
+    index: Rc<optix::RtBuffer>,
     has_texture: bool,
     texture: Option<Rc<cuda::TextureObject>>,
 }
@@ -230,10 +230,6 @@ impl SampleRenderer {
             texture_objects.push(Rc::new(texture_object));
         }
 
-        // build accel
-        // upload the model data and create the triangle array build input
-        let mut build_inputs = Vec::with_capacity(model.meshes.len());
-
         // Build Shader Binding Table
         let rg_rec =
             SbtRecord::new(0i32, std::sync::Arc::clone(&program_groups[0]));
@@ -241,21 +237,30 @@ impl SampleRenderer {
             SbtRecord::new(0i32, std::sync::Arc::clone(&program_groups[1]));
         let mut hg_recs = Vec::with_capacity(model.meshes.len());
 
+        // build accel
+        // upload the model data and create the triangle array build input
+        let mut build_inputs = Vec::with_capacity(model.meshes.len());
+
         for mesh in &model.meshes {
-            let vertex_buffer =
+            let vertex_buffer = Rc::new(
                 optix::RtBuffer::new(&mesh.vertex, optix::BufferFormat::F32x3)
-                    .unwrap();
-            let index_buffer =
+                    .unwrap(),
+            );
+            let index_buffer = Rc::new(
                 optix::RtBuffer::new(&mesh.index, optix::BufferFormat::I32x3)
-                    .unwrap();
-            let normal_buffer =
+                    .unwrap(),
+            );
+            let normal_buffer = Rc::new(
                 optix::RtBuffer::new(&mesh.normal, optix::BufferFormat::F32x3)
-                    .unwrap();
-            let texcoord_buffer = optix::RtBuffer::new(
-                &mesh.texcoord,
-                optix::BufferFormat::F32x2,
-            )
-            .unwrap();
+                    .unwrap(),
+            );
+            let texcoord_buffer = Rc::new(
+                optix::RtBuffer::new(
+                    &mesh.texcoord,
+                    optix::BufferFormat::F32x2,
+                )
+                .unwrap(),
+            );
 
             let (has_texture, texture) =
                 if let Some(texture_id) = mesh.diffuse_texture_id {
@@ -266,10 +271,10 @@ impl SampleRenderer {
 
             let mesh_sbt_data = TriangleMeshSBTData {
                 color: mesh.diffuse.into(),
-                vertex: vertex_buffer,
-                index: index_buffer,
-                normal: normal_buffer,
-                texcoord: texcoord_buffer,
+                vertex: Rc::clone(&vertex_buffer),
+                index: Rc::clone(&index_buffer),
+                normal: Rc::clone(&normal_buffer),
+                texcoord: Rc::clone(&texcoord_buffer),
                 has_texture,
                 texture,
             };
@@ -280,16 +285,11 @@ impl SampleRenderer {
             );
 
             hg_recs.push(hg_rec);
-        }
-
-        for rec in &hg_recs {
-            let vertex_buffer = &rec.data.vertex;
-            let index_buffer = &rec.data.index;
 
             let build_input = optix::BuildInput::Triangle(
                 optix::TriangleArray::new(
-                    std::slice::from_ref(&vertex_buffer),
-                    &index_buffer,
+                    vec![vertex_buffer],
+                    index_buffer,
                     optix::GeometryFlags::NONE,
                 )
                 .unwrap(),

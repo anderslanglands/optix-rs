@@ -5,6 +5,8 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 use optix::{DeviceShareable, SbtRecord, SharedVariable};
 use optix_derive::device_shared;
 
+use std::rc::Rc;
+
 // Wrap math types in a newtype that we can share with the device
 optix::wrap_copyable_for_device! {V2i32, V2i32D}
 optix::wrap_copyable_for_device! {V3f32, V3f32D}
@@ -12,8 +14,8 @@ optix::wrap_copyable_for_device! {V3f32, V3f32D}
 #[device_shared]
 struct TriangleMeshSBTData {
     color: V3f32D,
-    vertex: optix::RtBuffer,
-    index: optix::RtBuffer,
+    vertex: Rc<optix::RtBuffer>,
+    index: Rc<optix::RtBuffer>,
 }
 
 pub struct SampleRenderer {
@@ -178,16 +180,19 @@ impl SampleRenderer {
         let mut hg_recs = Vec::with_capacity(meshes.len());
 
         for mesh in &meshes {
-            let vertex_buffer =
+            let vertex_buffer = Rc::new(
                 optix::RtBuffer::new(&mesh.vertex, optix::BufferFormat::F32x3)
-                    .unwrap();
-            let index_buffer =
+                    .unwrap(),
+            );
+            let index_buffer = Rc::new(
                 optix::RtBuffer::new(&mesh.index, optix::BufferFormat::I32x3)
-                    .unwrap();
+                    .unwrap(),
+            );
+
             let mesh_sbt_data = TriangleMeshSBTData {
                 color: mesh.color.into(),
-                vertex: vertex_buffer,
-                index: index_buffer,
+                vertex: Rc::clone(&vertex_buffer),
+                index: Rc::clone(&index_buffer),
             };
 
             let hg_rec = SbtRecord::new(
@@ -196,16 +201,11 @@ impl SampleRenderer {
             );
 
             hg_recs.push(hg_rec);
-        }
-
-        for rec in &hg_recs {
-            let vertex_buffer = &rec.data.vertex;
-            let index_buffer = &rec.data.index;
 
             let build_input = optix::BuildInput::Triangle(
                 optix::TriangleArray::new(
-                    std::slice::from_ref(&vertex_buffer),
-                    &index_buffer,
+                    vec![vertex_buffer],
+                    index_buffer,
                     optix::GeometryFlags::NONE,
                 )
                 .unwrap(),
@@ -214,9 +214,9 @@ impl SampleRenderer {
             build_inputs.push(build_input);
         }
 
-        let sbt = optix::ShaderBindingTableBuilder::new(&rg_rec)
-            .miss_records(std::slice::from_ref(&miss_rec))
-            .hitgroup_records(&hg_recs)
+        let sbt = optix::ShaderBindingTableBuilder::new(rg_rec)
+            .miss_records(vec![miss_rec])
+            .hitgroup_records(hg_recs)
             .build();
 
         // BLAS setup

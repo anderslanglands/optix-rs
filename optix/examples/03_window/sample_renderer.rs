@@ -2,6 +2,8 @@ use imath::*;
 
 type Result<T, E = Error> = std::result::Result<T, E>;
 
+use std::rc::Rc;
+
 use optix::{DeviceShareable, SbtRecord, SharedVariable};
 use optix_derive::device_shared;
 
@@ -17,23 +19,6 @@ pub struct LaunchParams {
     color_buffer: cuda::Buffer,
     fb_size: V2i32D,
 }
-
-/*
-#[sbt_record]
-pub struct RaygenRecord {
-    data: *mut std::os::raw::c_void,
-}
-
-#[sbt_record]
-pub struct MissRecord {
-    data: *mut std::os::raw::c_void,
-}
-
-#[sbt_record]
-pub struct HitgroupRecord {
-    object_id: i32,
-}
-*/
 
 pub struct SampleRenderer {
     cuda_context: cuda::ContextRef,
@@ -187,9 +172,9 @@ impl SampleRenderer {
         let hg_rec =
             SbtRecord::new(0i32, std::sync::Arc::clone(&program_groups[2]));
 
-        let sbt = optix::ShaderBindingTableBuilder::new(&rg_rec)
-            .miss_records(std::slice::from_ref(&miss_rec))
-            .hitgroup_records(std::slice::from_ref(&hg_rec))
+        let sbt = optix::ShaderBindingTableBuilder::new(rg_rec)
+            .miss_records(vec![miss_rec])
+            .hitgroup_records(vec![hg_rec])
             .build();
 
         let color_buffer = cuda::Buffer::new(

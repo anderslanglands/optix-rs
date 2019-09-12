@@ -10,9 +10,9 @@ use std::any::Any;
 pub struct ShaderBindingTable {
     pub(crate) sbt: sys::OptixShaderBindingTable,
     rg: cuda::Buffer,
-    rec_rg: Vec<Box<dyn Any>>,
+    rec_rg: Box<dyn Any>,
     ex: Option<cuda::Buffer>,
-    rec_ex: Vec<Box<dyn Any>>,
+    rec_ex: Option<Box<dyn Any>>,
     ms: Option<cuda::Buffer>,
     rec_ms: Vec<Box<dyn Any>>,
     hg: Option<cuda::Buffer>,
@@ -23,9 +23,9 @@ pub struct ShaderBindingTable {
 
 pub struct ShaderBindingTableBuilder {
     rg: cuda::Buffer,
-    rec_rg: Vec<Box<dyn Any>>,
+    rec_rg: Box<dyn Any>,
     ex: Option<cuda::Buffer>,
-    rec_ex: Vec<Box<dyn Any>>,
+    rec_ex: Option<Box<dyn Any>>,
     ms: Option<cuda::Buffer>,
     ms_stride: u32,
     ms_count: u32,
@@ -58,9 +58,9 @@ impl ShaderBindingTableBuilder {
         ShaderBindingTableBuilder {
             rg: cuda::Buffer::with_data(std::slice::from_ref(&rec_rg_d))
                 .unwrap(),
-            rec_rg: vec![Box::new(rec_rg)],
+            rec_rg: Box::new(rec_rg),
             ex: None,
-            rec_ex: Vec::new(),
+            rec_ex: None,
             ms: None,
             ms_stride: 0,
             ms_count: 0,
@@ -87,7 +87,7 @@ impl ShaderBindingTableBuilder {
         self.ex = Some(
             cuda::Buffer::with_data(std::slice::from_ref(&rec_ex_d)).unwrap(),
         );
-        self.rec_ex.push(Box::new(rec_ex));
+        self.rec_ex = Some(Box::new(rec_ex));
 
         self
     }
@@ -239,7 +239,6 @@ where
 #[repr(C)]
 #[repr(align(16))]
 pub struct SbtRecordDevice<T> {
-    #[repr(align(16))]
     header: [u8; 32],
     data: T,
 }
