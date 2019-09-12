@@ -2,32 +2,37 @@ use imath::*;
 
 type Result<T, E = Error> = std::result::Result<T, E>;
 
-use optix::{DeviceShareable, SbtRecord, SharedVariable};
+use optix::{
+    BufferElement, BufferFormat, DeviceShareable, SbtRecord, SharedVariable,
+};
 use optix_derive::device_shared;
 
 use std::rc::Rc;
 use std::sync::Arc;
 
 // Wrap math types in a newtype that we can share with the device
-optix::wrap_copyable_for_device! {V2i32, V2i32D}
-optix::wrap_copyable_for_device! {V3f32, V3f32D}
+optix::wrap_copyable_for_device! {V2f32, V2f32D, BufferFormat::F32x2, 2}
+optix::wrap_copyable_for_device! {V2i32, V2i32D, BufferFormat::I32x2, 2}
+optix::wrap_copyable_for_device! {V3f32, V3f32D, BufferFormat::F32x3, 3}
+optix::wrap_copyable_for_device! {V3i32, V3i32D, BufferFormat::I32x3, 3}
+optix::wrap_copyable_for_device! {V4f32, V4f32D, BufferFormat::F32x4, 4}
 
 #[device_shared]
 struct TriangleMeshSBTData {
     color: V3f32D,
-    vertex: Rc<optix::RtBuffer>,
-    normal: Rc<optix::RtBuffer>,
-    texcoord: Rc<optix::RtBuffer>,
-    index: Rc<optix::RtBuffer>,
+    vertex: Rc<optix::CtBuffer<V3f32D>>,
+    normal: Rc<optix::CtBuffer<V3f32D>>,
+    texcoord: Rc<optix::CtBuffer<V2f32D>>,
+    index: Rc<optix::CtBuffer<V3i32D>>,
     has_texture: bool,
     texture: Option<Rc<cuda::TextureObject>>,
 }
 
 pub struct Mesh {
-    pub vertex: Vec<V3f32>,
-    pub normal: Vec<V3f32>,
-    pub texcoord: Vec<V2f32>,
-    pub index: Vec<V3i32>,
+    pub vertex: Vec<V3f32D>,
+    pub normal: Vec<V3f32D>,
+    pub texcoord: Vec<V2f32D>,
+    pub index: Vec<V3i32D>,
     pub diffuse: V3f32,
     pub diffuse_texture_id: Option<usize>,
 }
@@ -83,6 +88,9 @@ impl SampleRenderer {
         // Check that we've got available devices
         let num_devices = cuda::get_device_count();
         println!("Found {} CUDA devices", num_devices);
+
+        println!("SBT decl = \n{}", TriangleMeshSBTData::cuda_decl(false));
+        println!("LP decl = \n{}", LaunchParams::cuda_decl(false));
 
         // Initialize optix function table. Must be called before calling
         // any OptiX functions.
@@ -279,25 +287,14 @@ impl SampleRenderer {
         let mut build_inputs = Vec::with_capacity(model.meshes.len());
 
         for mesh in &model.meshes {
-            let vertex_buffer = Rc::new(
-                optix::RtBuffer::new(&mesh.vertex, optix::BufferFormat::F32x3)
-                    .unwrap(),
-            );
-            let index_buffer = Rc::new(
-                optix::RtBuffer::new(&mesh.index, optix::BufferFormat::I32x3)
-                    .unwrap(),
-            );
-            let normal_buffer = Rc::new(
-                optix::RtBuffer::new(&mesh.normal, optix::BufferFormat::F32x3)
-                    .unwrap(),
-            );
-            let texcoord_buffer = Rc::new(
-                optix::RtBuffer::new(
-                    &mesh.texcoord,
-                    optix::BufferFormat::F32x2,
-                )
-                .unwrap(),
-            );
+            let vertex_buffer =
+                Rc::new(optix::CtBuffer::new(&mesh.vertex).unwrap());
+            let index_buffer =
+                Rc::new(optix::CtBuffer::new(&mesh.index).unwrap());
+            let normal_buffer =
+                Rc::new(optix::CtBuffer::new(&mesh.normal).unwrap());
+            let texcoord_buffer =
+                Rc::new(optix::CtBuffer::new(&mesh.texcoord).unwrap());
 
             for pg in &hitgroup_pgs {
                 let (has_texture, texture) =
@@ -401,10 +398,9 @@ impl SampleRenderer {
             }
         };
 
-        let color_buffer = cuda::Buffer::new(
-            (fb_size.x * fb_size.y) as usize * std::mem::size_of::<V4f32>(),
-        )
-        .unwrap();
+        let color_buffer = optix::CtBuffer::<V4f32D>::uninitialized(
+            (fb_size.x * fb_size.y) as usize,
+        )?;
 
         let cos_fovy = 0.66f32;
         let aspect = fb_size.x as f32 / fb_size.y as f32;
@@ -478,13 +474,14 @@ impl SampleRenderer {
 
     pub fn resize(&mut self, size: V2i32) {
         self.launch_params.frame.size = size.into();
-        self.launch_params.frame.color_buffer = cuda::Buffer::new(
-            (size.x * size.y) as usize * std::mem::size_of::<V4f32>(),
-        )
-        .unwrap();
+        self.launch_params.frame.color_buffer =
+            optix::CtBuffer::<V4f32D>::uninitialized(
+                (size.x * size.y) as usize,
+            )
+            .unwrap();
     }
 
-    pub fn download_pixels(&self, pixels: &mut [V4f32]) -> Result<()> {
+    pub fn download_pixels(&self, pixels: &mut [V4f32D]) -> Result<()> {
         self.launch_params.frame.color_buffer.download(pixels)?;
         Ok(())
     }
@@ -607,7 +604,7 @@ struct RenderCamera {
 
 #[device_shared]
 struct Frame {
-    color_buffer: cuda::Buffer,
+    color_buffer: optix::CtBuffer<V4f32D>,
     size: V2i32D,
     accum_id: i32,
 }

@@ -1,7 +1,7 @@
 use optix_sys as sys;
 
 use super::{
-    buffer::{BufferFormat, RtBuffer},
+    buffer::{BufferElement, BufferFormat, CtBuffer},
     device_context::DeviceContext,
     error::Error,
 };
@@ -12,14 +12,22 @@ use std::ffi::{CStr, CString};
 
 use std::rc::Rc;
 
-pub enum BuildInput {
-    Triangle(TriangleArray),
+pub enum BuildInput<V, I>
+where
+    V: BufferElement,
+    I: BufferElement,
+{
+    Triangle(TriangleArray<V, I>),
     CustomPrimitive(CustomPrimitiveArray),
     Instance(InstanceArray),
 }
 
-impl From<&BuildInput> for sys::OptixBuildInput {
-    fn from(b: &BuildInput) -> sys::OptixBuildInput {
+impl<V, I> From<&BuildInput<V, I>> for sys::OptixBuildInput
+where
+    V: BufferElement,
+    I: BufferElement,
+{
+    fn from(b: &BuildInput<V, I>) -> sys::OptixBuildInput {
         let mut input = sys::OptixBuildInputUnion::default();
         match b {
             BuildInput::Triangle(ta) => {
@@ -35,19 +43,27 @@ impl From<&BuildInput> for sys::OptixBuildInput {
     }
 }
 
-pub struct TriangleArray {
-    vertex_buffers: Vec<Rc<RtBuffer>>,
+pub struct TriangleArray<V, I>
+where
+    V: BufferElement,
+    I: BufferElement,
+{
+    vertex_buffers: Vec<Rc<CtBuffer<V>>>,
     vertex_buffers_d: Vec<cuda::CUdeviceptr>,
-    index_buffer: Rc<RtBuffer>,
+    index_buffer: Rc<CtBuffer<I>>,
     flags: GeometryFlags,
 }
 
-impl TriangleArray {
+impl<V, I> TriangleArray<V, I>
+where
+    V: BufferElement,
+    I: BufferElement,
+{
     pub fn new(
-        vertex_buffers: Vec<Rc<RtBuffer>>,
-        index_buffer: Rc<RtBuffer>,
+        vertex_buffers: Vec<Rc<CtBuffer<V>>>,
+        index_buffer: Rc<CtBuffer<I>>,
         flags: GeometryFlags,
-    ) -> Result<TriangleArray> {
+    ) -> Result<TriangleArray<V, I>> {
         let vertex_buffers_d: Vec<cuda::CUdeviceptr> =
             vertex_buffers.iter().map(|b| b.as_device_ptr()).collect();
 
@@ -73,12 +89,16 @@ impl TriangleArray {
     }
 }
 
-impl TryFrom<&TriangleArray> for sys::OptixBuildInputTriangleArray {
+impl<V, I> TryFrom<&TriangleArray<V, I>> for sys::OptixBuildInputTriangleArray
+where
+    V: BufferElement,
+    I: BufferElement,
+{
     type Error = Error;
 
     #[allow(non_snake_case)]
     fn try_from(
-        ta: &TriangleArray,
+        ta: &TriangleArray<V, I>,
     ) -> Result<sys::OptixBuildInputTriangleArray> {
         let vertexBuffers = ta.vertex_buffers_d.as_ptr();
         let numVertices = ta.vertex_buffers[0].len() as u32;
@@ -219,11 +239,15 @@ pub struct AccelBufferSizes {
 }
 
 impl DeviceContext {
-    pub fn accel_compute_memory_usage(
+    pub fn accel_compute_memory_usage<V, I>(
         &self,
         accel_options: &AccelBuildOptions,
-        build_inputs: &[BuildInput],
-    ) -> Result<Vec<AccelBufferSizes>> {
+        build_inputs: &[BuildInput<V, I>],
+    ) -> Result<Vec<AccelBufferSizes>>
+    where
+        V: BufferElement,
+        I: BufferElement,
+    {
         let mut buffer_sizes =
             vec![AccelBufferSizes::default(); build_inputs.len()];
 
@@ -250,15 +274,19 @@ impl DeviceContext {
         Ok(buffer_sizes)
     }
 
-    pub fn accel_build(
+    pub fn accel_build<V, I>(
         &self,
         stream: &cuda::Stream,
         accel_options: &AccelBuildOptions,
-        build_inputs: &[BuildInput],
+        build_inputs: &[BuildInput<V, I>],
         temp_buffer: &cuda::Buffer,
         output_buffer: cuda::Buffer,
         emitted_properties: &[AccelEmitDesc],
-    ) -> Result<TraversableHandle> {
+    ) -> Result<TraversableHandle>
+    where
+        V: BufferElement,
+        I: BufferElement,
+    {
         let build_inputs: Vec<sys::OptixBuildInput> =
             build_inputs.into_iter().map(|b| b.into()).collect();
 
@@ -359,5 +387,8 @@ impl super::DeviceShareable for TraversableHandle {
     type Target = sys::OptixTraversableHandle;
     fn to_device(&self) -> Self::Target {
         self.hnd
+    }
+    fn cuda_decl(_: bool) -> String {
+        "OptixTraversableHandle".into()
     }
 }

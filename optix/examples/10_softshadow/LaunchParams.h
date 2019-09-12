@@ -23,6 +23,7 @@ namespace osc {
 
 enum { RADIANCE_RAY_TYPE = 0, SHADOW_RAY_TYPE, RAY_TYPE_COUNT };
 
+/*
 struct TriangleMeshSBTData {
     V3f32 color;
     V3f32* vertex;
@@ -51,6 +52,37 @@ struct LaunchParams {
         V3f32 origin, du, dv, power;
     } light;
 
+    OptixTraversableHandle traversable;
+};
+*/
+
+struct TriangleMeshSBTData {
+    V3f32 color;
+    V3f32* vertex;
+    V3f32* normal;
+    V2f32* texcoord;
+    V3i32* index;
+    bool has_texture;
+    cudaTextureObject_t texture;
+};
+struct LaunchParams {
+    struct {
+        V4f32* color_buffer;
+        V2i32 size;
+        int accum_id;
+    } frame;
+    struct {
+        V3f32 position;
+        V3f32 direction;
+        V3f32 horizontal;
+        V3f32 vertical;
+    } camera;
+    struct {
+        V3f32 origin;
+        V3f32 du;
+        V3f32 dv;
+        V3f32 power;
+    } light;
     OptixTraversableHandle traversable;
 };
 

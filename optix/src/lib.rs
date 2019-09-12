@@ -57,6 +57,7 @@ pub fn init() -> Result<()> {
 pub trait DeviceShareable {
     type Target: Copy;
     fn to_device(&self) -> Self::Target;
+    fn cuda_decl(nested: bool) -> String;
 }
 
 impl DeviceShareable for cuda::Buffer {
@@ -64,12 +65,18 @@ impl DeviceShareable for cuda::Buffer {
     fn to_device(&self) -> Self::Target {
         self.as_device_ptr()
     }
+    fn cuda_decl(_: bool) -> String {
+        "void*".into()
+    }
 }
 
 impl DeviceShareable for cuda::TextureObject {
     type Target = cuda::cudaTextureObject_t;
     fn to_device(&self) -> Self::Target {
         self.as_device_ptr()
+    }
+    fn cuda_decl(_: bool) -> String {
+        "cudaTextureObject_t".into()
     }
 }
 
@@ -81,6 +88,9 @@ impl DeviceShareable for Option<cuda::TextureObject> {
             None => 0,
         }
     }
+    fn cuda_decl(_: bool) -> String {
+        "cudaTextureObject_t".into()
+    }
 }
 
 impl DeviceShareable for Option<std::rc::Rc<cuda::TextureObject>> {
@@ -91,6 +101,9 @@ impl DeviceShareable for Option<std::rc::Rc<cuda::TextureObject>> {
             None => 0,
         }
     }
+    fn cuda_decl(_: bool) -> String {
+        "cudaTextureObject_t".into()
+    }
 }
 
 impl DeviceShareable for i32 {
@@ -98,12 +111,18 @@ impl DeviceShareable for i32 {
     fn to_device(&self) -> i32 {
         *self
     }
+    fn cuda_decl(_: bool) -> String {
+        "int".into()
+    }
 }
 
 impl DeviceShareable for bool {
     type Target = bool;
     fn to_device(&self) -> bool {
         *self
+    }
+    fn cuda_decl(_: bool) -> String {
+        "bool".into()
     }
 }
 
@@ -172,15 +191,23 @@ where
 /// implemented
 #[macro_export]
 macro_rules! wrap_copyable_for_device {
-    ($ty:ty, $newtype:ident) => {
+    ($ty:ty, $newtype:ident, $fmt:expr, $cmp:literal) => {
         #[derive(Copy, Clone)]
-        struct $newtype($ty);
+        pub struct $newtype($ty);
 
         impl DeviceShareable for $newtype {
             type Target = $newtype;
             fn to_device(&self) -> Self::Target {
                 *self
             }
+            fn cuda_decl(_: bool) -> String {
+                stringify!($ty).into()
+            }
+        }
+
+        impl BufferElement for $newtype {
+            const FORMAT: BufferFormat = $fmt;
+            const COMPONENTS: usize = $cmp;
         }
 
         impl std::ops::Deref for $newtype {

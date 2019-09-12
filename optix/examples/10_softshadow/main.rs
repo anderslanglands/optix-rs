@@ -72,8 +72,8 @@ fn main() {
 
     let mut fsq = FullscreenQuad::new(width, height).unwrap();
 
-    let mut image_data =
-        vec![v4f32(0.0, 0.0, 0.0, 0.0); (width * height) as usize];
+    let mut image_data: Vec<V4f32D> =
+        vec![v4f32(0.0, 0.0, 0.0, 0.0).into(); (width * height) as usize];
 
     unsafe {
         gl::Viewport(0, 0, fb_width, fb_height);
@@ -93,12 +93,14 @@ fn main() {
             sample.resize(v2i32(w as i32, h as i32));
             width = w;
             height = h;
-            image_data
-                .resize((width * height) as usize, v4f32(0.0, 0.0, 0.0, 0.0));
+            image_data.resize(
+                (width * height) as usize,
+                v4f32(0.0, 0.0, 0.0, 0.0).into(),
+            );
         }
 
         sample.render();
-        sample.download_pixels(&mut image_data).unwrap();
+        sample.download_pixels(image_data.as_mut_slice()).unwrap();
         fsq.update_texture(&image_data);
         fsq.set_progression(1);
 
@@ -188,37 +190,37 @@ fn load_model(path: &std::path::Path) -> Model {
                 (v3f32(0.8, 0.8, 0.8), None)
             };
 
-            let vertex: Vec<V3f32> = model
+            let vertex: Vec<V3f32D> = model
                 .mesh
                 .positions
                 .chunks(3)
                 .map(|c| {
                     let p = v3f32(c[0], c[1], c[2]);
                     bounds = bounds.extend_by_pnt(p);
-                    p
+                    p.into()
                 })
                 .collect();
             // println!("Mesh has {} vertices", vertex.len());
 
-            let normal: Vec<V3f32> = model
+            let normal: Vec<V3f32D> = model
                 .mesh
                 .normals
                 .chunks(3)
-                .map(|c| v3f32(c[0], c[1], c[2]))
+                .map(|c| v3f32(c[0], c[1], c[2]).into())
                 .collect();
 
-            let texcoord: Vec<V2f32> = model
+            let texcoord: Vec<V2f32D> = model
                 .mesh
                 .texcoords
                 .chunks(2)
-                .map(|c| v2f32(c[0], c[1]))
+                .map(|c| v2f32(c[0], c[1]).into())
                 .collect();
 
-            let index: Vec<V3i32> = model
+            let index: Vec<V3i32D> = model
                 .mesh
                 .indices
                 .chunks(3)
-                .map(|c| v3i32(c[0] as i32, c[1] as i32, c[2] as i32))
+                .map(|c| v3i32(c[0] as i32, c[1] as i32, c[2] as i32).into())
                 .collect();
 
             Mesh {

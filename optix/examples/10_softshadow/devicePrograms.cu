@@ -118,7 +118,7 @@ extern "C" __global__ void __closesthit__radiance() {
     // available
     // ------------------------------------------------------------------
     V3f32 diffuseColor = sbtData.color;
-    if (sbtData.hasTexture && sbtData.texcoord) {
+    if (sbtData.has_texture && sbtData.texcoord) {
         const V2f32 tc = (1.f - u - v) * sbtData.texcoord[index.x] +
                          u * sbtData.texcoord[index.y] +
                          v * sbtData.texcoord[index.z];
@@ -128,7 +128,7 @@ extern "C" __global__ void __closesthit__radiance() {
     }
 
     // start with some ambient term
-    V3f32 pixelColor = (0.1f + 0.2f * fabsf(dot(Ns, rayDir))) * diffuseColor;
+    V3f32 pixelColor = (0.01f + 0.1f * fabsf(dot(Ns, rayDir))) * diffuseColor;
 
     // ------------------------------------------------------------------
     // compute shadow
@@ -213,12 +213,12 @@ extern "C" __global__ void __raygen__renderFrame() {
     // compute a test pattern based on pixel ID
     const i32 ix = optixGetLaunchIndex().x;
     const i32 iy = optixGetLaunchIndex().y;
-    const i32 accumID = optixLaunchParams.frame.accumID;
+    const i32 accum_id = optixLaunchParams.frame.accum_id;
     const auto& camera = optixLaunchParams.camera;
 
     PRD prd;
-    prd.random.init(ix + accumID * optixLaunchParams.frame.size.x,
-                    iy + accumID * optixLaunchParams.frame.size.y);
+    prd.random.init(ix + accum_id * optixLaunchParams.frame.size.x,
+                    iy + accum_id * optixLaunchParams.frame.size.y);
     prd.pixelColor = V3f32(0.f);
 
     // the values we store the PRD poi32er in:
@@ -253,7 +253,7 @@ extern "C" __global__ void __raygen__renderFrame() {
     }
 
     const u32 fbIndex = ix + iy * optixLaunchParams.frame.size.x;
-    optixLaunchParams.frame.colorBuffer[fbIndex] = make_float4(
+    optixLaunchParams.frame.color_buffer[fbIndex] = make_float4(
         pixelColor.x / numPixelSamples, pixelColor.y / numPixelSamples,
         pixelColor.z / numPixelSamples, 1.0f);
 }

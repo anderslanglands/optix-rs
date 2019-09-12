@@ -2,7 +2,7 @@ use gl;
 use gl::types::{GLchar, GLenum, GLint, GLsizeiptr, GLuint, GLvoid};
 use std::ffi::{CStr, CString};
 
-use imath::*;
+use super::V4f32D;
 
 pub struct Shader {
     id: GLuint,
@@ -541,7 +541,7 @@ impl FullscreenQuad {
         self.vertex_array.unbind();
     }
 
-    pub fn update_texture(&self, data: &[V4f32]) {
+    pub fn update_texture(&self, data: &[V4f32D]) {
         unsafe {
             gl::BindTexture(gl::TEXTURE_2D, self.texture_id);
             gl::TexSubImage2D(
