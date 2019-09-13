@@ -17,7 +17,11 @@
 #include <optix_device.h>
 #include <vec.h>
 
-#include "LaunchParams.h"
+enum { RADIANCE_RAY_TYPE = 0, SHADOW_RAY_TYPE, RAY_TYPE_COUNT };
+
+namespace osc {
+#include "launch_params.h"
+}
 
 using namespace osc;
 
@@ -103,7 +107,7 @@ extern "C" __global__ void __closesthit__radiance() {
     // available
     // ------------------------------------------------------------------
     V3f32 diffuseColor = sbtData.color;
-    if (sbtData.hasTexture && sbtData.texcoord) {
+    if (sbtData.has_texture && sbtData.texcoord) {
         const V2f32 tc = (1.f - u - v) * sbtData.texcoord[index.x] +
                          u * sbtData.texcoord[index.y] +
                          v * sbtData.texcoord[index.z];
@@ -220,7 +224,7 @@ extern "C" __global__ void __raygen__renderFrame() {
 
     // and write to frame buffer ...
     const u32 fbIndex = ix + iy * optixLaunchParams.frame.size.x;
-    optixLaunchParams.frame.colorBuffer[fbIndex] =
+    optixLaunchParams.frame.color_buffer[fbIndex] =
         make_float4(pixelColorPRD.x, pixelColorPRD.y, pixelColorPRD.z, 1.0f);
 }
 

@@ -17,7 +17,9 @@
 #include <optix_device.h>
 #include <vec.h>
 
-#include "LaunchParams.h"
+namespace osc {
+#include "launch_params.h"
+}
 
 using namespace osc;
 
@@ -133,20 +135,6 @@ extern "C" __global__ void __raygen__renderFrame() {
         normalize(camera.direction + (screen.x - 0.5f) * camera.horizontal +
                   (screen.y - 0.5f) * camera.vertical);
 
-    /*
-if (ix == 960 / 2 && iy == 540 / 2) {
-V3f32 p = camera.position;
-printf("position: %f %f %f\n", p.x, p.y, p.z);
-V3f32 d = camera.direction;
-printf("direction: %f %f %f\n", d.x, d.y, d.z);
-V3f32 h = camera.horizontal;
-printf("horizontal: %f %f %f\n", h.x, h.y, h.z);
-V3f32 v = camera.vertical;
-printf("vertical: %f %f %f\n", v.x, v.y, v.z);
-printf("raydir: %f %f %f\n", rayDir.x, rayDir.y, rayDir.z);
-}
-*/
-
     optixTrace(optixLaunchParams.traversable, (float3)camera.position,
                (float3)rayDir,
                0.f,   // tmin
@@ -161,7 +149,7 @@ printf("raydir: %f %f %f\n", rayDir.x, rayDir.y, rayDir.z);
 
     // and write to frame buffer ...
     const u32 fbIndex = ix + iy * optixLaunchParams.frame.size.x;
-    optixLaunchParams.frame.colorBuffer[fbIndex] =
+    optixLaunchParams.frame.color_buffer[fbIndex] =
         make_float4(pixelColorPRD.x, pixelColorPRD.y, pixelColorPRD.z, 1.0f);
 }
 

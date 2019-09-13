@@ -14,9 +14,12 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#include "vec.h"
 #include <optix_device.h>
 
-#include "LaunchParams.h"
+namespace osc {
+#include "launch_params.h"
+}
 
 using namespace osc;
 
@@ -62,7 +65,7 @@ __miss__radiance() { /*! for this simple example, this will remain empty */
 // ray gen program - the actual rendering happens in here
 //------------------------------------------------------------------------------
 extern "C" __global__ void __raygen__renderFrame() {
-    const int frameID = optixLaunchParams.frameID;
+    const int frameID = optixLaunchParams.frame_id;
     if (frameID == 0 && optixGetLaunchIndex().x == 0 &&
         optixGetLaunchIndex().y == 0) {
         // we could of course also have used optixGetLaunchDims to query
@@ -72,7 +75,7 @@ extern "C" __global__ void __raygen__renderFrame() {
         printf("############################################\n");
         printf("Hello world from OptiX 7 raygen program!\n(within a "
                "%ix%i-sized launch)\n",
-               optixLaunchParams.fbSize.x, optixLaunchParams.fbSize.y);
+               optixLaunchParams.fb_size.x, optixLaunchParams.fb_size.y);
         printf("############################################\n");
     }
 
@@ -89,8 +92,8 @@ extern "C" __global__ void __raygen__renderFrame() {
     const float b = float((ix + iy + frameID) % 256) / 255.0f;
 
     // and write to frame buffer ...
-    const unsigned fbIndex = ix + iy * optixLaunchParams.fbSize.x;
-    optixLaunchParams.colorBuffer[fbIndex] = make_float4(r, g, b, 1.0f);
+    const unsigned fbIndex = ix + iy * optixLaunchParams.fb_size.x;
+    optixLaunchParams.color_buffer[fbIndex] = make_float4(r, g, b, 1.0f);
 }
 
 } // namespace osc

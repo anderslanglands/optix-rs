@@ -8,7 +8,7 @@ use glfw::{Action, Context, Key};
 pub mod gl_util;
 use crate::gl_util::*;
 
-use imath::*;
+use optix::math::*;
 
 use std::rc::Rc;
 
@@ -72,7 +72,7 @@ fn main() {
 
     let mut fsq = FullscreenQuad::new(width, height).unwrap();
 
-    let mut image_data: Vec<V4f32D> =
+    let mut image_data: Vec<V4f32> =
         vec![v4f32(0.0, 0.0, 0.0, 0.0).into(); (width * height) as usize];
 
     unsafe {
@@ -190,7 +190,7 @@ fn load_model(path: &std::path::Path) -> Model {
                 (v3f32(0.8, 0.8, 0.8), None)
             };
 
-            let vertex: Vec<V3f32D> = model
+            let vertex: Vec<V3f32> = model
                 .mesh
                 .positions
                 .chunks(3)
@@ -202,21 +202,21 @@ fn load_model(path: &std::path::Path) -> Model {
                 .collect();
             // println!("Mesh has {} vertices", vertex.len());
 
-            let normal: Vec<V3f32D> = model
+            let normal: Vec<V3f32> = model
                 .mesh
                 .normals
                 .chunks(3)
                 .map(|c| v3f32(c[0], c[1], c[2]).into())
                 .collect();
 
-            let texcoord: Vec<V2f32D> = model
+            let texcoord: Vec<V2f32> = model
                 .mesh
                 .texcoords
                 .chunks(2)
                 .map(|c| v2f32(c[0], c[1]).into())
                 .collect();
 
-            let index: Vec<V3i32D> = model
+            let index: Vec<V3i32> = model
                 .mesh
                 .indices
                 .chunks(3)

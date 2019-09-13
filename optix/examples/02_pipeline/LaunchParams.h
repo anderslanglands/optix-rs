@@ -16,16 +16,15 @@
 
 #pragma once
 
-struct vec2i {
-    int x;
-    int y;
-};
+#include "vec.h"
 
 namespace osc {
+
+typedef unsigned int uint32_t;
 struct LaunchParams {
     int frameID{0};
-    unsigned* colorBuffer;
-    vec2i fbSize;
+    uint32_t* colorBuffer;
+    V2i32 fbSize;
 };
 
 } // namespace osc

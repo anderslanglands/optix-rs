@@ -1,4 +1,4 @@
-use imath::*;
+use optix::math::*;
 
 type Result<T, E = Error> = std::result::Result<T, E>;
 
@@ -10,29 +10,22 @@ use optix_derive::device_shared;
 use std::rc::Rc;
 use std::sync::Arc;
 
-// Wrap math types in a newtype that we can share with the device
-optix::wrap_copyable_for_device! {V2f32, V2f32D, BufferFormat::F32x2, 2}
-optix::wrap_copyable_for_device! {V2i32, V2i32D, BufferFormat::I32x2, 2}
-optix::wrap_copyable_for_device! {V3f32, V3f32D, BufferFormat::F32x3, 3}
-optix::wrap_copyable_for_device! {V3i32, V3i32D, BufferFormat::I32x3, 3}
-optix::wrap_copyable_for_device! {V4f32, V4f32D, BufferFormat::F32x4, 4}
-
 #[device_shared]
 struct TriangleMeshSBTData {
-    color: V3f32D,
-    vertex: Rc<optix::CtBuffer<V3f32D>>,
-    normal: Rc<optix::CtBuffer<V3f32D>>,
-    texcoord: Rc<optix::CtBuffer<V2f32D>>,
-    index: Rc<optix::CtBuffer<V3i32D>>,
+    color: V3f32,
+    vertex: Rc<optix::CtBuffer<V3f32>>,
+    normal: Rc<optix::CtBuffer<V3f32>>,
+    texcoord: Rc<optix::CtBuffer<V2f32>>,
+    index: Rc<optix::CtBuffer<V3i32>>,
     has_texture: bool,
     texture: Option<Rc<cuda::TextureObject>>,
 }
 
 pub struct Mesh {
-    pub vertex: Vec<V3f32D>,
-    pub normal: Vec<V3f32D>,
-    pub texcoord: Vec<V2f32D>,
-    pub index: Vec<V3i32D>,
+    pub vertex: Vec<V3f32>,
+    pub normal: Vec<V3f32>,
+    pub texcoord: Vec<V2f32>,
+    pub index: Vec<V3i32>,
     pub diffuse: V3f32,
     pub diffuse_texture_id: Option<usize>,
 }
@@ -89,8 +82,14 @@ impl SampleRenderer {
         let num_devices = cuda::get_device_count();
         println!("Found {} CUDA devices", num_devices);
 
-        println!("SBT decl = \n{}", TriangleMeshSBTData::cuda_decl(false));
-        println!("LP decl = \n{}", LaunchParams::cuda_decl(false));
+        let header = cuda::nvrtc::Header {
+            name: "launch_params.h".into(),
+            contents: format!(
+                "{} {}",
+                TriangleMeshSBTData::cuda_decl(false),
+                LaunchParams::cuda_decl(false)
+            ),
+        };
 
         // Initialize optix function table. Must be called before calling
         // any OptiX functions.
@@ -140,7 +139,7 @@ impl SampleRenderer {
         // We just have a single program for now. Compile it from
         // source using nvrtc
         let cuda_source = include_str!("devicePrograms.cu");
-        let ptx = compile_to_ptx(cuda_source);
+        let ptx = compile_to_ptx(cuda_source, header);
 
         // Create the module
         let (module, log) = ctx.module_create_from_ptx(
@@ -398,7 +397,7 @@ impl SampleRenderer {
             }
         };
 
-        let color_buffer = optix::CtBuffer::<V4f32D>::uninitialized(
+        let color_buffer = optix::CtBuffer::<V4f32>::uninitialized(
             (fb_size.x * fb_size.y) as usize,
         )?;
 
@@ -475,13 +474,11 @@ impl SampleRenderer {
     pub fn resize(&mut self, size: V2i32) {
         self.launch_params.frame.size = size.into();
         self.launch_params.frame.color_buffer =
-            optix::CtBuffer::<V4f32D>::uninitialized(
-                (size.x * size.y) as usize,
-            )
-            .unwrap();
+            optix::CtBuffer::<V4f32>::uninitialized((size.x * size.y) as usize)
+                .unwrap();
     }
 
-    pub fn download_pixels(&self, pixels: &mut [V4f32D]) -> Result<()> {
+    pub fn download_pixels(&self, pixels: &mut [V4f32]) -> Result<()> {
         self.launch_params.frame.color_buffer.download(pixels)?;
         Ok(())
     }
@@ -495,7 +492,7 @@ pub enum Error {
     CudaError(cuda::Error),
 }
 
-fn compile_to_ptx(src: &str) -> String {
+fn compile_to_ptx(src: &str, header: cuda::nvrtc::Header) -> String {
     use cuda::nvrtc::Program;
 
     let optix_root = std::env::var("OPTIX_ROOT")
@@ -533,7 +530,7 @@ fn compile_to_ptx(src: &str) -> String {
 
     // The program object allows us to compile the cuda source and get ptx from
     // it if successful.
-    let mut prg = Program::new(src, "devicePrograms", Vec::new()).unwrap();
+    let mut prg = Program::new(src, "devicePrograms", vec![header]).unwrap();
 
     match prg.compile_program(&options) {
         Err(code) => {
@@ -596,25 +593,25 @@ impl TriangleMesh {
 
 #[device_shared]
 struct RenderCamera {
-    position: V3f32D,
-    direction: V3f32D,
-    horizontal: V3f32D,
-    vertical: V3f32D,
+    position: V3f32,
+    direction: V3f32,
+    horizontal: V3f32,
+    vertical: V3f32,
 }
 
 #[device_shared]
 struct Frame {
-    color_buffer: optix::CtBuffer<V4f32D>,
-    size: V2i32D,
+    color_buffer: optix::CtBuffer<V4f32>,
+    size: V2i32,
     accum_id: i32,
 }
 
 #[device_shared]
 struct RenderLight {
-    origin: V3f32D,
-    du: V3f32D,
-    dv: V3f32D,
-    power: V3f32D,
+    origin: V3f32,
+    du: V3f32,
+    dv: V3f32,
+    power: V3f32,
 }
 
 #[device_shared]

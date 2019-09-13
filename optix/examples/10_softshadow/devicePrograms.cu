@@ -17,9 +17,15 @@
 #include <cuda_runtime.h>
 #include <optix_device.h>
 
-#include "LaunchParams.h"
+// #include "LaunchParams.h"
 #include "lcg.h"
 #include "vec.h"
+
+enum { RADIANCE_RAY_TYPE = 0, SHADOW_RAY_TYPE, RAY_TYPE_COUNT };
+
+namespace osc {
+#include "launch_params.h"
+}
 
 using namespace osc;
 

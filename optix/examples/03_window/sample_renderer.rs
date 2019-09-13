@@ -1,14 +1,10 @@
-use imath::*;
-
 type Result<T, E = Error> = std::result::Result<T, E>;
 
 use std::rc::Rc;
 
+use optix::math::*;
 use optix::{DeviceShareable, SbtRecord, SharedVariable};
 use optix_derive::device_shared;
-
-// Wrap math types in a newtype that we can share with the device
-optix::wrap_copyable_for_device! {V2i32, V2i32D}
 
 // device_shared macro creates the device-compatible type and impls
 // DeviceShareable to enable automatic copying from the original type to the
@@ -16,8 +12,8 @@ optix::wrap_copyable_for_device! {V2i32, V2i32D}
 #[device_shared]
 pub struct LaunchParams {
     frame_id: i32,
-    color_buffer: cuda::Buffer,
-    fb_size: V2i32D,
+    color_buffer: optix::CtBuffer<V4f32>,
+    fb_size: V2i32,
 }
 
 pub struct SampleRenderer {
@@ -92,8 +88,13 @@ impl SampleRenderer {
 
         // We just have a single program for now. Compile it from
         // source using nvrtc
+        let header = cuda::nvrtc::Header {
+            name: "launch_params.h".into(),
+            contents: LaunchParams::cuda_decl(false),
+        };
+
         let cuda_source = include_str!("devicePrograms.cu");
-        let ptx = compile_to_ptx(cuda_source);
+        let ptx = compile_to_ptx(cuda_source, header);
 
         // Create the module
         let (module, log) = ctx.module_create_from_ptx(
@@ -177,10 +178,9 @@ impl SampleRenderer {
             .hitgroup_records(vec![hg_rec])
             .build();
 
-        let color_buffer = cuda::Buffer::new(
-            (fb_size.x * fb_size.y) as usize * std::mem::size_of::<V4f32>(),
-        )
-        .unwrap();
+        let color_buffer = optix::CtBuffer::<V4f32>::uninitialized(
+            (fb_size.x * fb_size.y) as usize,
+        )?;
 
         let launch_params = SharedVariable::new(LaunchParams {
             frame_id: 0,
@@ -223,11 +223,10 @@ impl SampleRenderer {
     }
 
     pub fn resize(&mut self, size: V2i32) {
-        *self.launch_params.fb_size = size;
-        self.launch_params.color_buffer = cuda::Buffer::new(
-            (size.x * size.y) as usize * std::mem::size_of::<V4f32>(),
-        )
-        .unwrap();
+        self.launch_params.fb_size = size;
+        self.launch_params.color_buffer =
+            optix::CtBuffer::<V4f32>::uninitialized((size.x * size.y) as usize)
+                .unwrap();
     }
 
     pub fn download_pixels(&self, pixels: &mut [V4f32]) -> Result<()> {
@@ -244,7 +243,7 @@ pub enum Error {
     CudaError(cuda::Error),
 }
 
-fn compile_to_ptx(src: &str) -> String {
+fn compile_to_ptx(src: &str, header: cuda::nvrtc::Header) -> String {
     use cuda::nvrtc::Program;
 
     let optix_root = std::env::var("OPTIX_ROOT")
@@ -256,10 +255,6 @@ fn compile_to_ptx(src: &str) -> String {
     // Create a vector of options to pass to the compiler
     let optix_inc = format!("-I{}/include", optix_root);
     let cuda_inc = format!("-I{}/include", cuda_root);
-    let source_inc = format!(
-        "-I{}/examples/03_window",
-        std::env::var("CARGO_MANIFEST_DIR").unwrap()
-    );
     let common_inc = format!(
         "-I{}/examples/common",
         std::env::var("CARGO_MANIFEST_DIR").unwrap()
@@ -268,7 +263,6 @@ fn compile_to_ptx(src: &str) -> String {
     let options = vec![
         optix_inc,
         cuda_inc,
-        source_inc,
         common_inc,
         "-I/usr/include/x86_64-linux-gnu".into(),
         "-I/usr/lib/gcc/x86_64-linux-gnu/7/include".into(),
@@ -282,7 +276,7 @@ fn compile_to_ptx(src: &str) -> String {
 
     // The program object allows us to compile the cuda source and get ptx from
     // it if successful.
-    let mut prg = Program::new(src, "devicePrograms", Vec::new()).unwrap();
+    let mut prg = Program::new(src, "devicePrograms", vec![header]).unwrap();
 
     match prg.compile_program(&options) {
         Err(code) => {

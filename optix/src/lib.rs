@@ -39,6 +39,8 @@ pub use acceleration::*;
 pub mod buffer;
 pub use buffer::*;
 
+pub mod math;
+
 /// Initialize the OptiX library function table. This function *MUST* be called
 /// before any other optix functions.
 pub fn init() -> Result<()> {
@@ -227,6 +229,28 @@ macro_rules! wrap_copyable_for_device {
             fn from(v: $ty) -> $newtype {
                 $newtype(v)
             }
+        }
+    };
+}
+
+/// Macro to generate a newtype wrapper with DeviceShareable and Deref
+/// implemented
+#[macro_export]
+macro_rules! math_type {
+    ($ty:ty, $fmt:expr, $cmp:literal) => {
+        impl DeviceShareable for $ty {
+            type Target = $ty;
+            fn to_device(&self) -> Self::Target {
+                *self
+            }
+            fn cuda_decl(_: bool) -> String {
+                stringify!($ty).into()
+            }
+        }
+
+        impl BufferElement for $ty {
+            const FORMAT: BufferFormat = $fmt;
+            const COMPONENTS: usize = $cmp;
         }
     };
 }

@@ -17,7 +17,9 @@
 #include <optix_device.h>
 #include <vec.h>
 
-#include "LaunchParams.h"
+namespace osc {
+#include "launch_params.h"
+}
 
 using namespace osc;
 
@@ -149,7 +151,7 @@ printf("raydir: %f %f %f\n", rayDir.x, rayDir.y, rayDir.z);
 
     // and write to frame buffer ...
     const u32 fbIndex = ix + iy * optixLaunchParams.frame.size.x;
-    optixLaunchParams.frame.colorBuffer[fbIndex] =
+    optixLaunchParams.frame.color_buffer[fbIndex] =
         V4f32(pixelColorPRD.x, pixelColorPRD.y, pixelColorPRD.z, 1.0f);
 }
 

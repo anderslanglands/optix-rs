@@ -2,22 +2,19 @@ use imath::*;
 
 type Result<T, E = Error> = std::result::Result<T, E>;
 
+use optix::math::*;
 use optix::{DeviceShareable, SbtRecord, SharedVariable};
 use optix_derive::device_shared;
 
 use std::rc::Rc;
 
-// Wrap math types in a newtype that we can share with the device
-optix::wrap_copyable_for_device! {V2i32, V2i32D}
-optix::wrap_copyable_for_device! {V3f32, V3f32D}
-
 #[device_shared]
 struct TriangleMeshSBTData {
-    color: V3f32D,
-    vertex: Rc<optix::RtBuffer>,
-    normal: Rc<optix::RtBuffer>,
-    texcoord: Rc<optix::RtBuffer>,
-    index: Rc<optix::RtBuffer>,
+    color: V3f32,
+    vertex: Rc<optix::CtBuffer<V3f32>>,
+    normal: Rc<optix::CtBuffer<V3f32>>,
+    texcoord: Rc<optix::CtBuffer<V2f32>>,
+    index: Rc<optix::CtBuffer<V3i32>>,
     has_texture: bool,
     texture: Option<Rc<cuda::TextureObject>>,
 }
@@ -122,8 +119,17 @@ impl SampleRenderer {
 
         // We just have a single program for now. Compile it from
         // source using nvrtc
+        let header = cuda::nvrtc::Header {
+            name: "launch_params.h".into(),
+            contents: format!(
+                "{} {}",
+                TriangleMeshSBTData::cuda_decl(false),
+                LaunchParams::cuda_decl(false)
+            ),
+        };
+
         let cuda_source = include_str!("devicePrograms.cu");
-        let ptx = compile_to_ptx(cuda_source);
+        let ptx = compile_to_ptx(cuda_source, header);
 
         // Create the module
         let (module, log) = ctx.module_create_from_ptx(
@@ -242,25 +248,14 @@ impl SampleRenderer {
         let mut build_inputs = Vec::with_capacity(model.meshes.len());
 
         for mesh in &model.meshes {
-            let vertex_buffer = Rc::new(
-                optix::RtBuffer::new(&mesh.vertex, optix::BufferFormat::F32x3)
-                    .unwrap(),
-            );
-            let index_buffer = Rc::new(
-                optix::RtBuffer::new(&mesh.index, optix::BufferFormat::I32x3)
-                    .unwrap(),
-            );
-            let normal_buffer = Rc::new(
-                optix::RtBuffer::new(&mesh.normal, optix::BufferFormat::F32x3)
-                    .unwrap(),
-            );
-            let texcoord_buffer = Rc::new(
-                optix::RtBuffer::new(
-                    &mesh.texcoord,
-                    optix::BufferFormat::F32x2,
-                )
-                .unwrap(),
-            );
+            let vertex_buffer =
+                Rc::new(optix::CtBuffer::new(&mesh.vertex).unwrap());
+            let index_buffer =
+                Rc::new(optix::CtBuffer::new(&mesh.index).unwrap());
+            let normal_buffer =
+                Rc::new(optix::CtBuffer::new(&mesh.normal).unwrap());
+            let texcoord_buffer =
+                Rc::new(optix::CtBuffer::new(&mesh.texcoord).unwrap());
 
             let (has_texture, texture) =
                 if let Some(texture_id) = mesh.diffuse_texture_id {
@@ -364,10 +359,9 @@ impl SampleRenderer {
             }
         };
 
-        let mut color_buffer = cuda::Buffer::new(
-            (fb_size.x * fb_size.y) as usize * std::mem::size_of::<V4f32>(),
-        )
-        .unwrap();
+        let color_buffer = optix::CtBuffer::<V4f32>::uninitialized(
+            (fb_size.x * fb_size.y) as usize,
+        )?;
 
         let cos_fovy = 0.66f32;
         let aspect = fb_size.x as f32 / fb_size.y as f32;
@@ -433,10 +427,9 @@ impl SampleRenderer {
 
     pub fn resize(&mut self, size: V2i32) {
         self.launch_params.frame.size = size.into();
-        self.launch_params.frame.color_buffer = cuda::Buffer::new(
-            (size.x * size.y) as usize * std::mem::size_of::<V4f32>(),
-        )
-        .unwrap();
+        self.launch_params.frame.color_buffer =
+            optix::CtBuffer::<V4f32>::uninitialized((size.x * size.y) as usize)
+                .unwrap();
     }
 
     pub fn download_pixels(&self, pixels: &mut [V4f32]) -> Result<()> {
@@ -453,7 +446,7 @@ pub enum Error {
     CudaError(cuda::Error),
 }
 
-fn compile_to_ptx(src: &str) -> String {
+fn compile_to_ptx(src: &str, header: cuda::nvrtc::Header) -> String {
     use cuda::nvrtc::Program;
 
     let optix_root = std::env::var("OPTIX_ROOT")
@@ -466,7 +459,7 @@ fn compile_to_ptx(src: &str) -> String {
     let optix_inc = format!("-I{}/include", optix_root);
     let cuda_inc = format!("-I{}/include", cuda_root);
     let source_inc = format!(
-        "-I{}/examples/08_texture",
+        "-I{}/examples/10_softshadow",
         std::env::var("CARGO_MANIFEST_DIR").unwrap()
     );
     let common_inc = format!(
@@ -491,7 +484,7 @@ fn compile_to_ptx(src: &str) -> String {
 
     // The program object allows us to compile the cuda source and get ptx from
     // it if successful.
-    let mut prg = Program::new(src, "devicePrograms", Vec::new()).unwrap();
+    let mut prg = Program::new(src, "devicePrograms", vec![header]).unwrap();
 
     match prg.compile_program(&options) {
         Err(code) => {
@@ -554,16 +547,16 @@ impl TriangleMesh {
 
 #[device_shared]
 struct RenderCamera {
-    position: V3f32D,
-    direction: V3f32D,
-    horizontal: V3f32D,
-    vertical: V3f32D,
+    position: V3f32,
+    direction: V3f32,
+    horizontal: V3f32,
+    vertical: V3f32,
 }
 
 #[device_shared]
 struct Frame {
-    color_buffer: cuda::Buffer,
-    size: V2i32D,
+    color_buffer: optix::CtBuffer<V4f32>,
+    size: V2i32,
 }
 
 #[device_shared]
