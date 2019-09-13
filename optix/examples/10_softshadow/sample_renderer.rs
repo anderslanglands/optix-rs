@@ -10,62 +10,13 @@ use optix_derive::device_shared;
 use std::rc::Rc;
 use std::sync::Arc;
 
-#[device_shared]
-struct TriangleMeshSBTData {
-    color: V3f32,
-    vertex: Rc<optix::CtBuffer<V3f32>>,
-    normal: Rc<optix::CtBuffer<V3f32>>,
-    texcoord: Rc<optix::CtBuffer<V2f32>>,
-    index: Rc<optix::CtBuffer<V3i32>>,
-    has_texture: bool,
-    texture: Option<Rc<cuda::TextureObject>>,
-}
-
-pub struct Mesh {
-    pub vertex: Vec<V3f32>,
-    pub normal: Vec<V3f32>,
-    pub texcoord: Vec<V2f32>,
-    pub index: Vec<V3i32>,
-    pub diffuse: V3f32,
-    pub diffuse_texture_id: Option<usize>,
-}
-
-pub struct Texture {
-    pub pixels: Vec<u8>,
-    pub resolution: V2i32,
-}
-
-pub struct Model {
-    pub meshes: Vec<Mesh>,
-    pub textures: Vec<Rc<Texture>>,
-    pub bounds: Box3f32,
-}
-
-pub struct QuadLight {
-    pub origin: V3f32,
-    pub du: V3f32,
-    pub dv: V3f32,
-    pub power: V3f32,
-}
-
 pub struct SampleRenderer {
     cuda_context: cuda::ContextRef,
     stream: cuda::Stream,
-    device_prop: cuda::DeviceProp,
-
     pipeline: optix::PipelineRef,
-
-    module: optix::ModuleRef,
-
-    program_groups: Vec<optix::ProgramGroupRef>,
     sbt: optix::ShaderBindingTable,
-
     launch_params: SharedVariable<LaunchParams>,
-
     last_set_camera: Camera,
-
-    model: Model,
-
     ctx: optix::DeviceContext,
 }
 
@@ -438,14 +389,10 @@ impl SampleRenderer {
         Ok(SampleRenderer {
             cuda_context,
             stream,
-            device_prop,
             pipeline,
-            module,
-            program_groups,
             sbt,
             launch_params,
             last_set_camera: camera,
-            model,
             ctx,
         })
     }
@@ -620,4 +567,42 @@ pub struct LaunchParams {
     camera: RenderCamera,
     light: RenderLight,
     traversable: optix::TraversableHandle,
+}
+
+#[device_shared]
+struct TriangleMeshSBTData {
+    color: V3f32,
+    vertex: Rc<optix::CtBuffer<V3f32>>,
+    normal: Rc<optix::CtBuffer<V3f32>>,
+    texcoord: Rc<optix::CtBuffer<V2f32>>,
+    index: Rc<optix::CtBuffer<V3i32>>,
+    has_texture: bool,
+    texture: Option<Rc<cuda::TextureObject>>,
+}
+
+pub struct Mesh {
+    pub vertex: Vec<V3f32>,
+    pub normal: Vec<V3f32>,
+    pub texcoord: Vec<V2f32>,
+    pub index: Vec<V3i32>,
+    pub diffuse: V3f32,
+    pub diffuse_texture_id: Option<usize>,
+}
+
+pub struct Texture {
+    pub pixels: Vec<u8>,
+    pub resolution: V2i32,
+}
+
+pub struct Model {
+    pub meshes: Vec<Mesh>,
+    pub textures: Vec<Rc<Texture>>,
+    pub bounds: Box3f32,
+}
+
+pub struct QuadLight {
+    pub origin: V3f32,
+    pub du: V3f32,
+    pub dv: V3f32,
+    pub power: V3f32,
 }
