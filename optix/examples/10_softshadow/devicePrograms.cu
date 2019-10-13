@@ -17,7 +17,6 @@
 #include <cuda_runtime.h>
 #include <optix_device.h>
 
-// #include "LaunchParams.h"
 #include "lcg.h"
 #include "vec.h"
 

@@ -23,8 +23,8 @@ pub struct SampleRenderer {
     last_set_camera: Camera,
 
     mesh: TriangleMesh,
-    vertex_buffer: Rc<optix::CtBuffer<V3f32>>,
-    index_buffer: Rc<optix::CtBuffer<V3i32>>,
+    vertex_buffer: Rc<optix::Buffer<V3f32>>,
+    index_buffer: Rc<optix::Buffer<V3i32>>,
 
     ctx: optix::DeviceContext,
 }
@@ -139,9 +139,8 @@ impl SampleRenderer {
 
         // build accel
         // upload the model data and create the triangle array build input
-        let vertex_buffer =
-            Rc::new(optix::CtBuffer::new(&mesh.vertex).unwrap());
-        let index_buffer = Rc::new(optix::CtBuffer::new(&mesh.index).unwrap());
+        let vertex_buffer = Rc::new(optix::Buffer::new(&mesh.vertex).unwrap());
+        let index_buffer = Rc::new(optix::Buffer::new(&mesh.index).unwrap());
 
         let build_input = optix::BuildInput::Triangle(
             optix::TriangleArray::new(
@@ -261,7 +260,7 @@ impl SampleRenderer {
             .hitgroup_records(vec![hg_rec])
             .build();
 
-        let color_buffer = optix::CtBuffer::<V4f32>::uninitialized(
+        let color_buffer = optix::Buffer::<V4f32>::uninitialized(
             (fb_size.x * fb_size.y) as usize,
         )?;
 
@@ -325,7 +324,7 @@ impl SampleRenderer {
     pub fn resize(&mut self, size: V2i32) {
         self.launch_params.frame.size = size.into();
         self.launch_params.frame.color_buffer =
-            optix::CtBuffer::<V4f32>::uninitialized((size.x * size.y) as usize)
+            optix::Buffer::<V4f32>::uninitialized((size.x * size.y) as usize)
                 .unwrap();
     }
 
@@ -437,7 +436,7 @@ impl TriangleMesh {
 
 #[device_shared]
 pub struct Frame {
-    color_buffer: optix::CtBuffer<V4f32>,
+    color_buffer: optix::Buffer<V4f32>,
     size: V2i32,
 }
 

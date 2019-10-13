@@ -61,22 +61,25 @@ pub fn device_shared(attr: TokenStream, item: TokenStream) -> TokenStream {
     let field_type = fields.iter().map(|field| &field.ty);
 
     let cuda_decl = quote! {
-            fn cuda_decl(nested: bool) -> String {
-                let mut s: String = if nested {
-                    "struct {".into()
-                } else {
-                    format!("struct {} {{", #s_name)
-                };
-                #(
-                    s = format!("{} {} {};", s, <#field_type as DeviceShareable>::cuda_decl(true), #s_field_name);
-                )*
-                if nested {
-                    s = format!("{} }}", s);
-                } else {
-                    s = format!("{} }};", s);
-                }
-                s
+        fn cuda_type() -> String {
+            #s_name.into()
+        }
+        fn cuda_decl(nested: bool) -> String {
+            let mut s: String = if nested {
+                "struct {".into()
+            } else {
+                format!("struct {} {{", #s_name)
+            };
+            #(
+                s = format!("{} {} {};", s, <#field_type as DeviceShareable>::cuda_decl(true), #s_field_name);
+            )*
+            if nested {
+                s = format!("{} }}", s);
+            } else {
+                s = format!("{} }};", s);
             }
+            s
+        }
     };
 
     let field_name = fields.iter().map(|field| &field.ident);

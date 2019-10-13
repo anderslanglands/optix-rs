@@ -51,3 +51,23 @@ impl From<cuda::Error> for Error {
         Error::CudaError { cerr: e }
     }
 }
+
+impl std::error::Error for Error {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Error::InitializationFailed { cerr, .. } => Some(cerr),
+            Error::DeviceContextCreateFailed { cerr, .. } => Some(cerr),
+            Error::DeviceContextMethodFailed { cerr, .. } => Some(cerr),
+            Error::SetCacheLocationFailed { cerr, .. } => Some(cerr),
+            Error::ModuleCreationFailed { cerr, .. } => Some(cerr),
+            Error::ProgramGroupCreationFailed { cerr, .. } => Some(cerr),
+            Error::PipelineCreationFailed { cerr, .. } => Some(cerr),
+            Error::LaunchFailed { cerr, .. } => Some(cerr),
+            Error::CudaError { cerr, .. } => Some(cerr),
+            Error::AccelComputeMemoryUsageFailed { cerr, .. } => Some(cerr),
+            Error::AccelBuildFailed { cerr, .. } => Some(cerr),
+            Error::AccelCompactFailed { cerr, .. } => Some(cerr),
+            _ => None,
+        }
+    }
+}

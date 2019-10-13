@@ -8,17 +8,17 @@ use std::rc::Rc;
 use super::DeviceShareable;
 
 /// Runtime-typed buffer
-pub struct RtBuffer {
+pub struct DynamicBuffer {
     buffer: cuda::Buffer,
     count: usize,
     format: BufferFormat,
 }
 
-impl RtBuffer {
-    pub fn new<T>(data: &[T], format: BufferFormat) -> Result<RtBuffer> {
+impl DynamicBuffer {
+    pub fn new<T>(data: &[T], format: BufferFormat) -> Result<DynamicBuffer> {
         let buffer = cuda::Buffer::with_data(data)?;
 
-        Ok(RtBuffer {
+        Ok(DynamicBuffer {
             buffer,
             count: data.len(),
             format,
@@ -46,27 +46,27 @@ impl RtBuffer {
     }
 }
 
-impl DeviceShareable for RtBuffer {
+impl DeviceShareable for DynamicBuffer {
     type Target = cuda::CUdeviceptr;
     fn to_device(&self) -> Self::Target {
         self.buffer.as_device_ptr()
     }
-    fn cuda_decl(_: bool) -> String {
+    fn cuda_type() -> String {
         "void*".into()
     }
 }
 
-impl DeviceShareable for Rc<RtBuffer> {
+impl DeviceShareable for Rc<DynamicBuffer> {
     type Target = cuda::CUdeviceptr;
     fn to_device(&self) -> Self::Target {
         self.buffer.as_device_ptr()
     }
-    fn cuda_decl(_: bool) -> String {
+    fn cuda_type() -> String {
         "void*".into()
     }
 }
 
-pub struct CtBuffer<T>
+pub struct Buffer<T>
 where
     T: BufferElement,
 {
@@ -75,24 +75,24 @@ where
     _t: std::marker::PhantomData<T>,
 }
 
-impl<T> CtBuffer<T>
+impl<T> Buffer<T>
 where
     T: BufferElement,
 {
-    pub fn new(data: &[T]) -> Result<CtBuffer<T>> {
+    pub fn new(data: &[T]) -> Result<Buffer<T>> {
         let buffer = cuda::Buffer::with_data(data)?;
 
-        Ok(CtBuffer {
+        Ok(Buffer {
             buffer,
             count: data.len(),
             _t: std::marker::PhantomData::<T> {},
         })
     }
 
-    pub fn uninitialized(count: usize) -> Result<CtBuffer<T>> {
+    pub fn uninitialized(count: usize) -> Result<Buffer<T>> {
         let buffer = cuda::Buffer::new(count * std::mem::size_of::<T>())?;
 
-        Ok(CtBuffer {
+        Ok(Buffer {
             buffer,
             count,
             _t: std::marker::PhantomData::<T> {},
@@ -124,7 +124,7 @@ where
     }
 }
 
-impl<T> DeviceShareable for CtBuffer<T>
+impl<T> DeviceShareable for Buffer<T>
 where
     T: BufferElement,
 {
@@ -132,12 +132,12 @@ where
     fn to_device(&self) -> Self::Target {
         self.buffer.as_device_ptr()
     }
-    fn cuda_decl(_: bool) -> String {
+    fn cuda_type() -> String {
         format!("{}*", T::FORMAT.device_name())
     }
 }
 
-impl<T> DeviceShareable for Rc<CtBuffer<T>>
+impl<T> DeviceShareable for Rc<Buffer<T>>
 where
     T: BufferElement,
 {
@@ -145,7 +145,7 @@ where
     fn to_device(&self) -> Self::Target {
         self.buffer.as_device_ptr()
     }
-    fn cuda_decl(_: bool) -> String {
+    fn cuda_type() -> String {
         format!("{}*", T::FORMAT.device_name())
     }
 }

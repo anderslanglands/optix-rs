@@ -59,7 +59,10 @@ pub fn init() -> Result<()> {
 pub trait DeviceShareable {
     type Target: Copy;
     fn to_device(&self) -> Self::Target;
-    fn cuda_decl(nested: bool) -> String;
+    fn cuda_decl(nested: bool) -> String {
+        Self::cuda_type()
+    }
+    fn cuda_type() -> String;
 }
 
 impl DeviceShareable for cuda::Buffer {
@@ -67,7 +70,7 @@ impl DeviceShareable for cuda::Buffer {
     fn to_device(&self) -> Self::Target {
         self.as_device_ptr()
     }
-    fn cuda_decl(_: bool) -> String {
+    fn cuda_type() -> String {
         "void*".into()
     }
 }
@@ -77,7 +80,7 @@ impl DeviceShareable for cuda::TextureObject {
     fn to_device(&self) -> Self::Target {
         self.as_device_ptr()
     }
-    fn cuda_decl(_: bool) -> String {
+    fn cuda_type() -> String {
         "cudaTextureObject_t".into()
     }
 }
@@ -90,7 +93,7 @@ impl DeviceShareable for Option<cuda::TextureObject> {
             None => 0,
         }
     }
-    fn cuda_decl(_: bool) -> String {
+    fn cuda_type() -> String {
         "cudaTextureObject_t".into()
     }
 }
@@ -103,7 +106,7 @@ impl DeviceShareable for Option<std::rc::Rc<cuda::TextureObject>> {
             None => 0,
         }
     }
-    fn cuda_decl(_: bool) -> String {
+    fn cuda_type() -> String {
         "cudaTextureObject_t".into()
     }
 }
@@ -113,8 +116,28 @@ impl DeviceShareable for i32 {
     fn to_device(&self) -> i32 {
         *self
     }
-    fn cuda_decl(_: bool) -> String {
+    fn cuda_type() -> String {
         "int".into()
+    }
+}
+
+impl DeviceShareable for f32 {
+    type Target = f32;
+    fn to_device(&self) -> f32 {
+        *self
+    }
+    fn cuda_type() -> String {
+        "float".into()
+    }
+}
+
+impl DeviceShareable for u32 {
+    type Target = u32;
+    fn to_device(&self) -> u32 {
+        *self
+    }
+    fn cuda_type() -> String {
+        "unsigned int".into()
     }
 }
 
@@ -123,7 +146,7 @@ impl DeviceShareable for bool {
     fn to_device(&self) -> bool {
         *self
     }
-    fn cuda_decl(_: bool) -> String {
+    fn cuda_type() -> String {
         "bool".into()
     }
 }
@@ -189,6 +212,113 @@ where
     }
 }
 
+pub struct SharedVec<T>
+where
+    T: DeviceShareable,
+{
+    vec: Vec<T>,
+    buffer: cuda::Buffer,
+}
+
+impl<T> SharedVec<T>
+where
+    T: DeviceShareable,
+    T::Target: std::fmt::Debug,
+{
+    /// Create a new SharedVec, taking ownership of the variable `var`.
+    ///
+    /// Once the `SharedVec` has been created, it can be uploaded to the
+    /// device using the `SharedVariable::upload()` method. `SharedVec`
+    /// handles management of the underlying CUDA buffer used for device-side
+    /// storage. `SharedVec` implements Deref targeting the wrapped
+    /// variable type for easy access.
+    pub fn new(vec: Vec<T>) -> Result<SharedVec<T>> {
+        let cvec: Vec<T::Target> = vec
+            .iter()
+            .map(|t| {
+                println!("new: {:?}", t.to_device());
+                t.to_device()
+            })
+            .collect();
+        let buffer = cuda::Buffer::with_data(&cvec)?;
+        Ok(SharedVec { vec, buffer })
+    }
+
+    /// Upload the wrapped vec to the device. Any changes to the variable
+    /// on the Rust side will not be reflected on the device until this is
+    /// called.
+    pub fn upload(&mut self) -> Result<()> {
+        let cvec: Vec<T::Target> = self
+            .vec
+            .iter()
+            .map(|t| {
+                println!("upload: {:?}", t.to_device());
+                t.to_device()
+            })
+            .collect();
+        self.buffer.upload(&cvec)?;
+        Ok(())
+    }
+
+    /// Get a reference to the `cuda::Buffer` representing the device-side
+    /// storage for this variable.
+    pub fn variable_buffer(&self) -> &cuda::Buffer {
+        &self.buffer
+    }
+}
+
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct SharedVecD {
+    pub ptr: cuda::CUdeviceptr,
+    pub len: u32,
+}
+
+impl<T> DeviceShareable for SharedVec<T>
+where
+    T: DeviceShareable,
+{
+    type Target = SharedVecD;
+    fn to_device(&self) -> SharedVecD {
+        SharedVecD {
+            ptr: self.buffer.as_device_ptr(),
+            len: self.vec.len() as u32,
+        }
+    }
+    fn cuda_type() -> String {
+        "SharedVec".into()
+    }
+    fn cuda_decl(nested: bool) -> String {
+        if nested {
+            format!("struct {{{}* ptr; unsigned int len; }}", T::cuda_type())
+        } else {
+            format!(
+                "struct SharedVec {{{}* ptr; unsigned int len; }};",
+                T::cuda_type()
+            )
+        }
+    }
+}
+
+impl<T> std::ops::Deref for SharedVec<T>
+where
+    T: DeviceShareable,
+{
+    type Target = Vec<T>;
+    fn deref(&self) -> &Vec<T> {
+        &self.vec
+    }
+}
+
+impl<T> std::ops::DerefMut for SharedVec<T>
+where
+    T: DeviceShareable,
+{
+    fn deref_mut(&mut self) -> &mut Vec<T> {
+        &mut self.vec
+    }
+}
+
 /// Macro to generate a newtype wrapper with DeviceShareable and Deref
 /// implemented
 #[macro_export]
@@ -243,7 +373,7 @@ macro_rules! math_type {
             fn to_device(&self) -> Self::Target {
                 *self
             }
-            fn cuda_decl(_: bool) -> String {
+            fn cuda_type() -> String {
                 stringify!($ty).into()
             }
         }

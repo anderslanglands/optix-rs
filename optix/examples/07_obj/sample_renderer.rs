@@ -9,8 +9,8 @@ use std::rc::Rc;
 #[device_shared]
 struct TriangleMeshSBTData {
     color: V3f32,
-    vertex: Rc<optix::CtBuffer<V3f32>>,
-    index: Rc<optix::CtBuffer<V3i32>>,
+    vertex: Rc<optix::Buffer<V3f32>>,
+    index: Rc<optix::Buffer<V3i32>>,
 }
 
 pub struct Mesh {
@@ -198,9 +198,9 @@ impl SampleRenderer {
 
         for mesh in &model.meshes {
             let vertex_buffer =
-                Rc::new(optix::CtBuffer::new(&mesh.vertex).unwrap());
+                Rc::new(optix::Buffer::new(&mesh.vertex).unwrap());
             let index_buffer =
-                Rc::new(optix::CtBuffer::new(&mesh.index).unwrap());
+                Rc::new(optix::Buffer::new(&mesh.index).unwrap());
 
             let mesh_sbt_data = TriangleMeshSBTData {
                 color: mesh.diffuse.into(),
@@ -298,7 +298,7 @@ impl SampleRenderer {
             }
         };
 
-        let color_buffer = optix::CtBuffer::<V4f32>::uninitialized(
+        let color_buffer = optix::Buffer::<V4f32>::uninitialized(
             (fb_size.x * fb_size.y) as usize,
         )?;
 
@@ -362,7 +362,7 @@ impl SampleRenderer {
     pub fn resize(&mut self, size: V2i32) {
         self.launch_params.frame.size = size.into();
         self.launch_params.frame.color_buffer =
-            optix::CtBuffer::<V4f32>::uninitialized((size.x * size.y) as usize)
+            optix::Buffer::<V4f32>::uninitialized((size.x * size.y) as usize)
                 .unwrap();
     }
 
@@ -489,7 +489,7 @@ struct RenderCamera {
 
 #[device_shared]
 struct Frame {
-    color_buffer: optix::CtBuffer<V4f32>,
+    color_buffer: optix::Buffer<V4f32>,
     size: V2i32,
 }
 

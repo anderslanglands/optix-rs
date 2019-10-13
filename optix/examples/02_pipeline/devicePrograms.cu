@@ -18,8 +18,6 @@
 
 #include "LaunchParams.h"
 
-typedef unsigned int uint32_t;
-
 using namespace osc;
 
 namespace osc {

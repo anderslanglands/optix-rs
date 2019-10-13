@@ -1,14 +1,13 @@
 use optix_sys as sys;
 
 use super::{
-    buffer::{BufferElement, BufferFormat, CtBuffer},
+    buffer::{Buffer, BufferElement, BufferFormat},
     device_context::DeviceContext,
     error::Error,
 };
 type Result<T, E = Error> = std::result::Result<T, E>;
 
 use std::convert::{TryFrom, TryInto};
-use std::ffi::{CStr, CString};
 
 use std::rc::Rc;
 
@@ -48,9 +47,9 @@ where
     V: BufferElement,
     I: BufferElement,
 {
-    vertex_buffers: Vec<Rc<CtBuffer<V>>>,
+    vertex_buffers: Vec<Rc<Buffer<V>>>,
     vertex_buffers_d: Vec<cuda::CUdeviceptr>,
-    index_buffer: Rc<CtBuffer<I>>,
+    index_buffer: Rc<Buffer<I>>,
     flags: GeometryFlags,
 }
 
@@ -60,8 +59,8 @@ where
     I: BufferElement,
 {
     pub fn new(
-        vertex_buffers: Vec<Rc<CtBuffer<V>>>,
-        index_buffer: Rc<CtBuffer<I>>,
+        vertex_buffers: Vec<Rc<Buffer<V>>>,
+        index_buffer: Rc<Buffer<I>>,
         flags: GeometryFlags,
     ) -> Result<TriangleArray<V, I>> {
         let vertex_buffers_d: Vec<cuda::CUdeviceptr> =
@@ -388,7 +387,7 @@ impl super::DeviceShareable for TraversableHandle {
     fn to_device(&self) -> Self::Target {
         self.hnd
     }
-    fn cuda_decl(_: bool) -> String {
+    fn cuda_type() -> String {
         "OptixTraversableHandle".into()
     }
 }

@@ -11,10 +11,10 @@ use std::rc::Rc;
 #[device_shared]
 struct TriangleMeshSBTData {
     color: V3f32,
-    vertex: Rc<optix::CtBuffer<V3f32>>,
-    normal: Rc<optix::CtBuffer<V3f32>>,
-    texcoord: Rc<optix::CtBuffer<V2f32>>,
-    index: Rc<optix::CtBuffer<V3i32>>,
+    vertex: Rc<optix::Buffer<V3f32>>,
+    normal: Rc<optix::Buffer<V3f32>>,
+    texcoord: Rc<optix::Buffer<V2f32>>,
+    index: Rc<optix::Buffer<V3i32>>,
     has_texture: bool,
     texture: Option<Rc<cuda::TextureObject>>,
 }
@@ -249,13 +249,13 @@ impl SampleRenderer {
 
         for mesh in &model.meshes {
             let vertex_buffer =
-                Rc::new(optix::CtBuffer::new(&mesh.vertex).unwrap());
+                Rc::new(optix::Buffer::new(&mesh.vertex).unwrap());
             let index_buffer =
-                Rc::new(optix::CtBuffer::new(&mesh.index).unwrap());
+                Rc::new(optix::Buffer::new(&mesh.index).unwrap());
             let normal_buffer =
-                Rc::new(optix::CtBuffer::new(&mesh.normal).unwrap());
+                Rc::new(optix::Buffer::new(&mesh.normal).unwrap());
             let texcoord_buffer =
-                Rc::new(optix::CtBuffer::new(&mesh.texcoord).unwrap());
+                Rc::new(optix::Buffer::new(&mesh.texcoord).unwrap());
 
             let (has_texture, texture) =
                 if let Some(texture_id) = mesh.diffuse_texture_id {
@@ -359,7 +359,7 @@ impl SampleRenderer {
             }
         };
 
-        let color_buffer = optix::CtBuffer::<V4f32>::uninitialized(
+        let color_buffer = optix::Buffer::<V4f32>::uninitialized(
             (fb_size.x * fb_size.y) as usize,
         )?;
 
@@ -428,7 +428,7 @@ impl SampleRenderer {
     pub fn resize(&mut self, size: V2i32) {
         self.launch_params.frame.size = size.into();
         self.launch_params.frame.color_buffer =
-            optix::CtBuffer::<V4f32>::uninitialized((size.x * size.y) as usize)
+            optix::Buffer::<V4f32>::uninitialized((size.x * size.y) as usize)
                 .unwrap();
     }
 
@@ -555,7 +555,7 @@ struct RenderCamera {
 
 #[device_shared]
 struct Frame {
-    color_buffer: optix::CtBuffer<V4f32>,
+    color_buffer: optix::Buffer<V4f32>,
     size: V2i32,
 }
 

@@ -136,7 +136,7 @@ impl DeviceContext {
         }
 
         let module = super::Ref::new(Module { module });
-        self.modules.push(super::Ref::clone(&module));
+        // self.modules.push(super::Ref::clone(&module));
         Ok((module, log))
     }
 }

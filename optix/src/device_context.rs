@@ -17,8 +17,8 @@ pub struct DeviceContext {
     pub(crate) ctx: sys::OptixDeviceContext,
 
     // handles for all object types
-    pub(crate) modules: Vec<ModuleRef>,
-    pub(crate) program_groups: Vec<ProgramGroupRef>,
+    // pub(crate) modules: Vec<ModuleRef>,
+    // pub(crate) program_groups: Vec<ProgramGroupRef>,
     pub(crate) pipelines: Vec<PipelineRef>,
 }
 
@@ -48,7 +48,10 @@ impl DeviceContext {
                 panic!("optixDeviceContextCreate returned NULL");
             }
 
-            Ok(DeviceContext { ctx, modules: Vec::new(), program_groups: Vec::new(), pipelines: Vec::new() })
+            Ok(DeviceContext { ctx, 
+            // modules: Vec::new(), 
+            // program_groups: Vec::new(), 
+            pipelines: Vec::new() })
         }
     }
 

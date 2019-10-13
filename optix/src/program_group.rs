@@ -98,7 +98,7 @@ impl DeviceContext {
                     }
 
                     let pg = super::Ref::new(ProgramGroup { pg, desc });
-                    self.program_groups.push(super::Ref::clone(&pg));
+                    // self.program_groups.push(super::Ref::clone(&pg));
                     Ok((pg, log))
                 }
                 ProgramGroupDesc::Miss(ProgramGroupModule {
@@ -141,7 +141,7 @@ impl DeviceContext {
                     }
 
                     let pg = super::Ref::new(ProgramGroup { pg, desc });
-                    self.program_groups.push(super::Ref::clone(&pg));
+                    // self.program_groups.push(super::Ref::clone(&pg));
                     Ok((pg, log))
                 }
                 ProgramGroupDesc::Hitgroup { ch, ah, is } => {
@@ -220,7 +220,7 @@ impl DeviceContext {
                     }
 
                     let pg = super::Ref::new(ProgramGroup { pg, desc });
-                    self.program_groups.push(super::Ref::clone(&pg));
+                    // self.program_groups.push(super::Ref::clone(&pg));
                     Ok((pg, log))
                 }
             }

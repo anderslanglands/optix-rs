@@ -13,11 +13,11 @@ use std::sync::Arc;
 pub struct SampleRenderer {
     cuda_context: cuda::ContextRef,
     stream: cuda::Stream,
+    ctx: optix::DeviceContext,
     pipeline: optix::PipelineRef,
     sbt: optix::ShaderBindingTable,
     launch_params: SharedVariable<LaunchParams>,
     last_set_camera: Camera,
-    ctx: optix::DeviceContext,
 }
 
 impl SampleRenderer {
@@ -33,15 +33,6 @@ impl SampleRenderer {
         let num_devices = cuda::get_device_count();
         println!("Found {} CUDA devices", num_devices);
 
-        let header = cuda::nvrtc::Header {
-            name: "launch_params.h".into(),
-            contents: format!(
-                "{} {}",
-                TriangleMeshSBTData::cuda_decl(false),
-                LaunchParams::cuda_decl(false)
-            ),
-        };
-
         // Initialize optix function table. Must be called before calling
         // any OptiX functions.
         optix::init()?;
@@ -50,7 +41,7 @@ impl SampleRenderer {
         cuda::set_device(0)?;
 
         // Create a new stream to submit work on
-        let stream = cuda::Stream::new().unwrap();
+        let stream = cuda::Stream::new()?;
 
         // Get the device properties
         let device_prop = cuda::get_device_properties(0)?;
@@ -60,7 +51,7 @@ impl SampleRenderer {
             device_prop.total_global_mem() / (1024 * 1024)
         );
 
-        // Get the context for the current thread
+        // Get the CUDA context for the current thread
         let cuda_context = cuda::Context::get_current()?;
 
         // Create the device context and enable logging
@@ -87,8 +78,17 @@ impl SampleRenderer {
             pipeline_launch_params_variable_name: "optixLaunchParams".into(),
         };
 
-        // We just have a single program for now. Compile it from
-        // source using nvrtc
+        // Compile our programs to PTX
+        // Any struct tagged with the #[device_shared] attribute can be shared
+        // with CUDA, and have a C declaration generated for it automatically
+        let header = cuda::nvrtc::Header {
+            name: "launch_params.h".into(),
+            contents: format!(
+                "{} {}",
+                TriangleMeshSBTData::cuda_decl(false),
+                LaunchParams::cuda_decl(false)
+            ),
+        };
         let cuda_source = include_str!("devicePrograms.cu");
         let ptx = compile_to_ptx(cuda_source, header);
 
@@ -223,28 +223,31 @@ impl SampleRenderer {
             texture_objects.push(Rc::new(texture_object));
         }
 
-        // Build Shader Binding Table Records
+        // Build raygen and miss SBT records
         let rg_rec = SbtRecord::new(0i32, std::sync::Arc::clone(&raygen_pg));
         let miss_recs = miss_pgs
             .iter()
             .map(|p| SbtRecord::new(0i32, std::sync::Arc::clone(&p)))
             .collect::<Vec<_>>();
 
+        // Loop over all the meshes in the model.
+        // For each mesh:
+        // 1) Create device primvar and index buffers
+        // 2) Create the TriangleMeshSBTData referencing those buffers that we
+        //    will use to reference those primvars in the hit programs.
+        // 3) Create the hitgroup SBT records with the TriangleMeshSBTData
+        // 4) Create the acceleration structure build input
         let mut hg_recs = Vec::new();
-
-        // build accel
-        // upload the model data and create the triangle array build input
         let mut build_inputs = Vec::with_capacity(model.meshes.len());
-
         for mesh in &model.meshes {
             let vertex_buffer =
-                Rc::new(optix::CtBuffer::new(&mesh.vertex).unwrap());
+                Rc::new(optix::Buffer::new(&mesh.vertex).unwrap());
             let index_buffer =
-                Rc::new(optix::CtBuffer::new(&mesh.index).unwrap());
+                Rc::new(optix::Buffer::new(&mesh.index).unwrap());
             let normal_buffer =
-                Rc::new(optix::CtBuffer::new(&mesh.normal).unwrap());
+                Rc::new(optix::Buffer::new(&mesh.normal).unwrap());
             let texcoord_buffer =
-                Rc::new(optix::CtBuffer::new(&mesh.texcoord).unwrap());
+                Rc::new(optix::Buffer::new(&mesh.texcoord).unwrap());
 
             for pg in &hitgroup_pgs {
                 let (has_texture, texture) =
@@ -282,10 +285,9 @@ impl SampleRenderer {
             build_inputs.push(build_input);
         }
 
-        // BLAS setup
+        // Acceleration structure setup
         let accel_build_options = optix::AccelBuildOptions {
-            build_flags: optix::BuildFlags::NONE
-                | optix::BuildFlags::ALLOW_COMPACTION,
+            build_flags: optix::BuildFlags::ALLOW_COMPACTION,
             operation: optix::BuildOperation::Build,
             motion_options: optix::MotionOptions {
                 num_keys: 1,
@@ -294,19 +296,16 @@ impl SampleRenderer {
                 time_end: 0.0,
             },
         };
-
         let blas_buffer_sizes = ctx
             .accel_compute_memory_usage(&accel_build_options, &build_inputs)?;
-
         let compacted_size_buffer =
             cuda::Buffer::new(std::mem::size_of::<usize>())?;
-
         let compacted_size_desc = optix::AccelEmitDesc::new(
             &compacted_size_buffer,
             optix::AccelPropertyType::CompactedSize,
         );
 
-        // allocate and execute build
+        // Allocate and build acceleration structure
         let temp_buffer =
             cuda::Buffer::new(blas_buffer_sizes[0].temp_size_in_bytes)?;
         let output_buffer =
@@ -323,13 +322,7 @@ impl SampleRenderer {
 
         // ultimately we'd want to do something more complex with async streams
         // here rather than a stop-the-world sync, but this will do for now.
-        match cuda::device_synchronize() {
-            Ok(_) => (),
-            Err(e) => {
-                println!("build sync failed");
-                return Err(e.into());
-            }
-        };
+        cuda::device_synchronize()?;
 
         // now compact the acceleration structure
         let compacted_size =
@@ -340,24 +333,23 @@ impl SampleRenderer {
             ctx.accel_compact(&cuda::Stream::default(), as_handle, as_buffer)?;
 
         // sync again
-        match cuda::device_synchronize() {
-            Ok(_) => (),
-            Err(e) => {
-                println!("compact sync failed");
-                return Err(e.into());
-            }
-        };
+        cuda::device_synchronize()?;
 
-        let color_buffer = optix::CtBuffer::<V4f32>::uninitialized(
+        // allocate the output buffer
+        let color_buffer = optix::Buffer::<V4f32>::uninitialized(
             (fb_size.x * fb_size.y) as usize,
         )?;
 
+        // set up the camera
         let cos_fovy = 0.66f32;
         let aspect = fb_size.x as f32 / fb_size.y as f32;
         let direction = (camera.at - camera.from).normalized();
         let horizontal =
             cos_fovy * aspect * direction.cross(camera.up).normalized();
         let vertical = cos_fovy * horizontal.cross(direction).normalized();
+
+        // Create the LaunchParams struct that will be shared as a __constant__
+        // on the device
         let launch_params = LaunchParams {
             frame: Frame {
                 color_buffer,
@@ -379,13 +371,18 @@ impl SampleRenderer {
             traversable: as_handle,
         };
 
-        let sbt = optix::ShaderBindingTableBuilder::new(rg_rec)
+        // Build the ShaderBindingTable with the records we created earlier
+        let sbt = optix::ShaderBindingTable::new(rg_rec)
             .miss_records(miss_recs)
             .hitgroup_records(hg_recs)
             .build();
 
+        // Create the SharedVariable that wraps the LaunchParams. This manages
+        // the device-side storage for us. When we want to sync to the device
+        // we just call upload()
         let launch_params = SharedVariable::<LaunchParams>::new(launch_params)?;
 
+        // Store the pieces we need to persist in the SampleRenderer
         Ok(SampleRenderer {
             cuda_context,
             stream,
@@ -398,9 +395,13 @@ impl SampleRenderer {
     }
 
     pub fn render(&mut self) {
+        // increment the frame id on the launch params to seed the RNG
         self.launch_params.frame.accum_id += 1;
+        // sync the updated params to the device
         self.launch_params.upload().unwrap();
 
+        // launch the kernel with our pipeline, params and sbt on the given
+        // CUDA stream
         self.ctx
             .launch(
                 &self.pipeline,
@@ -418,13 +419,16 @@ impl SampleRenderer {
         cuda::device_synchronize().unwrap();
     }
 
+    // update the size on the params and allocate a new output buffer
+    // params will be synced before next launch in render()
     pub fn resize(&mut self, size: V2i32) {
-        self.launch_params.frame.size = size.into();
+        self.launch_params.frame.size = size;
         self.launch_params.frame.color_buffer =
-            optix::CtBuffer::<V4f32>::uninitialized((size.x * size.y) as usize)
+            optix::Buffer::<V4f32>::uninitialized((size.x * size.y) as usize)
                 .unwrap();
     }
 
+    // copy the output image buffer back to the host
     pub fn download_pixels(&self, pixels: &mut [V4f32]) -> Result<()> {
         self.launch_params.frame.color_buffer.download(pixels)?;
         Ok(())
@@ -451,10 +455,6 @@ fn compile_to_ptx(src: &str, header: cuda::nvrtc::Header) -> String {
     // Create a vector of options to pass to the compiler
     let optix_inc = format!("-I{}/include", optix_root);
     let cuda_inc = format!("-I{}/include", cuda_root);
-    let source_inc = format!(
-        "-I{}/examples/10_softshadow",
-        std::env::var("CARGO_MANIFEST_DIR").unwrap()
-    );
     let common_inc = format!(
         "-I{}/examples/common",
         std::env::var("CARGO_MANIFEST_DIR").unwrap()
@@ -463,7 +463,6 @@ fn compile_to_ptx(src: &str, header: cuda::nvrtc::Header) -> String {
     let options = vec![
         optix_inc,
         cuda_inc,
-        source_inc,
         common_inc,
         "-I/usr/include/x86_64-linux-gnu".into(),
         "-I/usr/lib/gcc/x86_64-linux-gnu/7/include".into(),
@@ -548,7 +547,7 @@ struct RenderCamera {
 
 #[device_shared]
 struct Frame {
-    color_buffer: optix::CtBuffer<V4f32>,
+    color_buffer: optix::Buffer<V4f32>,
     size: V2i32,
     accum_id: i32,
 }
@@ -572,10 +571,10 @@ pub struct LaunchParams {
 #[device_shared]
 struct TriangleMeshSBTData {
     color: V3f32,
-    vertex: Rc<optix::CtBuffer<V3f32>>,
-    normal: Rc<optix::CtBuffer<V3f32>>,
-    texcoord: Rc<optix::CtBuffer<V2f32>>,
-    index: Rc<optix::CtBuffer<V3i32>>,
+    vertex: Rc<optix::Buffer<V3f32>>,
+    normal: Rc<optix::Buffer<V3f32>>,
+    texcoord: Rc<optix::Buffer<V2f32>>,
+    index: Rc<optix::Buffer<V3i32>>,
     has_texture: bool,
     texture: Option<Rc<cuda::TextureObject>>,
 }

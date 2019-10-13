@@ -12,7 +12,7 @@ use optix_derive::device_shared;
 #[device_shared]
 pub struct LaunchParams {
     frame_id: i32,
-    color_buffer: optix::CtBuffer<V4f32>,
+    color_buffer: optix::Buffer<V4f32>,
     fb_size: V2i32,
 }
 
@@ -95,6 +95,7 @@ impl SampleRenderer {
 
         let cuda_source = include_str!("devicePrograms.cu");
         let ptx = compile_to_ptx(cuda_source, header);
+        println!("ptx:\n{}", ptx);
 
         // Create the module
         let (module, log) = ctx.module_create_from_ptx(
@@ -178,7 +179,7 @@ impl SampleRenderer {
             .hitgroup_records(vec![hg_rec])
             .build();
 
-        let color_buffer = optix::CtBuffer::<V4f32>::uninitialized(
+        let color_buffer = optix::Buffer::<V4f32>::uninitialized(
             (fb_size.x * fb_size.y) as usize,
         )?;
 
@@ -225,7 +226,7 @@ impl SampleRenderer {
     pub fn resize(&mut self, size: V2i32) {
         self.launch_params.fb_size = size;
         self.launch_params.color_buffer =
-            optix::CtBuffer::<V4f32>::uninitialized((size.x * size.y) as usize)
+            optix::Buffer::<V4f32>::uninitialized((size.x * size.y) as usize)
                 .unwrap();
     }
 
