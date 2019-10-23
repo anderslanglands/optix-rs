@@ -151,6 +151,42 @@ impl DeviceShareable for bool {
     }
 }
 
+impl<T> DeviceShareable for std::rc::Rc<T>
+where
+    T: DeviceShareable,
+{
+    type Target = T::Target;
+    fn to_device(&self) -> T::Target {
+        (**self).to_device()
+    }
+
+    fn cuda_type() -> String {
+        T::cuda_type()
+    }
+
+    fn cuda_decl(nested: bool) -> String {
+        T::cuda_decl(nested)
+    }
+}
+
+impl<T> DeviceShareable for std::rc::Rc<std::cell::RefCell<T>>
+where
+    T: DeviceShareable,
+{
+    type Target = T::Target;
+    fn to_device(&self) -> T::Target {
+        self.borrow().to_device()
+    }
+
+    fn cuda_type() -> String {
+        T::cuda_type()
+    }
+
+    fn cuda_decl(nested: bool) -> String {
+        T::cuda_decl(nested)
+    }
+}
+
 /// Wrapper type to represent a variable that is shared between Rust and CUDA.
 pub struct SharedVariable<T>
 where
@@ -212,6 +248,7 @@ where
     }
 }
 
+/// Wrapper type to share a Vec with CUDA as a buffer.
 pub struct SharedVec<T>
 where
     T: DeviceShareable,
@@ -225,13 +262,13 @@ where
     T: DeviceShareable,
     T::Target: std::fmt::Debug,
 {
-    /// Create a new SharedVec, taking ownership of the variable `var`.
+    /// Create a new SharedVec, taking ownership of the Vec `vec`.
     ///
     /// Once the `SharedVec` has been created, it can be uploaded to the
-    /// device using the `SharedVariable::upload()` method. `SharedVec`
+    /// device using the `SharedVec::upload()` method. `SharedVec`
     /// handles management of the underlying CUDA buffer used for device-side
     /// storage. `SharedVec` implements Deref targeting the wrapped
-    /// variable type for easy access.
+    /// vec for easy access.
     pub fn new(vec: Vec<T>) -> Result<SharedVec<T>> {
         let cvec: Vec<T::Target> = vec
             .iter()

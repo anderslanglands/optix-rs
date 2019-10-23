@@ -56,16 +56,6 @@ impl DeviceShareable for DynamicBuffer {
     }
 }
 
-impl DeviceShareable for Rc<DynamicBuffer> {
-    type Target = cuda::CUdeviceptr;
-    fn to_device(&self) -> Self::Target {
-        self.buffer.as_device_ptr()
-    }
-    fn cuda_type() -> String {
-        "void*".into()
-    }
-}
-
 pub struct Buffer<T>
 where
     T: BufferElement,
@@ -125,19 +115,6 @@ where
 }
 
 impl<T> DeviceShareable for Buffer<T>
-where
-    T: BufferElement,
-{
-    type Target = cuda::CUdeviceptr;
-    fn to_device(&self) -> Self::Target {
-        self.buffer.as_device_ptr()
-    }
-    fn cuda_type() -> String {
-        format!("{}*", T::FORMAT.device_name())
-    }
-}
-
-impl<T> DeviceShareable for Rc<Buffer<T>>
 where
     T: BufferElement,
 {
