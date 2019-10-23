@@ -64,20 +64,12 @@ pub fn device_shared(attr: TokenStream, item: TokenStream) -> TokenStream {
         fn cuda_type() -> String {
             #s_name.into()
         }
-        fn cuda_decl(nested: bool) -> String {
-            let mut s: String = if nested {
-                "struct {".into()
-            } else {
-                format!("struct {} {{", #s_name)
-            };
+        fn cuda_decl() -> String {
+            let mut s =   format!("struct {} {{", #s_name);
             #(
-                s = format!("{} {} {};", s, <#field_type as DeviceShareable>::cuda_decl(true), #s_field_name);
+                s = format!("{} {} {};", s, <#field_type as DeviceShareable>::cuda_type(), #s_field_name);
             )*
-            if nested {
-                s = format!("{} }}", s);
-            } else {
-                s = format!("{} }};", s);
-            }
+            s = format!("{} }};", s);
             s
         }
     };

@@ -52,7 +52,10 @@ impl DeviceShareable for DynamicBuffer {
         self.buffer.as_device_ptr()
     }
     fn cuda_type() -> String {
-        "void*".into()
+        "DynBuffer".into()
+    }
+    fn cuda_decl() -> String {
+        "struct DynBuffer { void* ptr; size_t len; };".into()
     }
 }
 
@@ -114,16 +117,51 @@ where
     }
 }
 
+#[derive(Copy, Clone, Debug)]
+pub struct BufferD {
+    ptr: cuda::CUdeviceptr,
+    len: usize,
+}
+
 impl<T> DeviceShareable for Buffer<T>
 where
     T: BufferElement,
 {
-    type Target = cuda::CUdeviceptr;
+    type Target = BufferD;
     fn to_device(&self) -> Self::Target {
-        self.buffer.as_device_ptr()
+        BufferD {
+            ptr: self.buffer.as_device_ptr(),
+            len: self.len(),
+        }
     }
     fn cuda_type() -> String {
-        format!("{}*", T::FORMAT.device_name())
+        format!("Buffer<{}>", T::FORMAT.device_name())
+    }
+
+    fn cuda_decl() -> String {
+        r#"
+template <typename ElemT> 
+struct Buffer { 
+    ElemT* ptr; size_t len; 
+
+    const ElemT& operator[](size_t i) const {
+        return ptr[i];
+    } 
+
+    ElemT& operator[](size_t i) {
+        return ptr[i];
+    } 
+
+    bool is_null() const {
+        return ptr == nullptr;
+    }
+
+    bool is_empty() const {
+        return len == 0;
+    }
+};
+"#
+        .into()
     }
 }
 

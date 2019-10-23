@@ -59,7 +59,7 @@ pub fn init() -> Result<()> {
 pub trait DeviceShareable {
     type Target: Copy;
     fn to_device(&self) -> Self::Target;
-    fn cuda_decl(nested: bool) -> String {
+    fn cuda_decl() -> String {
         Self::cuda_type()
     }
     fn cuda_type() -> String;
@@ -164,8 +164,8 @@ where
         T::cuda_type()
     }
 
-    fn cuda_decl(nested: bool) -> String {
-        T::cuda_decl(nested)
+    fn cuda_decl() -> String {
+        T::cuda_decl()
     }
 }
 
@@ -182,8 +182,8 @@ where
         T::cuda_type()
     }
 
-    fn cuda_decl(nested: bool) -> String {
-        T::cuda_decl(nested)
+    fn cuda_decl() -> String {
+        T::cuda_decl()
     }
 }
 
@@ -308,7 +308,7 @@ where
 #[derive(Copy, Clone)]
 pub struct SharedVecD {
     pub ptr: cuda::CUdeviceptr,
-    pub len: u32,
+    pub len: usize,
 }
 
 impl<T> DeviceShareable for SharedVec<T>
@@ -319,21 +319,16 @@ where
     fn to_device(&self) -> SharedVecD {
         SharedVecD {
             ptr: self.buffer.as_device_ptr(),
-            len: self.vec.len() as u32,
+            len: self.vec.len(),
         }
     }
+
     fn cuda_type() -> String {
-        "SharedVec".into()
+        format!("SharedVec<{}>", T::cuda_type())
     }
-    fn cuda_decl(nested: bool) -> String {
-        if nested {
-            format!("struct {{{}* ptr; unsigned int len; }}", T::cuda_type())
-        } else {
-            format!(
-                "struct SharedVec {{{}* ptr; unsigned int len; }};",
-                T::cuda_type()
-            )
-        }
+
+    fn cuda_decl() -> String {
+        "template <typename T> SharedVec {T* ptr; size_t len; };".into()
     }
 }
 
@@ -369,7 +364,7 @@ macro_rules! wrap_copyable_for_device {
             fn to_device(&self) -> Self::Target {
                 *self
             }
-            fn cuda_decl(_: bool) -> String {
+            fn cuda_type() -> String {
                 stringify!($ty).into()
             }
         }

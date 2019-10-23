@@ -84,7 +84,7 @@ extern "C" __global__ void __closesthit__radiance() {
     const V3f32& B = sbtData.vertex[index.y];
     const V3f32& C = sbtData.vertex[index.z];
     V3f32 Ng = cross(B - A, C - A);
-    V3f32 Ns = (sbtData.normal)
+    V3f32 Ns = (!sbtData.normal.is_null())
                    ? ((1.f - u - v) * sbtData.normal[index.x] +
                       u * sbtData.normal[index.y] + v * sbtData.normal[index.z])
                    : Ng;
@@ -107,7 +107,7 @@ extern "C" __global__ void __closesthit__radiance() {
     // available
     // ------------------------------------------------------------------
     V3f32 diffuseColor = sbtData.color;
-    if (sbtData.has_texture && sbtData.texcoord) {
+    if (sbtData.has_texture && !sbtData.texcoord.is_null()) {
         const V2f32 tc = (1.f - u - v) * sbtData.texcoord[index.x] +
                          u * sbtData.texcoord[index.y] +
                          v * sbtData.texcoord[index.z];

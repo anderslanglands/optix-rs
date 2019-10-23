@@ -90,8 +90,13 @@ impl SampleRenderer {
         // source using nvrtc
         let header = cuda::nvrtc::Header {
             name: "launch_params.h".into(),
-            contents: LaunchParams::cuda_decl(false),
+            contents: format!(
+                "{} {}",
+                optix::Buffer::<i32>::cuda_decl(),
+                LaunchParams::cuda_decl(),
+            ),
         };
+        println!("header:\n{}", header.contents);
 
         let cuda_source = include_str!("devicePrograms.cu");
         let ptx = compile_to_ptx(cuda_source, header);

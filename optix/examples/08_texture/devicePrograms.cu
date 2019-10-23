@@ -86,7 +86,7 @@ extern "C" __global__ void __closesthit__radiance() {
     // geometry normal (fallback)
     // ------------------------------------------------------------------
     V3f32 N(0.0f, 0.0f, 0.0f);
-    if (sbtData.normal) {
+    if (!sbtData.normal.is_null()) {
         N = (1.f - u - v) * sbtData.normal[index.x] +
             u * sbtData.normal[index.y] + v * sbtData.normal[index.z];
     } else {
@@ -102,7 +102,7 @@ extern "C" __global__ void __closesthit__radiance() {
     // available
     // ------------------------------------------------------------------
     V3f32 diffuseColor = sbtData.color;
-    if (sbtData.has_texture && sbtData.texcoord) {
+    if (sbtData.has_texture && !sbtData.texcoord.is_null()) {
         const V2f32 tc = (1.f - u - v) * sbtData.texcoord[index.x] +
                          u * sbtData.texcoord[index.y] +
                          v * sbtData.texcoord[index.z];

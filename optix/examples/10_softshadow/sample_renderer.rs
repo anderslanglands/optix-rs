@@ -84,9 +84,13 @@ impl SampleRenderer {
         let header = cuda::nvrtc::Header {
             name: "launch_params.h".into(),
             contents: format!(
-                "{} {}",
-                TriangleMeshSBTData::cuda_decl(false),
-                LaunchParams::cuda_decl(false)
+                "{} {} {} {} {} {}",
+                optix::Buffer::<i32>::cuda_decl(),
+                Frame::cuda_decl(),
+                RenderCamera::cuda_decl(),
+                RenderLight::cuda_decl(),
+                LaunchParams::cuda_decl(),
+                TriangleMeshSBTData::cuda_decl(),
             ),
         };
         let cuda_source = include_str!("devicePrograms.cu");
