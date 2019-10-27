@@ -4,6 +4,7 @@ use super::{
     buffer::{Buffer, BufferElement, BufferFormat},
     device_context::DeviceContext,
     error::Error,
+    instance::Instance,
 };
 type Result<T, E = Error> = std::result::Result<T, E>;
 
@@ -34,6 +35,14 @@ where
                     sys::OptixBuildInputType_OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
                 unsafe {
                     input.triangle_array = ta.try_into().unwrap();
+                }
+                sys::OptixBuildInput { type_, input }
+            }
+            BuildInput::Instance(ia) => {
+                let type_ =
+                    sys::OptixBuildInputType_OPTIX_BUILD_INPUT_TYPE_INSTANCES;
+                unsafe {
+                    input.instance_array = ia.into();
                 }
                 sys::OptixBuildInput { type_, input }
             }
@@ -159,7 +168,40 @@ where
 
 pub struct CustomPrimitiveArray {}
 
-pub struct InstanceArray {}
+pub struct InstanceArray {
+    instances: cuda::Buffer,
+    num_instances: u32,
+    aabbs: Option<cuda::Buffer>,
+    num_aabbs: u32,
+}
+
+impl InstanceArray {
+    pub fn new(instances: &[Instance]) -> Result<InstanceArray> {
+        let num_instances = instances.len() as u32;
+        let instances = cuda::Buffer::with_data(instances)?;
+        Ok(InstanceArray {
+            instances,
+            num_instances,
+            aabbs: None,
+            num_aabbs: 0,
+        })
+    }
+}
+
+impl From<&InstanceArray> for sys::OptixBuildInputInstanceArray {
+    fn from(ia: &InstanceArray) -> sys::OptixBuildInputInstanceArray {
+        sys::OptixBuildInputInstanceArray {
+            instances: ia.instances.as_device_ptr(),
+            numInstances: ia.num_instances,
+            aabbs: if let Some(a) = &ia.aabbs {
+                a.as_device_ptr()
+            } else {
+                0
+            },
+            numAabbs: ia.num_aabbs,
+        }
+    }
+}
 
 bitflags! {
     pub struct GeometryFlags: u32 {

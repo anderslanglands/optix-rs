@@ -31,8 +31,8 @@ pub struct LaunchParams {
 }
 
 pub struct SampleRenderer {
-    // CUDA device context and stream that optix pipeline will run on as well as
-    // device properties
+    // CUDA device context and stream that optix pipeline will run on as well
+    // as device properties
     cuda_context: CUcontext,
     stream: CUstream,
     device_props: cudaDeviceProp,
@@ -47,16 +47,16 @@ pub struct SampleRenderer {
 
     // Vector of all our program groups and the SBT built around them
     raygen_pgs: Vec<OptixProgramGroup>,
-    raygen_records_buffer: CudaBuffer,
+    raygen_records_buffer: cuda::Buffer,
     miss_pgs: Vec<OptixProgramGroup>,
-    miss_records_buffer: CudaBuffer,
+    miss_records_buffer: cuda::Buffer,
     hitgroup_pgs: Vec<OptixProgramGroup>,
-    hitgroup_records_buffer: CudaBuffer,
+    hitgroup_records_buffer: cuda::Buffer,
     sbt: OptixShaderBindingTable,
     launch_params: LaunchParams,
-    launch_params_buffer: CudaBuffer,
+    launch_params_buffer: cuda::Buffer,
 
-    color_buffer: CudaBuffer,
+    color_buffer: cuda::Buffer,
 }
 
 impl SampleRenderer {
@@ -350,7 +350,8 @@ impl SampleRenderer {
                 pipeline,
                 // direct stack size for direct callables invoked for IS or AH
                 2 * 1024,
-                // direct stack size for direct callables invoked from RG, MS or CH
+                // direct stack size for direct callables invoked from RG, MS
+                // or CH
                 2 * 1024,
                 // continuation stack size
                 2 * 1024,
@@ -378,8 +379,9 @@ impl SampleRenderer {
 
                 raygen_records.push(rec);
             }
-            let raygen_records_buffer = CudaBuffer::with_data(&raygen_records);
-            let raygenRecord = raygen_records_buffer.d_ptr as CUdeviceptr;
+            let raygen_records_buffer =
+                cuda::Buffer::with_data(&raygen_records).unwrap();
+            let raygenRecord = raygen_records_buffer.as_device_ptr();
 
             let mut miss_records = Vec::with_capacity(miss_pgs.len());
             for miss_pg in &miss_pgs {
@@ -397,8 +399,9 @@ impl SampleRenderer {
 
                 miss_records.push(rec);
             }
-            let miss_records_buffer = CudaBuffer::with_data(&miss_records);
-            let missRecordBase = miss_records_buffer.d_ptr as CUdeviceptr;
+            let miss_records_buffer =
+                cuda::Buffer::with_data(&miss_records).unwrap();
+            let missRecordBase = miss_records_buffer.as_device_ptr();
             let missRecordStrideInBytes =
                 std::mem::size_of::<MissRecord>() as u32;
             let missRecordCount = miss_records.len() as u32;
@@ -427,9 +430,8 @@ impl SampleRenderer {
                 hitgroup_records.push(rec);
             }
             let hitgroup_records_buffer =
-                CudaBuffer::with_data(&hitgroup_records);
-            let hitgroupRecordBase =
-                hitgroup_records_buffer.d_ptr as CUdeviceptr;
+                cuda::Buffer::with_data(&hitgroup_records).unwrap();
+            let hitgroupRecordBase = hitgroup_records_buffer.as_device_ptr();
             let hitgroupRecordStrideInBytes =
                 std::mem::size_of::<HitgroupRecord>() as u32;
             let hitgroupRecordCount = hitgroup_records.len() as u32;
@@ -448,18 +450,20 @@ impl SampleRenderer {
                 callablesRecordCount: 0,
             };
 
-            let color_buffer = CudaBuffer::new(
+            let color_buffer = cuda::Buffer::new(
                 (fb_size.x * fb_size.y) as usize * std::mem::size_of::<u32>(),
-            );
+            )
+            .unwrap();
 
             let mut launch_params = LaunchParams {
                 frame_id: 0,
-                color_buffer: color_buffer.d_ptr as *mut u32,
+                color_buffer: color_buffer.as_device_ptr() as *mut u32,
                 fb_size,
             };
 
             let launch_params_buffer =
-                CudaBuffer::with_data(std::slice::from_ref(&launch_params));
+                cuda::Buffer::with_data(std::slice::from_ref(&launch_params))
+                    .unwrap();
 
             println!("Setup complete.");
 
@@ -495,8 +499,8 @@ impl SampleRenderer {
             let res = optixLaunch(
                 self.pipeline,
                 self.stream,
-                self.launch_params_buffer.d_ptr as CUdeviceptr,
-                self.launch_params_buffer.size_in_bytes,
+                self.launch_params_buffer.as_device_ptr(),
+                self.launch_params_buffer.byte_size(),
                 &self.sbt,
                 self.launch_params.fb_size.x as u32,
                 self.launch_params.fb_size.y as u32,
@@ -555,7 +559,7 @@ fn compile_to_ptx(src: &str) -> String {
 
     // The program object allows us to compile the cuda source and get ptx from
     // it if successful.
-    let mut prg = Program::new(src, "devicePrograms", Vec::new()).unwrap();
+    let mut prg = Program::new(src, "devicePrograms", &Vec::new()).unwrap();
 
     match prg.compile_program(&options) {
         Err(code) => {

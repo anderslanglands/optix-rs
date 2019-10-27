@@ -1,7 +1,7 @@
 use cuda_sys::{
     cudaFree, cudaGetDeviceCount, CUcontext, CUdeviceptr, CUstream,
 };
-use optix_sys::{optixInit, OptixResult_OPTIX_SUCCESS};
+use optix_sys::{optixInit, OptixResult};
 
 fn main() {
     unsafe {
@@ -14,7 +14,7 @@ fn main() {
         println!("Found {} CUDA devices", num_devices);
 
         let result = optixInit();
-        if result != OptixResult_OPTIX_SUCCESS {
+        if result != OptixResult::OPTIX_SUCCESS {
             panic!("OptiX init failed!");
         }
 

@@ -262,7 +262,7 @@ fn compile_to_ptx(src: &str) -> String {
 
     // The program object allows us to compile the cuda source and get ptx from
     // it if successful.
-    let mut prg = Program::new(src, "devicePrograms", Vec::new()).unwrap();
+    let mut prg = Program::new(src, "devicePrograms", &Vec::new()).unwrap();
 
     match prg.compile_program(&options) {
         Err(code) => {

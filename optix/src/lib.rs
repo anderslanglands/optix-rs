@@ -39,6 +39,9 @@ pub use acceleration::*;
 pub mod buffer;
 pub use buffer::*;
 
+pub mod instance;
+pub use instance::{make_instance, Instance, InstanceFlags};
+
 pub mod math;
 
 /// Initialize the OptiX library function table. This function *MUST* be called
@@ -148,6 +151,24 @@ impl DeviceShareable for bool {
     }
     fn cuda_type() -> String {
         "bool".into()
+    }
+}
+
+impl<T> DeviceShareable for &T
+where
+    T: DeviceShareable,
+{
+    type Target = T::Target;
+    fn to_device(&self) -> T::Target {
+        (**self).to_device()
+    }
+
+    fn cuda_type() -> String {
+        T::cuda_type()
+    }
+
+    fn cuda_decl() -> String {
+        T::cuda_decl()
     }
 }
 
@@ -328,7 +349,18 @@ where
     }
 
     fn cuda_decl() -> String {
-        "template <typename T> SharedVec {T* ptr; size_t len; };".into()
+        r#"
+template <typename T> 
+struct SharedVec {
+    T* ptr; 
+    size_t len; 
+
+    bool is_empty() const {
+        return len == 0;
+    }
+};
+        "#
+        .into()
     }
 }
 
@@ -423,4 +455,6 @@ mod tests {
     fn it_works() {
         assert_eq!(2 + 2, 4);
     }
+
+    use super::DeviceShareable;
 }

@@ -220,6 +220,7 @@ impl std::error::Error for Error {
     }
 }
 
+/*
 #[cfg(test)]
 mod tests {
     use super::{optixInit, OptixResult_OPTIX_SUCCESS};
@@ -255,3 +256,4 @@ mod tests {
         assert_eq!(OptixSbtRecordAlignment, 16);
     }
 }
+*/

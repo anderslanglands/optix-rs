@@ -75,12 +75,13 @@ pub fn device_shared(attr: TokenStream, item: TokenStream) -> TokenStream {
     };
 
     let field_name = fields.iter().map(|field| &field.ident);
+    let generics = &input.generics;
 
     let result = quote! {
         #result
 
         // now impl DeviceShareable for the original struct
-        impl DeviceShareable for #name {
+        impl#generics DeviceShareable for #name#generics {
             type Target = #d_name;
             fn to_device(&self) -> Self::Target {
                 #d_name {
@@ -92,6 +93,8 @@ pub fn device_shared(attr: TokenStream, item: TokenStream) -> TokenStream {
             #cuda_decl
         }
     };
+
+    // panic!("{}", result);
 
     result.into()
 }

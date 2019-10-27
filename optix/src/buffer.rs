@@ -15,7 +15,23 @@ pub struct DynamicBuffer {
 }
 
 impl DynamicBuffer {
-    pub fn new<T>(data: &[T], format: BufferFormat) -> Result<DynamicBuffer> {
+    pub fn new<T>(data: &[T]) -> Result<DynamicBuffer>
+    where
+        T: BufferElement,
+    {
+        let buffer = cuda::Buffer::with_data(data)?;
+
+        Ok(DynamicBuffer {
+            buffer,
+            count: data.len(),
+            format: T::FORMAT,
+        })
+    }
+
+    pub fn with_format<T>(
+        data: &[T],
+        format: BufferFormat,
+    ) -> Result<DynamicBuffer> {
         let buffer = cuda::Buffer::with_data(data)?;
 
         Ok(DynamicBuffer {
@@ -47,15 +63,18 @@ impl DynamicBuffer {
 }
 
 impl DeviceShareable for DynamicBuffer {
-    type Target = cuda::CUdeviceptr;
+    type Target = BufferD;
     fn to_device(&self) -> Self::Target {
-        self.buffer.as_device_ptr()
+        BufferD {
+            ptr: self.buffer.as_device_ptr(),
+            len: self.len(),
+        }
     }
     fn cuda_type() -> String {
-        "DynBuffer".into()
+        "DynamicBuffer".into()
     }
     fn cuda_decl() -> String {
-        "struct DynBuffer { void* ptr; size_t len; };".into()
+        "struct DynamicBuffer { void* ptr; size_t len; };".into()
     }
 }
 

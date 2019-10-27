@@ -8,6 +8,7 @@ pub use super::device_context::DeviceContext;
 use std::ffi::{CStr, CString};
 
 #[repr(u32)]
+#[derive(Debug, Hash, PartialEq)]
 pub enum CompileOptimizationLevel {
     Level0 =
         sys::OptixCompileOptimizationLevel::OPTIX_COMPILE_OPTIMIZATION_LEVEL_0,
@@ -20,12 +21,14 @@ pub enum CompileOptimizationLevel {
 }
 
 #[repr(u32)]
+#[derive(Debug, Hash, PartialEq)]
 pub enum CompileDebugLevel {
     None = sys::OptixCompileDebugLevel::OPTIX_COMPILE_DEBUG_LEVEL_NONE,
     LineInfo = sys::OptixCompileDebugLevel::OPTIX_COMPILE_DEBUG_LEVEL_LINEINFO,
     FULL = sys::OptixCompileDebugLevel::OPTIX_COMPILE_DEBUG_LEVEL_FULL,
 }
 
+#[derive(Debug, Hash, PartialEq)]
 pub struct ModuleCompileOptions {
     pub max_register_count: i32,
     pub opt_level: CompileOptimizationLevel,
@@ -60,6 +63,7 @@ bitflags! {
     }
 }
 
+#[derive(Debug, Hash, PartialEq)]
 pub struct PipelineCompileOptions {
     pub uses_motion_blur: bool,
     pub traversable_graph_flags: TraversableGraphFlags,
