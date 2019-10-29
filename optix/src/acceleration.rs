@@ -363,7 +363,7 @@ impl DeviceContext {
 
             Ok(TraversableHandle {
                 hnd,
-                buffer: output_buffer,
+                _buffer: output_buffer,
             })
         }
     }
@@ -391,7 +391,7 @@ impl DeviceContext {
 
             Ok(TraversableHandle {
                 hnd,
-                buffer: output_buffer,
+                _buffer: output_buffer,
             })
         }
     }
@@ -421,7 +421,7 @@ impl<'b> AccelEmitDesc<'b> {
 
 pub struct TraversableHandle {
     pub hnd: sys::OptixTraversableHandle,
-    buffer: cuda::Buffer,
+    _buffer: cuda::Buffer,
 }
 
 impl super::DeviceShareable for TraversableHandle {

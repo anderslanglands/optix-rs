@@ -8,10 +8,10 @@ use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_void};
 use std::path::Path;
 
-use super::module::ModuleRef;
-use super::program_group::ProgramGroupRef;
-use super::pipeline::PipelineRef;
-use super::shader_binding_table::ShaderBindingTable;
+use super::{
+    pipeline::PipelineRef,
+    shader_binding_table::ShaderBindingTable,
+};
 
 pub struct DeviceContext {
     pub(crate) ctx: sys::OptixDeviceContext,
@@ -30,7 +30,7 @@ impl DeviceContext {
     /// Create a device context associated with the `cuda::Context` referenced with `cuda_context`.
     pub fn create(
         cuda_context: ContextRef,
-        options: Option<Options>,
+        _options: Option<Options>,
     ) -> Result<DeviceContext> {
         unsafe {
             let mut ctx = std::ptr::null_mut();

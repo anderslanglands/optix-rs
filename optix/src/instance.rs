@@ -3,7 +3,6 @@ use super::math::M4f32;
 use bitflags::bitflags;
 use optix_sys as sys;
 use std::mem::MaybeUninit;
-use std::rc::Rc;
 
 pub use sys::OptixInstance as Instance;
 

@@ -1,12 +1,10 @@
 use optix_sys as sys;
 
-use super::error::Error;
-type Result<T, E = Error> = std::result::Result<T, E>;
-
 use super::{DeviceShareable, ProgramGroupRef};
 
 use std::any::Any;
 
+#[allow(dead_code)]
 pub struct ShaderBindingTable {
     pub(crate) sbt: sys::OptixShaderBindingTable,
     rg: cuda::Buffer,

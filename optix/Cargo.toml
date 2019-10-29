@@ -13,6 +13,7 @@ derive_more = "0.15.0"
 bitflags = "1.1.0"
 gl = "0.13.0"
 imath = {path="../../imath-rs", optional=true}
+cfg-if = "0.1.10"
 
 [dev-dependencies]
 optix-derive = {path="../optix-derive"}

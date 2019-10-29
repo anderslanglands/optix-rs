@@ -25,7 +25,7 @@ pub enum ProgramGroupDesc {
 
 pub struct ProgramGroup {
     pub(crate) pg: sys::OptixProgramGroup,
-    desc: ProgramGroupDesc,
+    _desc: ProgramGroupDesc,
 }
 
 pub type ProgramGroupRef = super::Ref<ProgramGroup>;
@@ -97,7 +97,7 @@ impl DeviceContext {
                         });
                     }
 
-                    let pg = super::Ref::new(ProgramGroup { pg, desc });
+                    let pg = super::Ref::new(ProgramGroup { pg, _desc: desc });
                     // self.program_groups.push(super::Ref::clone(&pg));
                     Ok((pg, log))
                 }
@@ -140,15 +140,18 @@ impl DeviceContext {
                         });
                     }
 
-                    let pg = super::Ref::new(ProgramGroup { pg, desc });
+                    let pg = super::Ref::new(ProgramGroup { pg, _desc: desc });
                     // self.program_groups.push(super::Ref::clone(&pg));
                     Ok((pg, log))
                 }
                 ProgramGroupDesc::Hitgroup { ch, ah, is } => {
+                    #[allow(unused_assignments)]
                     let mut efn_ch = CString::new("").unwrap();
                     let mut efn_ch_ptr = std::ptr::null();
+                    #[allow(unused_assignments)]
                     let mut efn_ah = CString::new("").unwrap();
                     let mut efn_ah_ptr = std::ptr::null();
+                    #[allow(unused_assignments)]
                     let mut efn_is = CString::new("").unwrap();
                     let mut efn_is_ptr = std::ptr::null();
 
@@ -219,7 +222,7 @@ impl DeviceContext {
                         });
                     }
 
-                    let pg = super::Ref::new(ProgramGroup { pg, desc });
+                    let pg = super::Ref::new(ProgramGroup { pg, _desc: desc });
                     // self.program_groups.push(super::Ref::clone(&pg));
                     Ok((pg, log))
                 }

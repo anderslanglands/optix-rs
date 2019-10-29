@@ -1,23 +1,18 @@
 #![feature(proc_macro_diagnostic)]
 
 extern crate proc_macro;
-use proc_macro::{Diagnostic, TokenStream};
-use quote::{quote, ToTokens};
-use syn::{parse2, Data, DataStruct, DeriveInput, Fields};
+use proc_macro::TokenStream;
+use quote::quote;
+use syn::{
+    punctuated::Punctuated, token::Comma, Data, DataEnum, DataStruct,
+    DeriveInput, Field, Fields, Variant,
+};
 
 #[proc_macro_attribute]
-pub fn device_shared(attr: TokenStream, item: TokenStream) -> TokenStream {
+pub fn device_shared(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(item as DeriveInput);
 
-    let attrs = &input.attrs.iter();
-    let vis = &input.vis;
-    let name = &input.ident;
-    let d_name = proc_macro2::Ident::new(
-        &format!("{}D", input.ident),
-        proc_macro2::Span::call_site(),
-    );
-    let data = &input.data;
-
+    /*
     let fields = match &input.data {
         Data::Struct(DataStruct {
             fields: Fields::Named(fields),
@@ -25,6 +20,78 @@ pub fn device_shared(attr: TokenStream, item: TokenStream) -> TokenStream {
         }) => &fields.named,
         _ => panic!("expected a struct with named fields"),
     };
+    */
+    let result = match &input.data {
+        Data::Struct(DataStruct {
+            fields: Fields::Named(fields),
+            ..
+        }) => do_struct(&input, &fields.named),
+        Data::Enum(DataEnum { variants, .. }) => do_enum(&input, &variants),
+        _ => unimplemented!(),
+    };
+
+    // panic!("{}", result);
+
+    result.into()
+}
+
+fn do_enum(
+    input: &DeriveInput,
+    variants: &Punctuated<Variant, Comma>,
+) -> proc_macro2::TokenStream {
+    let name = &input.ident;
+
+    let variant_idents: Vec<_> = variants
+        .iter()
+        .map(|variant| format!("{}", &variant.ident))
+        .collect();
+
+    let s_name = format!("{}", name);
+
+    let result = quote! {
+        #[repr(u32)]
+        #[allow(dead_code)]
+        #[derive(Copy, Clone, PartialEq, PartialOrd)]
+        #input
+
+        impl DeviceShareable for #name {
+            type Target = u32;
+
+            fn to_device(&self) -> u32 {
+                *self as u32
+            }
+
+            fn cuda_type() -> String {
+                #s_name.into()
+            }
+
+            fn cuda_decl() -> String {
+                let mut s = format!("enum class {}: u32 {{\n", #s_name);
+
+                #(
+                    s = format!("{} {},\n", s, #variant_idents);
+                )*
+
+                s = format!("{} }};", s);
+
+                s
+            }
+        }
+    };
+
+    result
+}
+
+fn do_struct(
+    input: &DeriveInput,
+    fields: &Punctuated<Field, Comma>,
+) -> proc_macro2::TokenStream {
+    let name = &input.ident;
+    let d_name = proc_macro2::Ident::new(
+        &format!("{}D", input.ident),
+        proc_macro2::Span::call_site(),
+    );
+    let generics = &input.generics;
 
     let field_vis = fields.iter().map(|field| &field.vis);
     let field_name = fields.iter().map(|field| &field.ident);
@@ -37,7 +104,7 @@ pub fn device_shared(attr: TokenStream, item: TokenStream) -> TokenStream {
         // now device-compatible struct
         #[repr(C)]
         #[derive(Copy, Clone)]
-        pub struct #d_name {
+        pub struct #d_name#generics {
             #(
                 #field_vis #field_name: <#field_type as DeviceShareable>::Target,
             )*
@@ -75,14 +142,13 @@ pub fn device_shared(attr: TokenStream, item: TokenStream) -> TokenStream {
     };
 
     let field_name = fields.iter().map(|field| &field.ident);
-    let generics = &input.generics;
 
     let result = quote! {
         #result
 
         // now impl DeviceShareable for the original struct
         impl#generics DeviceShareable for #name#generics {
-            type Target = #d_name;
+            type Target = #d_name#generics;
             fn to_device(&self) -> Self::Target {
                 #d_name {
                     #(
@@ -94,9 +160,7 @@ pub fn device_shared(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     };
 
-    // panic!("{}", result);
-
-    result.into()
+    result
 }
 
 #[cfg(test)]

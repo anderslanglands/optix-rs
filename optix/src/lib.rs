@@ -291,13 +291,7 @@ where
     /// storage. `SharedVec` implements Deref targeting the wrapped
     /// vec for easy access.
     pub fn new(vec: Vec<T>) -> Result<SharedVec<T>> {
-        let cvec: Vec<T::Target> = vec
-            .iter()
-            .map(|t| {
-                println!("new: {:?}", t.to_device());
-                t.to_device()
-            })
-            .collect();
+        let cvec: Vec<T::Target> = vec.iter().map(|t| t.to_device()).collect();
         let buffer = cuda::Buffer::with_data(&cvec)?;
         Ok(SharedVec { vec, buffer })
     }
@@ -354,6 +348,18 @@ template <typename T>
 struct SharedVec {
     T* ptr; 
     size_t len; 
+
+    const T& operator[](size_t i) const {
+        return ptr[i];
+    } 
+
+    T& operator[](size_t i) {
+        return ptr[i];
+    } 
+
+    bool is_null() const {
+        return ptr == nullptr;
+    }
 
     bool is_empty() const {
         return len == 0;
@@ -453,8 +459,23 @@ macro_rules! math_type {
 mod tests {
     #[test]
     fn it_works() {
+        println!("{}", TestEnum::cuda_decl());
+        println!("{}", Life::cuda_decl());
         assert_eq!(2 + 2, 4);
     }
 
     use super::DeviceShareable;
+
+    #[optix_derive::device_shared]
+    struct Life<'a> {
+        x: &'a i32,
+    }
+
+    #[optix_derive::device_shared]
+    enum TestEnum {
+        A,
+        B,
+        C,
+        D,
+    }
 }

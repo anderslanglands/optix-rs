@@ -1,9 +1,5 @@
-use optix_sys as sys;
-
 use super::error::Error;
 type Result<T, E = Error> = std::result::Result<T, E>;
-
-use std::rc::Rc;
 
 use super::DeviceShareable;
 

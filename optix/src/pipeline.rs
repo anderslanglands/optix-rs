@@ -9,6 +9,7 @@ use super::program_group::ProgramGroupRef;
 
 use std::ffi::{CStr, CString};
 
+#[derive(Debug, Hash, PartialEq, Copy, Clone)]
 pub struct PipelineLinkOptions {
     pub max_trace_depth: u32,
     pub debug_level: CompileDebugLevel,
