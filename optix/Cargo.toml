@@ -14,6 +14,8 @@ bitflags = "1.1.0"
 gl = "0.13.0"
 imath = {path="../../imath-rs", optional=true}
 cfg-if = "0.1.10"
+nalgebra-glm = {version = "0.5.0", optional=true}
+nalgebra = {version = "0.19.0", optional=true}
 
 [dev-dependencies]
 optix-derive = {path="../optix-derive"}
@@ -22,6 +24,7 @@ tobj = "0.1.10"
 image = "0.22.2"
 
 [features]
-default=["math-imath"]
+default=["math-nalgebra"]
 math-imath = ["imath"]
+math-nalgebra = ["nalgebra-glm", "nalgebra"]
 

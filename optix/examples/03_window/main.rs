@@ -8,7 +8,7 @@ use glfw::{Action, Context, Key};
 pub mod gl_util;
 use crate::gl_util::*;
 
-use imath::*;
+use optix::math::*;
 
 fn main() {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();

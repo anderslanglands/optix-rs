@@ -33,7 +33,7 @@ pub fn make_instance(
 
     unsafe {
         std::ptr::copy_nonoverlapping(
-            transform.x.as_ptr(),
+            transform.as_ptr(),
             inst.transform.as_mut_ptr(),
             12,
         );

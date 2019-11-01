@@ -347,9 +347,9 @@ impl SampleRenderer {
         // set up the camera
         let cos_fovy = 0.66f32;
         let aspect = fb_size.x as f32 / fb_size.y as f32;
-        let direction = (camera.at - camera.from).normalized();
+        let direction = normalize(&(camera.at - camera.from));
         let horizontal =
-            cos_fovy * aspect * direction.cross(camera.up).normalized();
+            cos_fovy * aspect * normalize(cross(direction, camera.up));
         let vertical = cos_fovy * horizontal.cross(direction).normalized();
 
         // Create the LaunchParams struct that will be shared as a __constant__
@@ -517,14 +517,22 @@ impl TriangleMesh {
     pub fn add_cube(&mut self, center: V3f32, size: V3f32) {
         let start_index = self.vertex.len() as i32;
 
-        self.vertex.push((v3f32(0.0, 0.0, 0.0) + center) * size);
-        self.vertex.push((v3f32(1.0, 0.0, 0.0) + center) * size);
-        self.vertex.push((v3f32(0.0, 1.0, 0.0) + center) * size);
-        self.vertex.push((v3f32(1.0, 1.0, 0.0) + center) * size);
-        self.vertex.push((v3f32(0.0, 0.0, 1.0) + center) * size);
-        self.vertex.push((v3f32(1.0, 0.0, 1.0) + center) * size);
-        self.vertex.push((v3f32(0.0, 1.0, 1.0) + center) * size);
-        self.vertex.push((v3f32(1.0, 1.0, 1.0) + center) * size);
+        self.vertex
+            .push((v3f32(0.0, 0.0, 0.0) + center).component_mul(&size));
+        self.vertex
+            .push((v3f32(1.0, 0.0, 0.0) + center).component_mul(&size));
+        self.vertex
+            .push((v3f32(0.0, 1.0, 0.0) + center).component_mul(&size));
+        self.vertex
+            .push((v3f32(1.0, 1.0, 0.0) + center).component_mul(&size));
+        self.vertex
+            .push((v3f32(0.0, 0.0, 1.0) + center).component_mul(&size));
+        self.vertex
+            .push((v3f32(1.0, 0.0, 1.0) + center).component_mul(&size));
+        self.vertex
+            .push((v3f32(0.0, 1.0, 1.0) + center).component_mul(&size));
+        self.vertex
+            .push((v3f32(1.0, 1.0, 1.0) + center).component_mul(&size));
 
         const indices: [i32; 36] = [
             0, 1, 3, 2, 3, 0, 5, 7, 6, 5, 6, 4, 0, 4, 5, 0, 5, 1, 2, 3, 7, 2,
