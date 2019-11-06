@@ -5,6 +5,8 @@ extern crate bitflags;
 
 use optix_sys as sys;
 
+pub mod cuda;
+
 pub mod error;
 pub use error::Error;
 type Result<T, E = Error> = std::result::Result<T, E>;

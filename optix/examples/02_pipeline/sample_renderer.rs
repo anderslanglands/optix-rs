@@ -1,3 +1,4 @@
+use optix::cuda;
 use optix::math::*;
 
 type Result<T, E = Error> = std::result::Result<T, E>;

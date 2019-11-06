@@ -3,6 +3,10 @@
 #![allow(non_snake_case)]
 #![feature(untagged_unions)]
 
+#[macro_use]
+extern crate derive_more;
+
+pub mod cuda_sys;
 use cuda_sys::{CUcontext, CUdeviceptr, CUstream};
 
 include!(concat!(env!("OUT_DIR"), "/optix_wrapper.rs"));

@@ -1,5 +1,6 @@
 type Result<T, E = Error> = std::result::Result<T, E>;
 
+use optix::cuda;
 use optix::math::*;
 use optix::{
     BufferElement, BufferFormat, DeviceShareable, SbtRecord, SharedVariable,

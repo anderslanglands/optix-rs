@@ -1,3 +1,4 @@
+use super::cuda;
 use cuda::ContextRef;
 use optix_sys as sys;
 

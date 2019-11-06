@@ -6,13 +6,12 @@ edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[dependencies]
-cuda-sys = {path="../../cuda-rs/cuda-sys"}
-
 [dev-dependencies]
 nalgebra-glm = "0.4.0"
-cuda = {path="../../cuda-rs/cuda"}
 
 [build-dependencies]
 bindgen = "0.51.0"
 cmake = "0.1.41"
+
+[dependencies]
+derive_more = "0.15.0"

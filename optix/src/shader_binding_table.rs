@@ -1,3 +1,4 @@
+use super::cuda;
 use optix_sys as sys;
 
 use super::{DeviceShareable, ProgramGroupRef};

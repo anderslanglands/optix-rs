@@ -8,7 +8,6 @@ edition = "2018"
 
 [dependencies]
 optix-sys = {path="../optix-sys"}
-cuda = {path="../../cuda-rs/cuda"}
 derive_more = "0.15.0"
 bitflags = "1.1.0"
 gl = "0.13.0"

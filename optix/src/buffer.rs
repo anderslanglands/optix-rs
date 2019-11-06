@@ -1,3 +1,4 @@
+use super::cuda;
 use super::error::Error;
 type Result<T, E = Error> = std::result::Result<T, E>;
 
