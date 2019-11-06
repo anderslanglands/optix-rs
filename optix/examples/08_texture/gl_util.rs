@@ -2,7 +2,7 @@ use gl;
 use gl::types::{GLchar, GLenum, GLint, GLsizeiptr, GLuint, GLvoid};
 use std::ffi::{CStr, CString};
 
-use imath::*;
+use optix::math::*;
 
 pub struct Shader {
     id: GLuint,

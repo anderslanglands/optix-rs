@@ -349,8 +349,8 @@ impl SampleRenderer {
         let aspect = fb_size.x as f32 / fb_size.y as f32;
         let direction = normalize(&(camera.at - camera.from));
         let horizontal =
-            cos_fovy * aspect * normalize(cross(direction, camera.up));
-        let vertical = cos_fovy * horizontal.cross(direction).normalized();
+            cos_fovy * aspect * normalize(&cross(&direction, &camera.up));
+        let vertical = cos_fovy * normalize(&cross(&horizontal, &direction));
 
         // Create the LaunchParams struct that will be shared as a __constant__
         // on the device

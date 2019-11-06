@@ -8,7 +8,7 @@ use glfw::{Action, Context, Key};
 pub mod gl_util;
 use crate::gl_util::*;
 
-use imath::*;
+use optix::math::*;
 
 use std::rc::Rc;
 
@@ -126,7 +126,7 @@ fn load_texture(path: &std::path::Path) -> Option<Rc<Texture>> {
 fn load_model(path: &std::path::Path) -> Model {
     let (models, materials) = tobj::load_obj(path).unwrap();
 
-    let mut bounds = Box3f32::new();
+    let mut bounds = Box3f32::make_empty();
     let mut loaded_texture_ids = std::collections::HashMap::new();
     let mut textures = Vec::new();
     let meshes = models
@@ -182,7 +182,7 @@ fn load_model(path: &std::path::Path) -> Model {
                 .chunks(3)
                 .map(|c| {
                     let p = v3f32(c[0], c[1], c[2]);
-                    bounds = bounds.extend_by_pnt(p);
+                    bounds.extend_by_pnt(p);
                     p
                 })
                 .collect();

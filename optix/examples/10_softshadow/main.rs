@@ -39,7 +39,7 @@ fn main() {
         origin: v3f32(-1000.0 - light_size, 800.0, -light_size),
         du: v3f32(2.0 * light_size, 0.0, 0.0),
         dv: v3f32(0.0, 0.0, 2.0 * light_size),
-        power: V3f32::broadcast(3000000.0),
+        power: v3f32(3000000.0, 3000000.0, 3000000.0),
     };
 
     let mut sample = SampleRenderer::new(
@@ -140,7 +140,7 @@ fn load_texture(path: &std::path::Path) -> Option<Rc<Texture>> {
 fn load_model(path: &std::path::Path) -> Model {
     let (models, materials) = tobj::load_obj(path).unwrap();
 
-    let mut bounds = Box3f32::new();
+    let mut bounds = Box3f32::make_empty();
     let mut loaded_texture_ids = std::collections::HashMap::new();
     let mut textures = Vec::new();
     let meshes = models
@@ -196,7 +196,7 @@ fn load_model(path: &std::path::Path) -> Model {
                 .chunks(3)
                 .map(|c| {
                     let p = v3f32(c[0], c[1], c[2]);
-                    bounds = bounds.extend_by_pnt(p);
+                    bounds.extend_by_pnt(p);
                     p.into()
                 })
                 .collect();

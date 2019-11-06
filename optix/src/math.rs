@@ -145,6 +145,42 @@ cfg_if::cfg_if! {
                 std::slice::from_raw_parts(s.as_ptr() as *const M4f64, s.len() / 16)
             }
         }
+
+        use nalgebra_glm::{TVec3, vec3, min2, max2};
+
+        pub struct Box3<T> where T: RealField {
+            pub min: TVec3<T>,
+            pub max: TVec3<T>,
+        }
+
+        impl<T> Box3<T> where T: RealField {
+            pub fn new(min: TVec3<T>, max: TVec3<T>) -> Box3<T> {
+                Box3{min, max}
+            }
+
+            pub fn make_empty() -> Box3<T> {
+                let max = T::min_value();
+                let min = T::max_value();
+                Box3 {
+                    min: vec3(min, min, min),
+                    max: vec3(max, max, max),
+                }
+            }
+
+            pub fn center(&self) -> TVec3<T> {
+                let d = self.max - self.min;
+                let half = T::from_f32(0.5).unwrap();
+                self.min + d.component_mul(&vec3(half, half, half))
+            }
+
+            pub fn extend_by_pnt(&mut self, pnt: TVec3<T>) {
+                self.min = min2(&self.min, &pnt);
+                self.max = max2(&self.max, &pnt);
+            }
+        }
+
+        pub type Box3f32 = Box3<f32>;
+        pub type Box3f64 = Box3<f64>;
     }
 }
 

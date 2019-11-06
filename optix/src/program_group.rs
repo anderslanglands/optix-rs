@@ -28,6 +28,12 @@ pub struct ProgramGroup {
     _desc: ProgramGroupDesc,
 }
 
+impl PartialEq for ProgramGroup {
+    fn eq(&self, rhs: &ProgramGroup) -> bool {
+        self.pg == rhs.pg
+    }
+}
+
 pub type ProgramGroupRef = super::Ref<ProgramGroup>;
 
 impl ProgramGroup {
