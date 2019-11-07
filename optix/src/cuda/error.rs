@@ -16,6 +16,7 @@ pub enum Error {
         desc: super::ChannelFormatDesc,
         width: usize,
         height: usize,
+        num_components: usize,
         flags: super::ArrayFlags,
     },
     #[display(fmt = "Array memcpy 2d failed.")]

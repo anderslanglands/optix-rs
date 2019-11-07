@@ -261,84 +261,101 @@ impl BufferFormat {
 pub trait BufferElement {
     const FORMAT: BufferFormat;
     const COMPONENTS: usize;
+    type ComponentType;
 }
 
 impl BufferElement for u8 {
     const FORMAT: BufferFormat = BufferFormat::U8;
     const COMPONENTS: usize = 1;
+    type ComponentType = u8;
 }
 
 impl BufferElement for [u8; 2] {
     const FORMAT: BufferFormat = BufferFormat::U8x2;
     const COMPONENTS: usize = 2;
+    type ComponentType = u8;
 }
 
 impl BufferElement for [u8; 3] {
     const FORMAT: BufferFormat = BufferFormat::U8x3;
     const COMPONENTS: usize = 3;
+    type ComponentType = u8;
 }
 
 impl BufferElement for [u8; 4] {
     const FORMAT: BufferFormat = BufferFormat::U8x4;
     const COMPONENTS: usize = 4;
+    type ComponentType = u8;
 }
 
 impl BufferElement for u16 {
     const FORMAT: BufferFormat = BufferFormat::U16;
     const COMPONENTS: usize = 1;
+    type ComponentType = u16;
 }
 
 impl BufferElement for [u16; 2] {
     const FORMAT: BufferFormat = BufferFormat::U16x2;
     const COMPONENTS: usize = 2;
+    type ComponentType = u16;
 }
 
 impl BufferElement for [u16; 3] {
     const FORMAT: BufferFormat = BufferFormat::U16x3;
     const COMPONENTS: usize = 3;
+    type ComponentType = u16;
 }
 
 impl BufferElement for [u16; 4] {
     const FORMAT: BufferFormat = BufferFormat::U16x4;
     const COMPONENTS: usize = 4;
+    type ComponentType = u16;
 }
 
 impl BufferElement for i32 {
     const FORMAT: BufferFormat = BufferFormat::I32;
     const COMPONENTS: usize = 1;
+    type ComponentType = i32;
 }
 
 impl BufferElement for [i32; 2] {
     const FORMAT: BufferFormat = BufferFormat::I32x2;
     const COMPONENTS: usize = 2;
+    type ComponentType = i32;
 }
 
 impl BufferElement for [i32; 3] {
     const FORMAT: BufferFormat = BufferFormat::I32x3;
     const COMPONENTS: usize = 3;
+    type ComponentType = i32;
 }
 
 impl BufferElement for [i32; 4] {
     const FORMAT: BufferFormat = BufferFormat::I32x4;
     const COMPONENTS: usize = 4;
+    type ComponentType = i32;
 }
 
 impl BufferElement for f32 {
     const FORMAT: BufferFormat = BufferFormat::F32;
     const COMPONENTS: usize = 1;
+    type ComponentType = f32;
 }
 
 impl BufferElement for [f32; 2] {
     const FORMAT: BufferFormat = BufferFormat::F32x2;
     const COMPONENTS: usize = 2;
+    type ComponentType = f32;
 }
 
 impl BufferElement for [f32; 3] {
     const FORMAT: BufferFormat = BufferFormat::F32x3;
     const COMPONENTS: usize = 3;
+    type ComponentType = f32;
 }
 
 impl BufferElement for [f32; 4] {
     const FORMAT: BufferFormat = BufferFormat::F32x4;
     const COMPONENTS: usize = 4;
+    type ComponentType = f32;
 }

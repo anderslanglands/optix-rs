@@ -41,6 +41,9 @@ pub use acceleration::*;
 pub mod buffer;
 pub use buffer::*;
 
+pub mod texture;
+pub use texture::*;
+
 pub mod instance;
 pub use instance::{make_instance, Instance, InstanceFlags};
 
@@ -439,7 +442,7 @@ macro_rules! wrap_copyable_for_device {
 /// implemented
 #[macro_export]
 macro_rules! math_type {
-    ($ty:ty, $fmt:expr, $cmp:literal) => {
+    ($ty:ty, $fmt:expr, $cmp:literal, $cmpty:ty) => {
         impl DeviceShareable for $ty {
             type Target = $ty;
             fn to_device(&self) -> Self::Target {
@@ -453,6 +456,7 @@ macro_rules! math_type {
         impl BufferElement for $ty {
             const FORMAT: BufferFormat = $fmt;
             const COMPONENTS: usize = $cmp;
+            type ComponentType = $cmpty;
         }
     };
 }

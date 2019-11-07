@@ -32,6 +32,7 @@ impl Array {
                     desc,
                     width,
                     height,
+                    num_components,
                     flags,
                 });
             }
@@ -48,13 +49,7 @@ impl Array {
                 super::MemcpyKind::HostToDevice as u32,
             );
             if res != sys::cudaError::cudaSuccess {
-                return Err(Error::ArrayAllocationFailed {
-                    cerr: res.into(),
-                    desc,
-                    width,
-                    height,
-                    flags,
-                });
+                return Err(Error::ArrayMemcpy2DFailed { cerr: res.into() });
             }
 
             Ok(Array { ptr })

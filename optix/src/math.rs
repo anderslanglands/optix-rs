@@ -96,6 +96,16 @@ cfg_if::cfg_if! {
 
         pub use nalgebra_glm::{Dimension, Scalar, Number, RealField};
 
+        pub fn cast_slice_v4u8(s: &[u8]) -> &[V4u8] {
+            if s.len() % 4 != 0 {
+                panic!("Tried to cast slice of length {} to V4u8", s.len());
+            }
+
+            unsafe {
+                std::slice::from_raw_parts(s.as_ptr() as *const V4u8, s.len() / 4)
+            }
+        }
+
         pub fn cast_slice_v3i32(s: &[i32]) -> &[V3i32] {
             if s.len() % 3 != 0 {
                 panic!("Tried to cast slice of length {} to V3i32", s.len());
@@ -113,6 +123,16 @@ cfg_if::cfg_if! {
 
             unsafe {
                 std::slice::from_raw_parts(s.as_ptr() as *const V3f32, s.len() / 3)
+            }
+        }
+
+        pub fn cast_slice_v4f32(s: &[f32]) -> &[V4f32] {
+            if s.len() % 4 != 0 {
+                panic!("Tried to cast slice of length {} to V4f32", s.len());
+            }
+
+            unsafe {
+                std::slice::from_raw_parts(s.as_ptr() as *const V4f32, s.len() / 4)
             }
         }
 
@@ -184,21 +204,21 @@ cfg_if::cfg_if! {
     }
 }
 
-math_type!(V2u8, BufferFormat::U8x2, 2);
-math_type!(V3u8, BufferFormat::U8x3, 3);
-math_type!(V4u8, BufferFormat::U8x4, 4);
+math_type!(V2u8, BufferFormat::U8x2, 2, u8);
+math_type!(V3u8, BufferFormat::U8x3, 3, u8);
+math_type!(V4u8, BufferFormat::U8x4, 4, u8);
 
-math_type!(V2u16, BufferFormat::U16x2, 2);
-math_type!(V3u16, BufferFormat::U16x3, 3);
-math_type!(V4u16, BufferFormat::U16x4, 4);
+math_type!(V2u16, BufferFormat::U16x2, 2, u16);
+math_type!(V3u16, BufferFormat::U16x3, 3, u16);
+math_type!(V4u16, BufferFormat::U16x4, 4, u16);
 
-math_type!(V2i32, BufferFormat::I32x2, 2);
-math_type!(V3i32, BufferFormat::I32x3, 3);
-math_type!(V4i32, BufferFormat::I32x4, 4);
+math_type!(V2i32, BufferFormat::I32x2, 2, i32);
+math_type!(V3i32, BufferFormat::I32x3, 3, i32);
+math_type!(V4i32, BufferFormat::I32x4, 4, i32);
 
-math_type!(V2f32, BufferFormat::F32x2, 2);
-math_type!(V3f32, BufferFormat::F32x3, 3);
-math_type!(V4f32, BufferFormat::F32x4, 4);
+math_type!(V2f32, BufferFormat::F32x2, 2, f32);
+math_type!(V3f32, BufferFormat::F32x3, 3, f32);
+math_type!(V4f32, BufferFormat::F32x4, 4, f32);
 
 impl DeviceShareable for M4f32 {
     type Target = M4f32;

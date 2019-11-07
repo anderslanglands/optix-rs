@@ -15,7 +15,7 @@ struct TriangleMeshSBTData {
     texcoord: Rc<optix::Buffer<V2f32>>,
     index: Rc<optix::Buffer<V3i32>>,
     has_texture: bool,
-    texture: Option<Rc<cuda::TextureObject>>,
+    texture: Option<Rc<optix::Texture>>,
 }
 
 pub struct Mesh {
@@ -202,6 +202,7 @@ impl SampleRenderer {
 
         // load textures
         let mut texture_objects = Vec::new();
+        /*
         for texture in &model.textures {
             let channel_desc = cuda::ChannelFormatDesc {
                 x: 8,
@@ -236,6 +237,18 @@ impl SampleRenderer {
             .unwrap();
 
             texture_objects.push(Rc::new(texture_object));
+        }
+        */
+        for texture in &model.textures {
+            let tex = optix::Texture::new(
+                cast_slice_v4u8(&texture.pixels),
+                texture.resolution.x as usize,
+                texture.resolution.y as usize,
+                optix::WrapMode::Wrap,
+                true,
+            )?;
+
+            texture_objects.push(Rc::new(tex));
         }
 
         // Build Shader Binding Table
