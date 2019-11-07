@@ -1,6 +1,4 @@
-use cuda_sys::{
-    cudaFree, cudaGetDeviceCount, CUcontext, CUdeviceptr, CUstream,
-};
+use optix_sys::cuda_sys::{cudaFree, cudaGetDeviceCount};
 use optix_sys::{optixInit, OptixResult};
 
 fn main() {
