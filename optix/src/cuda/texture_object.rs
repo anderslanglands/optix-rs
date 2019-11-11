@@ -152,10 +152,12 @@ pub enum TextureReadMode {
     NormalizedFloat = sys::cudaTextureReadMode_cudaReadModeNormalizedFloat,
 }
 
+#[derive(Debug)]
 pub enum ResourceDesc {
     Array(super::array::Array),
 }
 
+#[derive(Debug)]
 pub struct TextureObject {
     ptr: sys::cudaTextureObject_t,
     _res_desc: ResourceDesc,
@@ -207,7 +209,10 @@ impl Drop for TextureObject {
         unsafe {
             let res = sys::cudaDestroyTextureObject(self.ptr);
             if res != sys::cudaError::cudaSuccess {
-                panic!("cudaDestroyTextureObject failed: {:?}", res);
+                panic!(
+                    "cudaDestroyTextureObject {:p} failed: {:?}",
+                    self.ptr as *const u8, res
+                );
             }
         }
     }

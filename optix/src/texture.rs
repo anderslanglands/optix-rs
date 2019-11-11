@@ -5,12 +5,15 @@ use super::math::*;
 use super::DeviceShareable;
 type Result<T, E = Error> = std::result::Result<T, E>;
 
+#[derive(Debug)]
 pub struct Texture {
     texture_object: cuda::TextureObject,
 }
 
 pub trait TextureElement: BufferElement {
     const CHANNEL_DESC: cuda::ChannelFormatDesc;
+    const READ_MODE: cuda::TextureReadMode;
+    const SRGB: bool;
 }
 
 #[repr(u32)]
@@ -38,7 +41,6 @@ impl Texture {
         width: usize,
         height: usize,
         wrap_mode: WrapMode,
-        srgb: bool,
     ) -> Result<Texture>
     where
         T: TextureElement,
@@ -62,9 +64,9 @@ impl Texture {
         let tex_desc = cuda::TextureDesc::new()
             .address_mode([wrap_mode.into(); 3])
             .filter_mode(cuda::TextureFilterMode::Linear)
-            .read_mode(cuda::TextureReadMode::NormalizedFloat)
+            .read_mode(T::READ_MODE)
             .normalized_coords(true)
-            .srgb(srgb)
+            .srgb(T::SRGB)
             .build();
 
         let texture_object = cuda::TextureObject::new(
@@ -85,6 +87,9 @@ impl TextureElement for u8 {
         w: 0,
         f: cuda::ChannelFormatKind::Unsigned,
     };
+    const READ_MODE: cuda::TextureReadMode =
+        cuda::TextureReadMode::NormalizedFloat;
+    const SRGB: bool = true;
 }
 
 impl TextureElement for f32 {
@@ -95,6 +100,8 @@ impl TextureElement for f32 {
         w: 0,
         f: cuda::ChannelFormatKind::Float,
     };
+    const READ_MODE: cuda::TextureReadMode = cuda::TextureReadMode::ElementType;
+    const SRGB: bool = false;
 }
 
 impl TextureElement for V4u8 {
@@ -105,6 +112,9 @@ impl TextureElement for V4u8 {
         w: 8,
         f: cuda::ChannelFormatKind::Unsigned,
     };
+    const READ_MODE: cuda::TextureReadMode =
+        cuda::TextureReadMode::NormalizedFloat;
+    const SRGB: bool = true;
 }
 
 impl TextureElement for V4f32 {
@@ -115,6 +125,8 @@ impl TextureElement for V4f32 {
         w: 32,
         f: cuda::ChannelFormatKind::Float,
     };
+    const READ_MODE: cuda::TextureReadMode = cuda::TextureReadMode::ElementType;
+    const SRGB: bool = false;
 }
 
 impl DeviceShareable for Texture {

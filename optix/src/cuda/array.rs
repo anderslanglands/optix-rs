@@ -3,6 +3,7 @@ use optix_sys::cuda_sys as sys;
 use super::error::Error;
 type Result<T, E = Error> = std::result::Result<T, E>;
 
+#[derive(Debug)]
 pub struct Array {
     ptr: sys::cudaArray_t,
 }

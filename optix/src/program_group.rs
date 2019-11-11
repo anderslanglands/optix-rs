@@ -8,6 +8,7 @@ use super::module::ModuleRef;
 
 use std::ffi::{CStr, CString};
 
+#[derive(Clone)]
 pub struct ProgramGroupModule {
     pub module: ModuleRef,
     pub entry_function_name: String,

@@ -1,4 +1,7 @@
-use super::cuda;
+use super::{
+    cuda,
+    math::{Box3f32, V3f32, V3i32},
+};
 use optix_sys as sys;
 
 use super::{
@@ -13,7 +16,7 @@ use std::convert::{TryFrom, TryInto};
 
 use std::rc::Rc;
 
-pub enum BuildInput<V, I>
+pub enum BuildInput<V = V3f32, I = V3i32>
 where
     V: BufferElement,
     I: BufferElement,
@@ -47,7 +50,13 @@ where
                 }
                 sys::OptixBuildInput { type_, input }
             }
-            _ => unimplemented!(),
+            BuildInput::CustomPrimitive(cp) => {
+                let type_ = sys::OptixBuildInputType_OPTIX_BUILD_INPUT_TYPE_CUSTOM_PRIMITIVES;
+                unsafe {
+                    input.aabb_array = cp.into();
+                }
+                sys::OptixBuildInput { type_, input }
+            }
         }
     }
 }
@@ -167,7 +176,55 @@ where
     }
 }
 
-pub struct CustomPrimitiveArray {}
+pub struct CustomPrimitiveArray {
+    _aabb_buffers: Vec<cuda::Buffer>,
+    aabb_buffers_d: Vec<cuda::CUdeviceptr>,
+    num_primitives: u32,
+    flags: Box<u32>,
+}
+
+impl CustomPrimitiveArray {
+    pub fn new(
+        aabbs: &[Box3f32],
+        flags: GeometryFlags,
+    ) -> Result<CustomPrimitiveArray> {
+        let num_primitives = aabbs.len();
+        let buffer = unsafe {
+            cuda::Buffer::with_data(std::slice::from_raw_parts(
+                aabbs.as_ptr() as *const sys::OptixAabb,
+                num_primitives,
+            ))?
+        };
+        let aabb_buffers = vec![buffer];
+        let aabb_buffers_d: Vec<_> =
+            aabb_buffers.iter().map(|b| b.as_device_ptr()).collect();
+
+        Ok(CustomPrimitiveArray {
+            _aabb_buffers: aabb_buffers,
+            aabb_buffers_d,
+            num_primitives: num_primitives as u32,
+            flags: Box::new(flags.bits()),
+        })
+    }
+}
+
+impl From<&CustomPrimitiveArray> for sys::OptixBuildInputCustomPrimitiveArray {
+    fn from(
+        arr: &CustomPrimitiveArray,
+    ) -> sys::OptixBuildInputCustomPrimitiveArray {
+        sys::OptixBuildInputCustomPrimitiveArray {
+            aabbBuffers: arr.aabb_buffers_d.as_ptr(),
+            numPrimitives: arr.num_primitives,
+            strideInBytes: 0,
+            flags: arr.flags.as_ref() as *const u32,
+            numSbtRecords: 1,
+            sbtIndexOffsetBuffer: 0,
+            sbtIndexOffsetSizeInBytes: 0,
+            sbtIndexOffsetStrideInBytes: 0,
+            primitiveIndexOffset: 0,
+        }
+    }
+}
 
 pub struct InstanceArray {
     instances: cuda::Buffer,

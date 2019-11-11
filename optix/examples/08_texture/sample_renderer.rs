@@ -245,7 +245,6 @@ impl SampleRenderer {
                 texture.resolution.x as usize,
                 texture.resolution.y as usize,
                 optix::WrapMode::Wrap,
-                true,
             )?;
 
             texture_objects.push(Rc::new(tex));
