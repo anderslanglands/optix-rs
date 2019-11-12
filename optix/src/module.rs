@@ -63,7 +63,7 @@ bitflags! {
     }
 }
 
-#[derive(Debug, Hash, PartialEq)]
+#[derive(Debug, Hash, PartialEq, Clone)]
 pub struct PipelineCompileOptions {
     pub uses_motion_blur: bool,
     pub traversable_graph_flags: TraversableGraphFlags,

@@ -294,6 +294,8 @@ bitflags! {
     }
 }
 
+#[derive(Debug)]
+#[repr(C)]
 pub struct MotionOptions {
     pub num_keys: u16,
     pub flags: MotionFlags,
