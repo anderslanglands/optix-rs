@@ -99,7 +99,7 @@ impl DeviceContext {
 
         if res != sys::OptixResult::OPTIX_SUCCESS {
             return Err(Error::PipelineCreationFailed {
-                cerr: res.into(),
+                source: res.into(),
                 log,
             });
         }

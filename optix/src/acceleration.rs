@@ -368,7 +368,7 @@ impl DeviceContext {
 
         if res != sys::OptixResult::OPTIX_SUCCESS {
             return Err(Error::AccelComputeMemoryUsageFailed {
-                cerr: res.into(),
+                source: res.into(),
             });
         }
 
@@ -418,7 +418,7 @@ impl DeviceContext {
             );
 
             if res != sys::OptixResult::OPTIX_SUCCESS {
-                return Err(Error::AccelBuildFailed { cerr: res.into() });
+                return Err(Error::AccelBuildFailed { source: res.into() });
             }
 
             Ok(TraversableHandle {
@@ -446,7 +446,7 @@ impl DeviceContext {
             );
 
             if res != sys::OptixResult::OPTIX_SUCCESS {
-                return Err(Error::AccelCompactFailed { cerr: res.into() });
+                return Err(Error::AccelCompactFailed { source: res.into() });
             }
 
             Ok(TraversableHandle {

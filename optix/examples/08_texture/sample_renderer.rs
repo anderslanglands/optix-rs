@@ -452,12 +452,12 @@ impl SampleRenderer {
     }
 }
 
-#[derive(Display, Debug, From)]
+#[derive(thiserror::Error, Debug)]
 pub enum Error {
-    #[display(fmt = "OptiX error: {}", _0)]
-    OptixError(optix::Error),
-    #[display(fmt = "CUDA error: {}", _0)]
-    CudaError(cuda::Error),
+    #[error("OptiX error: {}", _0)]
+    OptixError(#[from] optix::Error),
+    #[error("CUDA error: {}", _0)]
+    CudaError(#[from] cuda::Error),
 }
 
 fn compile_to_ptx(src: &str, header: cuda::nvrtc::Header) -> String {

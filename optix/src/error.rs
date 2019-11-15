@@ -3,72 +3,45 @@ use optix_sys as sys;
 
 use super::BufferFormat;
 
-#[derive(Display, Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[display(fmt = "OptiX initialization failed")]
-    InitializationFailed { cerr: sys::Error },
-    #[display(fmt = "Failed to create OptiX device context")]
-    DeviceContextCreateFailed { cerr: sys::Error },
-    #[display(fmt = "A device context method failed")]
-    DeviceContextMethodFailed { cerr: sys::Error },
-    #[display(fmt = "Failed to set disk cache path '{}'", "path.display()")]
+    #[error("OptiX initialization failed")]
+    InitializationFailed { source: sys::Error },
+    #[error("Failed to create OptiX device context")]
+    DeviceContextCreateFailed { source: sys::Error },
+    #[error("A device context method failed")]
+    DeviceContextMethodFailed { source: sys::Error },
+    #[error("Failed to set disk cache path '{}'", "path.display()")]
     SetCacheLocationFailed {
-        cerr: sys::Error,
+        source: sys::Error,
         path: std::path::PathBuf,
     },
-    #[display(fmt = "Module creation failed:\n{}", log)]
-    ModuleCreationFailed { cerr: sys::Error, log: String },
-    #[display(fmt = "ProgramGroup creation failed:\n{}", log)]
-    ProgramGroupCreationFailed { cerr: sys::Error, log: String },
-    #[display(fmt = "Pipeline creation failed:\n{}", log)]
-    PipelineCreationFailed { cerr: sys::Error, log: String },
-    #[display(fmt = "OptiX launch failed")]
-    LaunchFailed { cerr: sys::Error },
-    #[display(fmt = "CUDA error")]
-    CudaError { cerr: cuda::Error },
-    #[display(fmt = "Incorrect vertex buffer format: {:?}", format)]
+    #[error("Module creation failed:\n{log:}")]
+    ModuleCreationFailed { source: sys::Error, log: String },
+    #[error("ProgramGroup creation failed:\n{log:}")]
+    ProgramGroupCreationFailed { source: sys::Error, log: String },
+    #[error("Pipeline creation failed:\n{log:}")]
+    PipelineCreationFailed { source: sys::Error, log: String },
+    #[error("OptiX launch failed")]
+    LaunchFailed { source: sys::Error },
+    #[error("CUDA error")]
+    CudaError {
+        #[from]
+        source: cuda::Error,
+    },
+    #[error("Incorrect vertex buffer format: {format:?}")]
     IncorrectVertexBufferFormat { format: super::BufferFormat },
-    #[display(fmt = "Incorrect index buffer format: {:?}", format)]
+    #[error("Incorrect index buffer format: {format:?}")]
     IncorrectIndexBufferFormat { format: super::BufferFormat },
-    #[display(fmt = "Failed to compute accel memory usage")]
-    AccelComputeMemoryUsageFailed { cerr: sys::Error },
-    #[display(fmt = "Failed to build accel")]
-    AccelBuildFailed { cerr: sys::Error },
-    #[display(fmt = "Failed to compact accel")]
-    AccelCompactFailed { cerr: sys::Error },
-    #[display(
-        fmt = "Buffer shape mismatch. Expected {:?}x{}",
-        e_format,
-        e_count
-    )]
+    #[error("Failed to compute accel memory usage")]
+    AccelComputeMemoryUsageFailed { source: sys::Error },
+    #[error("Failed to build accel")]
+    AccelBuildFailed { source: sys::Error },
+    #[error("Failed to compact accel")]
+    AccelCompactFailed { source: sys::Error },
+    #[error("Buffer shape mismatch. Expected {e_format:?}x{e_count:}")]
     BufferShapeMismatch {
         e_format: BufferFormat,
         e_count: usize,
     },
-}
-
-impl From<cuda::Error> for Error {
-    fn from(e: cuda::Error) -> Error {
-        Error::CudaError { cerr: e }
-    }
-}
-
-impl std::error::Error for Error {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            Error::InitializationFailed { cerr, .. } => Some(cerr),
-            Error::DeviceContextCreateFailed { cerr, .. } => Some(cerr),
-            Error::DeviceContextMethodFailed { cerr, .. } => Some(cerr),
-            Error::SetCacheLocationFailed { cerr, .. } => Some(cerr),
-            Error::ModuleCreationFailed { cerr, .. } => Some(cerr),
-            Error::ProgramGroupCreationFailed { cerr, .. } => Some(cerr),
-            Error::PipelineCreationFailed { cerr, .. } => Some(cerr),
-            Error::LaunchFailed { cerr, .. } => Some(cerr),
-            Error::CudaError { cerr, .. } => Some(cerr),
-            Error::AccelComputeMemoryUsageFailed { cerr, .. } => Some(cerr),
-            Error::AccelBuildFailed { cerr, .. } => Some(cerr),
-            Error::AccelCompactFailed { cerr, .. } => Some(cerr),
-            _ => None,
-        }
-    }
 }

@@ -8,13 +8,14 @@ edition = "2018"
 
 [dependencies]
 optix-sys = {path="../optix-sys"}
-derive_more = "0.15.0"
 bitflags = "1.1.0"
 gl = "0.13.0"
 imath = {path="../../imath-rs", optional=true}
 cfg-if = "0.1.10"
 nalgebra-glm = {version = "0.5.0", optional=true}
 nalgebra = {version = "0.19.0", optional=true}
+log = "0.4.8"
+thiserror = "1.0"
 
 [dev-dependencies]
 optix-derive = {path="../optix-derive"}

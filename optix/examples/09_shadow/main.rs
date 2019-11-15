@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate derive_more;
-
 mod sample_renderer;
 use sample_renderer::*;
 

@@ -1,6 +1,4 @@
 #[macro_use]
-extern crate derive_more;
-#[macro_use]
 extern crate bitflags;
 
 use optix_sys as sys;
@@ -55,7 +53,7 @@ pub fn init() -> Result<()> {
     unsafe {
         let res = sys::optixInit();
         if res != sys::OptixResult::OPTIX_SUCCESS {
-            return Err(Error::InitializationFailed { cerr: res.into() });
+            return Err(Error::InitializationFailed { source: res.into() });
         }
 
         Ok(())

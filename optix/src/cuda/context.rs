@@ -30,7 +30,7 @@ impl Context {
             let res = sys::cuCtxGetCurrent(&mut ctx);
             if res != sys::cudaError::cudaSuccess {
                 return Err(Error::CouldNotGetCurrentContext {
-                    cerr: res.into(),
+                    source: res.into(),
                 });
             }
             Ok(ContextRef { ctx })

@@ -8,17 +8,17 @@ use super::error::Error;
 type Result<T, E = Error> = std::result::Result<T, E>;
 
 #[repr(u32)]
-#[derive(Debug, Copy, Clone, Display)]
+#[derive(Debug, Copy, Clone, thiserror::Error)]
 pub enum MemcpyKind {
-    #[display(fmt = "Host to Host")]
+    #[error("Host to Host")]
     HostToHost = cudaMemcpyKind::cudaMemcpyHostToHost,
-    #[display(fmt = "Host to Device")]
+    #[error("Host to Device")]
     HostToDevice = cudaMemcpyKind::cudaMemcpyHostToDevice,
-    #[display(fmt = "Device to Host")]
+    #[error("Device to Host")]
     DeviceToHost = cudaMemcpyKind::cudaMemcpyDeviceToHost,
-    #[display(fmt = "Device to Device")]
+    #[error("Device to Device")]
     DeviceToDevice = cudaMemcpyKind::cudaMemcpyDeviceToDevice,
-    #[display(fmt = "Default")]
+    #[error("Default")]
     Default = cudaMemcpyKind::cudaMemcpyDefault,
 }
 
@@ -63,7 +63,7 @@ impl Buffer {
             let res = cudaMalloc(&mut d_ptr, size_in_bytes);
             if res != cudaError::cudaSuccess {
                 Err(Error::BufferAllocationFailed {
-                    cerr: res.into(),
+                    source: res.into(),
                     size: size_in_bytes,
                 })
             } else {
@@ -87,7 +87,7 @@ impl Buffer {
                 let res = cudaMalloc(&mut d_ptr, size_in_bytes);
                 if res != cudaError::cudaSuccess {
                     return Err(Error::BufferAllocationFailed {
-                        cerr: res.into(),
+                        source: res.into(),
                         size: size_in_bytes,
                     });
                 }
@@ -99,7 +99,9 @@ impl Buffer {
                     cudaMemcpyKind::cudaMemcpyHostToDevice,
                 );
                 if res != cudaError::cudaSuccess {
-                    return Err(Error::BufferUploadFailed { cerr: res.into() });
+                    return Err(Error::BufferUploadFailed {
+                        source: res.into(),
+                    });
                 }
             }
 
@@ -126,7 +128,7 @@ impl Buffer {
                 cudaMemcpyKind::cudaMemcpyHostToDevice,
             );
             if res != cudaError::cudaSuccess {
-                return Err(Error::BufferUploadFailed { cerr: res.into() });
+                return Err(Error::BufferUploadFailed { source: res.into() });
             }
         }
 
@@ -145,7 +147,7 @@ impl Buffer {
             cudaMemcpyKind::cudaMemcpyHostToDevice,
         );
         if res != cudaError::cudaSuccess {
-            return Err(Error::BufferUploadFailed { cerr: res.into() });
+            return Err(Error::BufferUploadFailed { source: res.into() });
         }
 
         Ok(())
@@ -167,7 +169,7 @@ impl Buffer {
                 cudaMemcpyKind::cudaMemcpyDeviceToHost,
             );
             if res != cudaError::cudaSuccess {
-                return Err(Error::BufferDownloadFailed { cerr: res.into() });
+                return Err(Error::BufferDownloadFailed { source: res.into() });
             }
         }
 
@@ -195,7 +197,7 @@ impl Buffer {
                 cudaMemcpyKind::cudaMemcpyDeviceToHost,
             );
             if res != cudaError::cudaSuccess {
-                return Err(Error::BufferDownloadFailed { cerr: res.into() });
+                return Err(Error::BufferDownloadFailed { source: res.into() });
             }
         }
 
@@ -224,39 +226,5 @@ impl Drop for Buffer {
         unsafe {
             cudaFree(self.d_ptr);
         }
-    }
-}
-
-pub struct BufferArray {
-    d_ptrs: Vec<*mut c_void>,
-    size_in_bytes: usize,
-}
-
-impl BufferArray {
-    pub fn new(bufs: Vec<Buffer>) -> BufferArray {
-        let size_in_bytes = bufs[0].size_in_bytes;
-        let d_ptrs: Vec<*mut c_void> =
-            bufs.into_iter().map(|b| b.d_ptr).collect();
-
-        BufferArray {
-            d_ptrs,
-            size_in_bytes,
-        }
-    }
-
-    pub fn as_ptr(&self) -> *const *const c_void {
-        self.d_ptrs.as_ptr() as *const *const c_void
-    }
-
-    pub fn as_device_ptr(&self) -> *const CUdeviceptr {
-        self.d_ptrs.as_ptr() as *const CUdeviceptr
-    }
-
-    pub fn as_mut_ptr(&mut self) -> *mut *mut c_void {
-        self.d_ptrs.as_mut_ptr()
-    }
-
-    pub fn byte_size(&self) -> usize {
-        self.size_in_bytes
     }
 }

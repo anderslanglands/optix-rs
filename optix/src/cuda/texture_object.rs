@@ -188,7 +188,7 @@ impl TextureObject {
             );
             if res != sys::cudaError::cudaSuccess {
                 return Err(Error::TextureObjectCreationFailed {
-                    cerr: res.into(),
+                    source: res.into(),
                 });
             }
 

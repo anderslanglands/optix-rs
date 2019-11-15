@@ -42,7 +42,7 @@ impl DeviceContext {
             );
             if res != sys::OptixResult::OPTIX_SUCCESS {
                 return Err(Error::DeviceContextCreateFailed {
-                    cerr: res.into(),
+                    source: res.into(),
                 });
             }
             if ctx.is_null() {
@@ -332,7 +332,7 @@ impl DeviceContext {
             sys::optixDeviceContextSetCacheLocation(self.ctx, cs.as_ptr())
         };
         if res != sys::OptixResult::OPTIX_SUCCESS {
-            return Err(Error::SetCacheLocationFailed{cerr: res.into(), path: path.as_ref().to_path_buf()});
+            return Err(Error::SetCacheLocationFailed{source: res.into(), path: path.as_ref().to_path_buf()});
         }
 
         Ok(())
@@ -379,7 +379,7 @@ impl DeviceContext {
             )
         };
         if res != sys::OptixResult::OPTIX_SUCCESS {
-            return Err(Error::LaunchFailed{cerr: res.into()});
+            return Err(Error::LaunchFailed{source: res.into()});
         }
 
         Ok(())

@@ -134,7 +134,7 @@ impl DeviceContext {
 
         if res != sys::OptixResult::OPTIX_SUCCESS {
             return Err(Error::ModuleCreationFailed {
-                cerr: res.into(),
+                source: res.into(),
                 log,
             });
         }

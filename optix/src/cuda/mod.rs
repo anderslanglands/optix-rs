@@ -1,7 +1,7 @@
 pub mod context;
 pub use context::{Context, ContextRef};
 pub mod buffer;
-pub use buffer::{Buffer, BufferArray, MemcpyKind};
+pub use buffer::{Buffer, MemcpyKind};
 pub mod error;
 pub mod nvrtc;
 pub mod stream;
@@ -43,7 +43,7 @@ pub fn set_device(device: i32) -> Result<()> {
         let res = sys::cudaSetDevice(device);
         if res != sys::cudaError_enum::CUDA_SUCCESS as u32 {
             return Err(Error::CouldNotSetDevice {
-                cerr: res.into(),
+                source: res.into(),
                 device,
             });
         }
@@ -58,7 +58,7 @@ pub fn get_device_properties(device: i32) -> Result<DeviceProp> {
         let res = sys::cudaGetDeviceProperties(prop.as_mut_ptr(), device);
         if res != sys::cudaError_enum::CUDA_SUCCESS {
             return Err(Error::CouldNotGetDeviceProperties {
-                cerr: res.into(),
+                source: res.into(),
                 device,
             });
         }
@@ -73,7 +73,7 @@ pub fn device_synchronize() -> Result<()> {
         sys::cudaGetLastError()
     };
     if res != sys::cudaError_enum::CUDA_SUCCESS {
-        Err(Error::DeviceSyncFailed { cerr: res.into() })
+        Err(Error::DeviceSyncFailed { source: res.into() })
     } else {
         Ok(())
     }
@@ -265,23 +265,15 @@ impl DeviceProp {
     }
 }
 
-#[derive(Copy, Clone, Debug, Display)]
+#[derive(Copy, Clone, Debug, thiserror::Error)]
 pub enum ComputeMode {
-    #[display(
-        fmt = "< Default compute mode (Multiple threads can use cuda::set_device() with this device)"
-    )]
+    #[error("< Default compute mode (Multiple threads can use cuda::set_device() with this device)")]
     Default,
-    #[display(
-        fmt = "< Compute-exclusive-thread mode (Only one thread in one process will be able to use cuda::set_device() with this device)"
-    )]
+    #[error("< Compute-exclusive-thread mode (Only one thread in one process will be able to use cuda::set_device() with this device)")]
     Exclusive,
-    #[display(
-        fmt = "< Compute-prohibited mode (No threads can use cuda::set_device() with this device)"
-    )]
+    #[error("< Compute-prohibited mode (No threads can use cuda::set_device() with this device)")]
     Prohibited,
-    #[display(
-        fmt = "< Compute-exclusive-process mode (Many threads in one process will be able to use cuda::set_device() with this device)"
-    )]
+    #[error("< Compute-exclusive-process mode (Many threads in one process will be able to use cuda::set_device() with this device)")]
     ExclusiveProcess,
 }
 

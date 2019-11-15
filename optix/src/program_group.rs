@@ -99,7 +99,7 @@ impl DeviceContext {
 
                     if res != sys::OptixResult::OPTIX_SUCCESS {
                         return Err(Error::ProgramGroupCreationFailed {
-                            cerr: res.into(),
+                            source: res.into(),
                             log,
                         });
                     }
@@ -142,7 +142,7 @@ impl DeviceContext {
 
                     if res != sys::OptixResult::OPTIX_SUCCESS {
                         return Err(Error::ProgramGroupCreationFailed {
-                            cerr: res.into(),
+                            source: res.into(),
                             log,
                         });
                     }
@@ -224,7 +224,7 @@ impl DeviceContext {
 
                     if res != sys::OptixResult::OPTIX_SUCCESS {
                         return Err(Error::ProgramGroupCreationFailed {
-                            cerr: res.into(),
+                            source: res.into(),
                             log,
                         });
                     }
