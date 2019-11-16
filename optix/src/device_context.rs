@@ -1,4 +1,4 @@
-use super::cuda;
+use super::cuda::{self, Allocator};
 use cuda::ContextRef;
 use optix_sys as sys;
 
@@ -367,7 +367,7 @@ impl DeviceContext {
         }
     }
 
-    pub fn launch(&self, pipeline: &PipelineRef, stream: &cuda::Stream, launch_params: &cuda::Buffer, sbt: &ShaderBindingTable, width: u32, height: u32, depth: u32) -> Result<()> {
+    pub fn launch<'a, 't, AllocT>(&self, pipeline: &PipelineRef, stream: &cuda::Stream, launch_params: &cuda::Buffer<'a, AllocT>, sbt: &ShaderBindingTable<'a, 't, AllocT>, width: u32, height: u32, depth: u32) -> Result<()> where AllocT: Allocator{
         let res = unsafe {
             sys::optixLaunch(
                 pipeline.pipeline,

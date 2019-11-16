@@ -92,6 +92,7 @@ fn do_struct(
         proc_macro2::Span::call_site(),
     );
     let generics = &input.generics;
+    let where_clause = &input.generics.where_clause;
 
     let field_vis = fields.iter().map(|field| &field.vis);
     let field_name = fields.iter().map(|field| &field.ident);
@@ -104,7 +105,7 @@ fn do_struct(
         // now device-compatible struct
         #[repr(C)]
         #[derive(Copy, Clone)]
-        pub struct #d_name#generics {
+        pub struct #d_name#generics #where_clause {
             #(
                 #field_vis #field_name: <#field_type as DeviceShareable>::Target,
             )*
@@ -147,7 +148,7 @@ fn do_struct(
         #result
 
         // now impl DeviceShareable for the original struct
-        impl#generics DeviceShareable for #name#generics {
+        impl#generics DeviceShareable for #name#generics #where_clause {
             type Target = #d_name#generics;
             fn to_device(&self) -> Self::Target {
                 #d_name {

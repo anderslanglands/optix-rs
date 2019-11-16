@@ -1,9 +1,10 @@
-use super::cuda;
+use super::cuda::{self, Allocator, Mallocator};
 use super::error::Error;
 type Result<T, E = Error> = std::result::Result<T, E>;
 
 use super::DeviceShareable;
 
+/*
 /// Runtime-typed buffer
 pub struct DynamicBuffer {
     buffer: cuda::Buffer,
@@ -74,22 +75,29 @@ impl DeviceShareable for DynamicBuffer {
         "struct DynamicBuffer { void* ptr; size_t len; };".into()
     }
 }
+*/
 
-pub struct Buffer<T>
+pub struct Buffer<'a, AllocT, T>
 where
+    AllocT: Allocator,
     T: BufferElement,
 {
-    buffer: cuda::Buffer,
+    buffer: cuda::Buffer<'a, AllocT>,
     count: usize,
     _t: std::marker::PhantomData<T>,
 }
 
-impl<T> Buffer<T>
+impl<'a, AllocT, T> Buffer<'a, AllocT, T>
 where
+    AllocT: Allocator,
     T: BufferElement,
 {
-    pub fn new(data: &[T]) -> Result<Buffer<T>> {
-        let buffer = cuda::Buffer::with_data(data)?;
+    pub fn new(
+        data: &[T],
+        tag: u64,
+        allocator: &'a AllocT,
+    ) -> Result<Buffer<'a, AllocT, T>> {
+        let buffer = cuda::Buffer::with_data(data, tag, allocator)?;
 
         Ok(Buffer {
             buffer,
@@ -98,8 +106,20 @@ where
         })
     }
 
-    pub fn uninitialized(count: usize) -> Result<Buffer<T>> {
-        let buffer = cuda::Buffer::new(count * std::mem::size_of::<T>())?;
+    pub fn uninitialized(
+        count: usize,
+        tag: u64,
+        allocator: &'a AllocT,
+    ) -> Result<Buffer<'a, AllocT, T>>
+    where
+        AllocT: Allocator,
+    {
+        let buffer = cuda::Buffer::new(
+            count * std::mem::size_of::<T>(),
+            std::mem::align_of::<T>(),
+            tag,
+            allocator,
+        )?;
 
         Ok(Buffer {
             buffer,
@@ -139,8 +159,9 @@ pub struct BufferD {
     len: usize,
 }
 
-impl<T> DeviceShareable for Buffer<T>
+impl<'a, AllocT, T> DeviceShareable for Buffer<'a, AllocT, T>
 where
+    AllocT: Allocator,
     T: BufferElement,
 {
     type Target = BufferD;

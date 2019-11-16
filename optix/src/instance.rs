@@ -1,4 +1,5 @@
 use super::acceleration::TraversableHandle;
+use super::cuda::{self, Allocator, Mallocator};
 use super::math::M4f32;
 use bitflags::bitflags;
 use optix_sys as sys;
@@ -17,14 +18,17 @@ bitflags! {
     }
 }
 
-pub fn make_instance(
+pub fn make_instance<'a, AllocT>(
     transform: &M4f32,
     instance_id: u32,
     sbt_offset: u32,
     visibility_mask: u32,
     flags: InstanceFlags,
-    traversable: &TraversableHandle,
-) -> Instance {
+    traversable: &TraversableHandle<'a, AllocT>,
+) -> Instance
+where
+    AllocT: Allocator,
+{
     let mut inst = MaybeUninit::<Instance>::uninit();
     let mut inst = unsafe {
         std::ptr::write_bytes(inst.as_mut_ptr(), 0, 1);

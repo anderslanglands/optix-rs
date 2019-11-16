@@ -13,6 +13,8 @@ pub use texture_object::{
 };
 pub mod array;
 pub use array::{Array, ArrayFlags, ChannelFormatDesc, ChannelFormatKind};
+pub mod allocator;
+pub use allocator::{Allocator, Mallocator, TaggedMallocator};
 
 pub use error::Error;
 type Result<T, E = Error> = std::result::Result<T, E>;
