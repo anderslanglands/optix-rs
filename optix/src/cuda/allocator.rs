@@ -148,11 +148,15 @@ impl Allocator for TaggedMallocator {
         sys::cudaFree(allocation.ptr as *mut std::os::raw::c_void);
         self.total_allocated
             .set(self.total_allocated.get() - allocation.size());
-        *self
-            .allocs_by_tag
-            .borrow_mut()
-            .get_mut(&allocation.tag())
-            .unwrap() -= allocation.size();
+        // *self
+        //     .allocs_by_tag
+        //     .borrow_mut()
+        //     .get_mut(&allocation.tag())
+        //     .unwrap() -= allocation.size();
+        match self.allocs_by_tag.borrow_mut().get_mut(&allocation.tag()) {
+            Some(total) => *total -= allocation.size(),
+            None => (),
+        }
         Ok(())
     }
 }

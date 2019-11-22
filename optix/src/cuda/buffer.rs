@@ -109,7 +109,16 @@ where
                 _alloc: allocator,
             })
         } else {
-            Err(Error::ZeroAllocation)
+            // TODO: we rely on being able to create zero-sized allocations in
+            // rama, to simplify passing optional stuff to cuda that we can
+            // represent as a null ptr. Is this the right wat to do this? Or
+            // should we ban zero-length allocations and have rama use Option
+            // etc to represent those situations at the expense of complexity?
+            // Err(Error::ZeroAllocation)
+            Ok(Buffer {
+                allocation: Allocation::new(0, 0, tag),
+                _alloc: allocator,
+            })
         }
     }
 
