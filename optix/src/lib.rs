@@ -64,7 +64,7 @@ pub fn init() -> Result<()> {
 /// Trait to represent a type that can convert itself to a CUDA-compatible
 /// target type.
 pub trait DeviceShareable {
-    type Target: Copy;
+    type Target;
     fn to_device(&self) -> Self::Target;
     fn cuda_decl() -> String {
         Self::cuda_type()
@@ -245,6 +245,8 @@ where
         let cvar = var.to_device();
         let buffer = cuda::Buffer::with_data(
             std::slice::from_ref(&cvar),
+            // FIXME: let trait implementors declare their preferred alignment
+            std::mem::align_of::<T>(),
             tag,
             allocator,
         )?;
@@ -264,6 +266,25 @@ where
     /// storage for this variable.
     pub fn variable_buffer(&self) -> &cuda::Buffer<'a, AllocT> {
         &self.buffer
+    }
+}
+
+impl<'a, AllocT, T> DeviceShareable for SharedVariable<'a, AllocT, T>
+where
+    AllocT: Allocator,
+    T: DeviceShareable,
+{
+    type Target = cuda::CUdeviceptr;
+    fn to_device(&self) -> Self::Target {
+        self.buffer.as_device_ptr()
+    }
+
+    fn cuda_type() -> String {
+        format!("{}*", T::cuda_type())
+    }
+
+    fn cuda_decl() -> String {
+        format!("{}*", T::cuda_decl())
     }
 }
 
@@ -317,7 +338,13 @@ where
         allocator: &'a AllocT,
     ) -> Result<SharedVec<'a, AllocT, T>> {
         let cvec: Vec<T::Target> = vec.iter().map(|t| t.to_device()).collect();
-        let buffer = cuda::Buffer::with_data(&cvec, tag, allocator)?;
+        let buffer = cuda::Buffer::with_data(
+            &cvec,
+            // FIXME: let trait implementors declare their preferred alignemnt
+            std::mem::align_of::<T>(),
+            tag,
+            allocator,
+        )?;
         Ok(SharedVec { vec, buffer })
     }
 
@@ -465,7 +492,7 @@ macro_rules! wrap_copyable_for_device {
 /// implemented
 #[macro_export]
 macro_rules! math_type {
-    ($ty:ty, $fmt:expr, $cmp:literal, $cmpty:ty) => {
+    ($ty:ty, $fmt:expr, $cmp:literal, $cmpty:ty, $align:literal) => {
         impl DeviceShareable for $ty {
             type Target = $ty;
             fn to_device(&self) -> Self::Target {
@@ -479,6 +506,7 @@ macro_rules! math_type {
         impl BufferElement for $ty {
             const FORMAT: BufferFormat = $fmt;
             const COMPONENTS: usize = $cmp;
+            const ALIGNMENT: usize = $align;
             type ComponentType = $cmpty;
         }
     };

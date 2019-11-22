@@ -3,28 +3,18 @@ use optix_sys as sys;
 
 use super::{DeviceShareable, ProgramGroupRef, SharedVariable};
 
-pub trait SbtData {
-    fn device_ptr(&self) -> cuda::CUdeviceptr;
-}
+pub trait SbtData {}
 
-impl<AllocT, T> SbtData for SharedVariable<'_, AllocT, T>
-where
-    AllocT: Allocator,
-    T: DeviceShareable,
-{
-    fn device_ptr(&self) -> cuda::CUdeviceptr {
-        self.variable_buffer().as_device_ptr()
-    }
-}
+// impl<AllocT, T> SbtData for SharedVariable<'_, AllocT, T>
+// where
+//     AllocT: Allocator,
+//     T: DeviceShareable,
+// {
+// }
 
-impl<T> SbtData for SbtRecord<T>
-where
-    T: SbtData + DeviceShareable,
-{
-    fn device_ptr(&self) -> cuda::CUdeviceptr {
-        self.data.device_ptr()
-    }
-}
+impl<T> SbtData for SbtRecord<T> where T: DeviceShareable {}
+
+impl<T> SbtData for T where T: DeviceShareable {}
 
 #[allow(dead_code)]
 pub struct ShaderBindingTable<'a, 't, AllocT>
@@ -99,6 +89,7 @@ where
         ShaderBindingTableBuilder {
             rg: cuda::Buffer::with_data(
                 std::slice::from_ref(&rec_rg_d),
+                sys::OptixSbtRecordAlignment,
                 tag,
                 allocator,
             )
@@ -134,6 +125,7 @@ where
         self.ex = Some(
             cuda::Buffer::with_data(
                 std::slice::from_ref(&rec_ex_d),
+                sys::OptixSbtRecordAlignment,
                 tag,
                 allocator,
             )
@@ -155,8 +147,15 @@ where
     {
         let rec_miss_d: Vec<SbtRecordDevice<T::Target>> =
             rec_miss.iter().map(|r| r.to_device_record()).collect();
-        self.ms =
-            Some(cuda::Buffer::with_data(&rec_miss_d, tag, allocator).unwrap());
+        self.ms = Some(
+            cuda::Buffer::with_data(
+                &rec_miss_d,
+                sys::OptixSbtRecordAlignment,
+                tag,
+                allocator,
+            )
+            .unwrap(),
+        );
         self.ms_stride =
             std::mem::size_of::<SbtRecordDevice<T::Target>>() as u32;
         self.ms_count = rec_miss.len() as u32;
@@ -178,8 +177,15 @@ where
     {
         let rec_hg_d: Vec<SbtRecordDevice<T::Target>> =
             rec_hg.iter().map(|r| r.to_device_record()).collect();
-        self.hg =
-            Some(cuda::Buffer::with_data(&rec_hg_d, tag, allocator).unwrap());
+        self.hg = Some(
+            cuda::Buffer::with_data(
+                &rec_hg_d,
+                sys::OptixSbtRecordAlignment,
+                tag,
+                allocator,
+            )
+            .unwrap(),
+        );
         self.hg_stride =
             std::mem::size_of::<SbtRecordDevice<T::Target>>() as u32;
         self.hg_count = rec_hg.len() as u32;
@@ -201,8 +207,15 @@ where
     {
         let rec_cl_d: Vec<SbtRecordDevice<T::Target>> =
             rec_cl.iter().map(|r| r.to_device_record()).collect();
-        self.cl =
-            Some(cuda::Buffer::with_data(&rec_cl_d, tag, allocator).unwrap());
+        self.cl = Some(
+            cuda::Buffer::with_data(
+                &rec_cl_d,
+                sys::OptixSbtRecordAlignment,
+                tag,
+                allocator,
+            )
+            .unwrap(),
+        );
         self.cl_stride =
             std::mem::size_of::<SbtRecordDevice<T::Target>>() as u32;
         self.cl_count = rec_cl.len() as u32;

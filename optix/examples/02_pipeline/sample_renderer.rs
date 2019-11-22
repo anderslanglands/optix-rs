@@ -5,7 +5,7 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 
 use optix::SbtRecord;
 
-pub struct SampleRenderer<'a, AllocT>
+pub struct SampleRenderer<'a, 't, AllocT>
 where
     AllocT: Allocator,
 {
@@ -18,7 +18,7 @@ where
     module: optix::ModuleRef,
 
     program_groups: Vec<optix::ProgramGroupRef>,
-    sbt: optix::ShaderBindingTable<'a, AllocT>,
+    sbt: optix::ShaderBindingTable<'a, 't, AllocT>,
 
     color_buffer: cuda::Buffer<'a, AllocT>,
     launch_params: LaunchParams,
@@ -39,14 +39,14 @@ pub enum MemTags {
 }
 }
 
-impl<'a, AllocT> SampleRenderer<'a, AllocT>
+impl<'a, 't, AllocT> SampleRenderer<'a, 't, AllocT>
 where
     AllocT: Allocator,
 {
     pub fn new(
         fb_size: V2i32,
         alloc: &'a AllocT,
-    ) -> Result<SampleRenderer<'a, AllocT>> {
+    ) -> Result<SampleRenderer<'a, 't, AllocT>> {
         // Make sure CUDA context is initialized
         cuda::init();
         // Check that we've got available devices
@@ -205,6 +205,7 @@ where
 
         let launch_params_buffer = cuda::Buffer::with_data(
             std::slice::from_ref(&launch_params),
+            std::mem::align_of::<LaunchParams>(),
             MemTags::LaunchParams as u64,
             alloc,
         )?;

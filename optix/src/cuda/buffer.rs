@@ -80,6 +80,7 @@ where
 
     pub fn with_data<T>(
         data: &[T],
+        alignment: usize,
         tag: u64,
         allocator: &'a AllocT,
     ) -> Result<Buffer<'a, AllocT>>
@@ -89,13 +90,8 @@ where
         let size_in_bytes = std::mem::size_of::<T>() * data.len();
 
         if size_in_bytes != 0 {
-            let allocation = unsafe {
-                allocator.alloc(
-                    size_in_bytes,
-                    std::mem::align_of::<T>(),
-                    tag,
-                )?
-            };
+            let allocation =
+                unsafe { allocator.alloc(size_in_bytes, alignment, tag)? };
 
             let res = unsafe {
                 cudaMemcpy(

@@ -210,6 +210,7 @@ where
                     aabbs.as_ptr() as *const sys::OptixAabb,
                     num_primitives,
                 ),
+                sys::OptixAabbBufferByteAlignment,
                 tag,
                 allocator,
             )?
@@ -269,7 +270,12 @@ where
         allocator: &'a AllocT,
     ) -> Result<InstanceArray<'a, AllocT>> {
         let num_instances = instances.len() as u32;
-        let instances = cuda::Buffer::with_data(instances, tag, allocator)?;
+        let instances = cuda::Buffer::with_data(
+            instances,
+            sys::OptixInstanceByteAlignment,
+            tag,
+            allocator,
+        )?;
         Ok(InstanceArray {
             instances,
             num_instances,

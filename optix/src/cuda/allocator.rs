@@ -85,8 +85,8 @@ impl Allocator for Mallocator {
         alignment: usize,
         tag: u64,
     ) -> Result<Allocation> {
-        // cuda mallocs are always 512-byte aligned on recent GPUs so we can
-        // satisfy anything up to that
+        // cuda mallocs are always 256 or 512-byte aligned on recent GPUs so we
+        // can satisfy anything up to that
         // FIXME: check this don't assume it's 512
         if alignment > 512 || !alignment.is_power_of_two() {
             return Err(Error::AllocationAlignment {

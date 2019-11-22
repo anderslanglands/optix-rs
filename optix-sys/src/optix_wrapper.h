@@ -2,6 +2,15 @@
 
 static const size_t OptixSbtRecordHeaderSize = OPTIX_SBT_RECORD_HEADER_SIZE;
 static const size_t OptixSbtRecordAlignment = OPTIX_SBT_RECORD_ALIGNMENT;
+static const size_t OptixAccelBufferByteAlignment =
+    OPTIX_ACCEL_BUFFER_BYTE_ALIGNMENT;
+static const size_t OptixInstanceByteAlignment = OPTIX_INSTANCE_BYTE_ALIGNMENT;
+static const size_t OptixAabbBufferByteAlignment =
+    OPTIX_AABB_BUFFER_BYTE_ALIGNMENT;
+static const size_t OptixGeometryTransformByteAlignment =
+    OPTIX_GEOMETRY_TRANSFORM_BYTE_ALIGNMENT;
+static const size_t OptixTransformByteAlignment =
+    OPTIX_TRANSFORM_BYTE_ALIGNMENT;
 
 /**
  * <div rustbindgen replaces="OptixGeometryFlags"></div>
