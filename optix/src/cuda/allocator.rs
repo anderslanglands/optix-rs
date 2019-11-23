@@ -16,6 +16,12 @@ pub trait Allocator {
     unsafe fn dealloc(&self, allocation: Allocation) -> Result<()>;
 }
 
+pub trait TaggedAllocator: Allocator {
+    fn visit<F>(&self, mut closure: F)
+    where
+        F: FnMut(&HashMap<u64, usize>);
+}
+
 pub struct Mallocator {}
 
 impl Mallocator {
@@ -158,6 +164,16 @@ impl Allocator for TaggedMallocator {
             None => (),
         }
         Ok(())
+    }
+}
+
+impl TaggedAllocator for TaggedMallocator {
+    fn visit<F>(&self, mut closure: F)
+    where
+        F: FnMut(&HashMap<u64, usize>),
+    {
+        let rg = self.allocs_by_tag.borrow();
+        closure(&*rg);
     }
 }
 
