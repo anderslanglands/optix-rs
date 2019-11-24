@@ -204,21 +204,21 @@ cfg_if::cfg_if! {
     }
 }
 
-math_type!(V2u8, BufferFormat::U8x2, 2, u8, 2);
-math_type!(V3u8, BufferFormat::U8x3, 3, u8, 1);
-math_type!(V4u8, BufferFormat::U8x4, 4, u8, 4);
+math_type!(V2u8, uchar2, BufferFormat::U8x2, 2, u8, 2);
+math_type!(V3u8, uchar3, BufferFormat::U8x3, 3, u8, 1);
+math_type!(V4u8, uchar4, BufferFormat::U8x4, 4, u8, 4);
 
-math_type!(V2u16, BufferFormat::U16x2, 2, u16, 4);
-math_type!(V3u16, BufferFormat::U16x3, 3, u16, 2);
-math_type!(V4u16, BufferFormat::U16x4, 4, u16, 8);
+math_type!(V2u16, ushort2, BufferFormat::U16x2, 2, u16, 4);
+math_type!(V3u16, ushort3, BufferFormat::U16x3, 3, u16, 2);
+math_type!(V4u16, ushort4, BufferFormat::U16x4, 4, u16, 8);
 
-math_type!(V2i32, BufferFormat::I32x2, 2, i32, 8);
-math_type!(V3i32, BufferFormat::I32x3, 3, i32, 4);
-math_type!(V4i32, BufferFormat::I32x4, 4, i32, 16);
+math_type!(V2i32, i32x2, BufferFormat::I32x2, 2, i32, 8);
+math_type!(V3i32, i32x3, BufferFormat::I32x3, 3, i32, 4);
+math_type!(V4i32, i32x4, BufferFormat::I32x4, 4, i32, 16);
 
-math_type!(V2f32, BufferFormat::F32x2, 2, f32, 8);
-math_type!(V3f32, BufferFormat::F32x3, 3, f32, 4);
-math_type!(V4f32, BufferFormat::F32x4, 4, f32, 16);
+math_type!(V2f32, f32x2, BufferFormat::F32x2, 2, f32, 8);
+math_type!(V3f32, f32x3, BufferFormat::F32x3, 3, f32, 4);
+math_type!(V4f32, f32x4, BufferFormat::F32x4, 4, f32, 16);
 
 impl DeviceShareable for M4f32 {
     type Target = M4f32;

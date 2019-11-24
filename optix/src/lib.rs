@@ -492,14 +492,14 @@ macro_rules! wrap_copyable_for_device {
 /// implemented
 #[macro_export]
 macro_rules! math_type {
-    ($ty:ty, $fmt:expr, $cmp:literal, $cmpty:ty, $align:literal) => {
+    ($ty:ty, $cuty:ty, $fmt:expr, $cmp:literal, $cmpty:ty, $align:literal) => {
         impl DeviceShareable for $ty {
             type Target = $ty;
             fn to_device(&self) -> Self::Target {
                 *self
             }
             fn cuda_type() -> String {
-                stringify!($ty).into()
+                stringify!($cuty).into()
             }
         }
 
