@@ -81,6 +81,26 @@ pub fn device_synchronize() -> Result<()> {
     }
 }
 
+pub fn mem_get_info() -> Result<(usize, usize)> {
+    let (res, free, total) = unsafe {
+        let mut free = 0usize;
+        let mut total = 0usize;
+        (
+            sys::cudaMemGetInfo(
+                &mut free as *mut usize,
+                &mut total as *mut usize,
+            ),
+            free,
+            total,
+        )
+    };
+    if res != sys::cudaError_enum::CUDA_SUCCESS {
+        Err(Error::GetMemInfoFailed { source: res.into() })
+    } else {
+        Ok((free, total))
+    }
+}
+
 pub struct DeviceProp {
     prop: sys::cudaDeviceProp,
 }

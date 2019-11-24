@@ -53,4 +53,6 @@ pub enum Error {
     DeviceSyncFailed { source: CudaError },
     #[error("Texture object creation failed")]
     TextureObjectCreationFailed { source: CudaError },
+    #[error("Could not get mem info")]
+    GetMemInfoFailed { source: CudaError },
 }
