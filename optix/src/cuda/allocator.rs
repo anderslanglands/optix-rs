@@ -20,6 +20,9 @@ pub trait TaggedAllocator: Allocator {
     fn visit<F>(&self, mut closure: F)
     where
         F: FnMut(&HashMap<u64, usize>);
+
+    fn total_allocated(&self) -> usize;
+    fn clone_map(&self) -> HashMap<u64, usize>;
 }
 
 pub struct Mallocator {}
@@ -41,10 +44,6 @@ impl TaggedMallocator {
             total_allocated: Cell::new(0),
             allocs_by_tag: RefCell::new(HashMap::new()),
         }
-    }
-
-    pub fn total_allocated(&self) -> usize {
-        self.total_allocated.get()
     }
 
     pub fn tag_allocations(&self) -> Ref<HashMap<u64, usize>> {
@@ -168,12 +167,20 @@ impl Allocator for TaggedMallocator {
 }
 
 impl TaggedAllocator for TaggedMallocator {
+    fn total_allocated(&self) -> usize {
+        self.total_allocated.get()
+    }
+
     fn visit<F>(&self, mut closure: F)
     where
         F: FnMut(&HashMap<u64, usize>),
     {
         let rg = self.allocs_by_tag.borrow();
         closure(&*rg);
+    }
+
+    fn clone_map(&self) -> HashMap<u64, usize> {
+        self.allocs_by_tag.borrow().clone()
     }
 }
 
