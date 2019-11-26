@@ -4,7 +4,7 @@ extern crate enum_primitive;
 use num::FromPrimitive;
 
 mod sample_renderer;
-use optix::cuda::TaggedMallocator;
+use optix::cuda::{TaggedAllocator, TaggedMallocator};
 use sample_renderer::{MemTags, SampleRenderer};
 
 use optix::math::*;

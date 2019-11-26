@@ -1,16 +1,9 @@
 use super::cuda::{self, Allocator};
 use optix_sys as sys;
 
-use super::{DeviceShareable, ProgramGroupRef, SharedVariable};
+use super::{DeviceShareable, ProgramGroupRef};
 
 pub trait SbtData {}
-
-// impl<AllocT, T> SbtData for SharedVariable<'_, AllocT, T>
-// where
-//     AllocT: Allocator,
-//     T: DeviceShareable,
-// {
-// }
 
 impl<T> SbtData for SbtRecord<T> where T: DeviceShareable {}
 

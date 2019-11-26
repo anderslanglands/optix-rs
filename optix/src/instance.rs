@@ -1,5 +1,5 @@
 use super::acceleration::TraversableHandle;
-use super::cuda::{self, Allocator, Mallocator};
+use super::cuda::Allocator;
 use super::math::M4f32;
 use bitflags::bitflags;
 use optix_sys as sys;

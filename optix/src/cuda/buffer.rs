@@ -1,7 +1,5 @@
 use super::allocator::{Allocation, Allocator, Mallocator};
-use optix_sys::cuda_sys::{
-    cudaError, cudaFree, cudaMalloc, cudaMemcpy, cudaMemcpyKind, CUdeviceptr,
-};
+use optix_sys::cuda_sys::{cudaError, cudaMemcpy, cudaMemcpyKind, CUdeviceptr};
 
 use std::os::raw::c_void;
 

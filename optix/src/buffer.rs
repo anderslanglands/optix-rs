@@ -1,4 +1,4 @@
-use super::cuda::{self, Allocator, Mallocator};
+use super::cuda::{self, Allocator};
 use super::error::Error;
 type Result<T, E = Error> = std::result::Result<T, E>;
 
