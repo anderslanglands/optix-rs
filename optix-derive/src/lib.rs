@@ -12,15 +12,6 @@ use syn::{
 pub fn device_shared(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(item as DeriveInput);
 
-    /*
-    let fields = match &input.data {
-        Data::Struct(DataStruct {
-            fields: Fields::Named(fields),
-            ..
-        }) => &fields.named,
-        _ => panic!("expected a struct with named fields"),
-    };
-    */
     let result = match &input.data {
         Data::Struct(DataStruct {
             fields: Fields::Named(fields),
@@ -51,7 +42,7 @@ fn do_enum(
     let result = quote! {
         #[repr(u32)]
         #[allow(dead_code)]
-        #[derive(Copy, Clone, PartialEq, PartialOrd)]
+        #[derive(Copy, Clone, PartialEq, PartialOrd, Debug)]
         #input
 
         impl DeviceShareable for #name {

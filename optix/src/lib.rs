@@ -323,7 +323,6 @@ impl<'a, AllocT, T> SharedVec<'a, AllocT, T>
 where
     AllocT: Allocator,
     T: DeviceShareable,
-    T::Target: std::fmt::Debug,
 {
     /// Create a new SharedVec, taking ownership of the Vec `vec`.
     ///
@@ -352,14 +351,8 @@ where
     /// on the Rust side will not be reflected on the device until this is
     /// called.
     pub fn upload(&mut self) -> Result<()> {
-        let cvec: Vec<T::Target> = self
-            .vec
-            .iter()
-            .map(|t| {
-                println!("upload: {:?}", t.to_device());
-                t.to_device()
-            })
-            .collect();
+        let cvec: Vec<T::Target> =
+            self.vec.iter().map(|t| t.to_device()).collect();
         self.buffer.upload(&cvec)?;
         Ok(())
     }

@@ -203,6 +203,27 @@ struct Buffer {
     }
 }
 
+impl<'a, T, AllocT> DeviceShareable
+    for Option<std::rc::Rc<Buffer<'a, AllocT, T>>>
+where
+    AllocT: 'a + Allocator,
+    T: BufferElement,
+{
+    type Target = BufferD;
+    fn to_device(&self) -> Self::Target {
+        match self {
+            Some(t) => t.to_device(),
+            None => BufferD { ptr: 0, len: 0 },
+        }
+    }
+    fn cuda_type() -> String {
+        Buffer::<'a, AllocT, T>::cuda_type()
+    }
+    fn cuda_decl() -> String {
+        Buffer::<'a, AllocT, T>::cuda_decl()
+    }
+}
+
 #[repr(u32)]
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum BufferFormat {
