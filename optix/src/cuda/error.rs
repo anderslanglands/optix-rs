@@ -2,6 +2,12 @@ use optix_sys::cuda_sys::Error as CudaError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    #[error("allocation of size {size:} bytes failed.")]
+    AllocationFailed { source: CudaError, size: usize },
+    #[error("allocation of size {size:} bytes failed as could not satisfy alignment of {align:} bytes.")]
+    AllocationAlignment { size: usize, align: usize },
+    #[error("Tried to allocate zero bytes")]
+    ZeroAllocation,
     #[error("Buffer allocation of size {size:} bytes failed.")]
     BufferAllocationFailed { source: CudaError, size: usize },
     #[error(
@@ -47,4 +53,6 @@ pub enum Error {
     DeviceSyncFailed { source: CudaError },
     #[error("Texture object creation failed")]
     TextureObjectCreationFailed { source: CudaError },
+    #[error("Could not get mem info")]
+    GetMemInfoFailed { source: CudaError },
 }

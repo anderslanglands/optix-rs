@@ -1,5 +1,5 @@
 use super::{
-    cuda,
+    cuda::{self, Allocator, Mallocator},
     math::{Box3f32, V3f32, V3i32},
 };
 use optix_sys as sys;
@@ -16,22 +16,25 @@ use std::convert::{TryFrom, TryInto};
 
 use std::rc::Rc;
 
-pub enum BuildInput<V = V3f32, I = V3i32>
+pub enum BuildInput<'a, AllocT, V = V3f32, I = V3i32>
 where
+    AllocT: Allocator,
     V: BufferElement,
     I: BufferElement,
 {
-    Triangle(TriangleArray<V, I>),
-    CustomPrimitive(CustomPrimitiveArray),
-    Instance(InstanceArray),
+    Triangle(TriangleArray<'a, AllocT, V, I>),
+    CustomPrimitive(CustomPrimitiveArray<'a, AllocT>),
+    Instance(InstanceArray<'a, AllocT>),
 }
 
-impl<V, I> From<&BuildInput<V, I>> for sys::OptixBuildInput
+impl<'a, AllocT, V, I> From<&BuildInput<'a, AllocT, V, I>>
+    for sys::OptixBuildInput
 where
+    AllocT: Allocator,
     V: BufferElement,
     I: BufferElement,
 {
-    fn from(b: &BuildInput<V, I>) -> sys::OptixBuildInput {
+    fn from(b: &BuildInput<'a, AllocT, V, I>) -> sys::OptixBuildInput {
         let mut input = sys::OptixBuildInputUnion::default();
         match b {
             BuildInput::Triangle(ta) => {
@@ -61,27 +64,29 @@ where
     }
 }
 
-pub struct TriangleArray<V, I>
+pub struct TriangleArray<'a, AllocT, V, I>
 where
+    AllocT: Allocator,
     V: BufferElement,
     I: BufferElement,
 {
-    vertex_buffers: Vec<Rc<Buffer<V>>>,
+    vertex_buffers: Vec<Rc<Buffer<'a, AllocT, V>>>,
     vertex_buffers_d: Vec<cuda::CUdeviceptr>,
-    index_buffer: Rc<Buffer<I>>,
+    index_buffer: Rc<Buffer<'a, AllocT, I>>,
     flags: GeometryFlags,
 }
 
-impl<V, I> TriangleArray<V, I>
+impl<'a, AllocT, V, I> TriangleArray<'a, AllocT, V, I>
 where
+    AllocT: Allocator,
     V: BufferElement,
     I: BufferElement,
 {
     pub fn new(
-        vertex_buffers: Vec<Rc<Buffer<V>>>,
-        index_buffer: Rc<Buffer<I>>,
+        vertex_buffers: Vec<Rc<Buffer<'a, AllocT, V>>>,
+        index_buffer: Rc<Buffer<'a, AllocT, I>>,
         flags: GeometryFlags,
-    ) -> Result<TriangleArray<V, I>> {
+    ) -> Result<TriangleArray<'a, AllocT, V, I>> {
         let vertex_buffers_d: Vec<cuda::CUdeviceptr> =
             vertex_buffers.iter().map(|b| b.as_device_ptr()).collect();
 
@@ -107,8 +112,10 @@ where
     }
 }
 
-impl<V, I> TryFrom<&TriangleArray<V, I>> for sys::OptixBuildInputTriangleArray
+impl<'a, AllocT, V, I> TryFrom<&TriangleArray<'a, AllocT, V, I>>
+    for sys::OptixBuildInputTriangleArray
 where
+    AllocT: Allocator,
     V: BufferElement,
     I: BufferElement,
 {
@@ -116,7 +123,7 @@ where
 
     #[allow(non_snake_case)]
     fn try_from(
-        ta: &TriangleArray<V, I>,
+        ta: &TriangleArray<'a, AllocT, V, I>,
     ) -> Result<sys::OptixBuildInputTriangleArray> {
         let vertexBuffers = ta.vertex_buffers_d.as_ptr();
         let numVertices = ta.vertex_buffers[0].len() as u32;
@@ -176,24 +183,37 @@ where
     }
 }
 
-pub struct CustomPrimitiveArray {
-    _aabb_buffers: Vec<cuda::Buffer>,
+pub struct CustomPrimitiveArray<'a, AllocT = Mallocator>
+where
+    AllocT: Allocator,
+{
+    _aabb_buffers: Vec<cuda::Buffer<'a, AllocT>>,
     aabb_buffers_d: Vec<cuda::CUdeviceptr>,
     num_primitives: u32,
     flags: Box<u32>,
 }
 
-impl CustomPrimitiveArray {
+impl<'a, AllocT> CustomPrimitiveArray<'a, AllocT>
+where
+    AllocT: Allocator,
+{
     pub fn new(
         aabbs: &[Box3f32],
         flags: GeometryFlags,
-    ) -> Result<CustomPrimitiveArray> {
+        tag: u64,
+        allocator: &'a AllocT,
+    ) -> Result<CustomPrimitiveArray<'a, AllocT>> {
         let num_primitives = aabbs.len();
         let buffer = unsafe {
-            cuda::Buffer::with_data(std::slice::from_raw_parts(
-                aabbs.as_ptr() as *const sys::OptixAabb,
-                num_primitives,
-            ))?
+            cuda::Buffer::with_data(
+                std::slice::from_raw_parts(
+                    aabbs.as_ptr() as *const sys::OptixAabb,
+                    num_primitives,
+                ),
+                sys::OptixAabbBufferByteAlignment,
+                tag,
+                allocator,
+            )?
         };
         let aabb_buffers = vec![buffer];
         let aabb_buffers_d: Vec<_> =
@@ -208,9 +228,13 @@ impl CustomPrimitiveArray {
     }
 }
 
-impl From<&CustomPrimitiveArray> for sys::OptixBuildInputCustomPrimitiveArray {
+impl<'a, AllocT> From<&CustomPrimitiveArray<'a, AllocT>>
+    for sys::OptixBuildInputCustomPrimitiveArray
+where
+    AllocT: Allocator,
+{
     fn from(
-        arr: &CustomPrimitiveArray,
+        arr: &CustomPrimitiveArray<'a, AllocT>,
     ) -> sys::OptixBuildInputCustomPrimitiveArray {
         sys::OptixBuildInputCustomPrimitiveArray {
             aabbBuffers: arr.aabb_buffers_d.as_ptr(),
@@ -226,17 +250,32 @@ impl From<&CustomPrimitiveArray> for sys::OptixBuildInputCustomPrimitiveArray {
     }
 }
 
-pub struct InstanceArray {
-    instances: cuda::Buffer,
+pub struct InstanceArray<'a, AllocT = Mallocator>
+where
+    AllocT: Allocator,
+{
+    instances: cuda::Buffer<'a, AllocT>,
     num_instances: u32,
-    aabbs: Option<cuda::Buffer>,
+    aabbs: Option<cuda::Buffer<'a, AllocT>>,
     num_aabbs: u32,
 }
 
-impl InstanceArray {
-    pub fn new(instances: &[Instance]) -> Result<InstanceArray> {
+impl<'a, AllocT> InstanceArray<'a, AllocT>
+where
+    AllocT: Allocator,
+{
+    pub fn new(
+        instances: &[Instance],
+        tag: u64,
+        allocator: &'a AllocT,
+    ) -> Result<InstanceArray<'a, AllocT>> {
         let num_instances = instances.len() as u32;
-        let instances = cuda::Buffer::with_data(instances)?;
+        let instances = cuda::Buffer::with_data(
+            instances,
+            sys::OptixInstanceByteAlignment,
+            tag,
+            allocator,
+        )?;
         Ok(InstanceArray {
             instances,
             num_instances,
@@ -246,8 +285,14 @@ impl InstanceArray {
     }
 }
 
-impl From<&InstanceArray> for sys::OptixBuildInputInstanceArray {
-    fn from(ia: &InstanceArray) -> sys::OptixBuildInputInstanceArray {
+impl<'a, AllocT> From<&InstanceArray<'a, AllocT>>
+    for sys::OptixBuildInputInstanceArray
+where
+    AllocT: Allocator,
+{
+    fn from(
+        ia: &InstanceArray<'a, AllocT>,
+    ) -> sys::OptixBuildInputInstanceArray {
         sys::OptixBuildInputInstanceArray {
             instances: ia.instances.as_device_ptr(),
             numInstances: ia.num_instances,
@@ -340,12 +385,13 @@ pub struct AccelBufferSizes {
 }
 
 impl DeviceContext {
-    pub fn accel_compute_memory_usage<V, I>(
+    pub fn accel_compute_memory_usage<'a, AllocT, V, I>(
         &self,
         accel_options: &AccelBuildOptions,
-        build_inputs: &[BuildInput<V, I>],
+        build_inputs: &[BuildInput<'a, AllocT, V, I>],
     ) -> Result<Vec<AccelBufferSizes>>
     where
+        AllocT: Allocator,
         V: BufferElement,
         I: BufferElement,
     {
@@ -375,16 +421,17 @@ impl DeviceContext {
         Ok(buffer_sizes)
     }
 
-    pub fn accel_build<V, I>(
+    pub fn accel_build<'a, 'at, 'ao, 'ae, 'b, AllocT, V, I>(
         &self,
         stream: &cuda::Stream,
         accel_options: &AccelBuildOptions,
-        build_inputs: &[BuildInput<V, I>],
-        temp_buffer: &cuda::Buffer,
-        output_buffer: cuda::Buffer,
-        emitted_properties: &[AccelEmitDesc],
-    ) -> Result<TraversableHandle>
+        build_inputs: &[BuildInput<'a, AllocT, V, I>],
+        temp_buffer: &cuda::Buffer<'at, AllocT>,
+        output_buffer: cuda::Buffer<'ao, AllocT>,
+        emitted_properties: &[AccelEmitDesc<'ae, 'b, AllocT>],
+    ) -> Result<TraversableHandle<'ao, AllocT>>
     where
+        AllocT: Allocator,
         V: BufferElement,
         I: BufferElement,
     {
@@ -428,12 +475,15 @@ impl DeviceContext {
         }
     }
 
-    pub fn accel_compact(
+    pub fn accel_compact<'ai, 'ao, AllocT>(
         &self,
         stream: &cuda::Stream,
-        input_handle: TraversableHandle,
-        output_buffer: cuda::Buffer,
-    ) -> Result<TraversableHandle> {
+        input_handle: TraversableHandle<'ai, AllocT>,
+        output_buffer: cuda::Buffer<'ao, AllocT>,
+    ) -> Result<TraversableHandle<'ao, AllocT>>
+    where
+        AllocT: Allocator,
+    {
         unsafe {
             let mut hnd = 0;
             let res = sys::optixAccelCompact(
@@ -465,26 +515,38 @@ pub enum AccelPropertyType {
     AABBs = sys::OptixAccelPropertyType_OPTIX_PROPERTY_TYPE_AABBS,
 }
 
-pub struct AccelEmitDesc<'b> {
-    result: &'b cuda::Buffer,
+pub struct AccelEmitDesc<'a, 'b, AllocT>
+where
+    AllocT: Allocator,
+{
+    result: &'b cuda::Buffer<'a, AllocT>,
     type_: AccelPropertyType,
 }
 
-impl<'b> AccelEmitDesc<'b> {
+impl<'a, 'b, AllocT> AccelEmitDesc<'a, 'b, AllocT>
+where
+    AllocT: Allocator,
+{
     pub fn new(
-        result: &'b cuda::Buffer,
+        result: &'b cuda::Buffer<'a, AllocT>,
         type_: AccelPropertyType,
-    ) -> AccelEmitDesc {
+    ) -> AccelEmitDesc<'a, 'b, AllocT> {
         AccelEmitDesc { result, type_ }
     }
 }
 
-pub struct TraversableHandle {
+pub struct TraversableHandle<'a, AllocT>
+where
+    AllocT: Allocator,
+{
     pub hnd: sys::OptixTraversableHandle,
-    _buffer: cuda::Buffer,
+    _buffer: cuda::Buffer<'a, AllocT>,
 }
 
-impl super::DeviceShareable for TraversableHandle {
+impl<'a, AllocT> super::DeviceShareable for TraversableHandle<'a, AllocT>
+where
+    AllocT: Allocator,
+{
     type Target = sys::OptixTraversableHandle;
     fn to_device(&self) -> Self::Target {
         self.hnd

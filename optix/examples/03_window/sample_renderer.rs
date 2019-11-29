@@ -2,7 +2,7 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 
 use std::rc::Rc;
 
-use optix::cuda;
+use optix::cuda::{self, Allocator};
 use optix::math::*;
 use optix::{DeviceShareable, SbtRecord, SharedVariable};
 use optix_derive::device_shared;
@@ -11,13 +11,65 @@ use optix_derive::device_shared;
 // DeviceShareable to enable automatic copying from the original type to the
 // device-compatible version.
 #[device_shared]
-pub struct LaunchParams {
+pub struct LaunchParams<'a, AllocT>
+where
+    AllocT: 'a + Allocator,
+{
     frame_id: i32,
-    color_buffer: optix::Buffer<V4f32>,
+    color_buffer: optix::Buffer<'a, AllocT, V4f32>,
     fb_size: V2i32,
 }
 
-pub struct SampleRenderer {
+/*
+#[repr(C)]
+#[derive(Copy, Clone, Debug)]
+pub struct LaunchParamsD {
+    frame_id: i32,
+    color_buffer: optix::buffer::BufferD,
+    fb_size: V2i32,
+}
+
+impl<'a, AllocT> DeviceShareable for LaunchParams<'a, AllocT>
+where
+    AllocT: Allocator,
+{
+    type Target = LaunchParamsD;
+
+    fn to_device(&self) -> Self::Target {
+        LaunchParamsD {
+            frame_id: self.frame_id,
+            color_buffer: self.color_buffer.to_device(),
+            fb_size: self.fb_size,
+        }
+    }
+
+    fn cuda_decl() -> String {
+        "struct LaunchParams { i32 frame_id; Buffer<V4f32> color_buffer; V2i32 fb_size; };".into()
+    }
+
+    fn cuda_type() -> String {
+        "LaunchParams".into()
+    }
+}
+*/
+
+enum_from_primitive! {
+#[repr(u64)]
+#[derive(Debug, PartialEq)]
+pub enum MemTags {
+    OutputBuffer = 1001,
+    SBT = 2001,
+    MissRecords = 2002,
+    HgRecords = 2003,
+    LaunchParams = 3001,
+}
+}
+
+pub struct SampleRenderer<'a, 't, AllocT>
+where
+    AllocT: Allocator,
+{
+    alloc: &'a AllocT,
     cuda_context: cuda::ContextRef,
     stream: cuda::Stream,
     device_prop: cuda::DeviceProp,
@@ -27,15 +79,22 @@ pub struct SampleRenderer {
     module: optix::ModuleRef,
 
     program_groups: Vec<optix::ProgramGroupRef>,
-    sbt: optix::ShaderBindingTable,
+    sbt: optix::ShaderBindingTable<'a, 't, AllocT>,
 
-    launch_params: SharedVariable<LaunchParams>,
+    launch_params: SharedVariable<'a, AllocT, LaunchParams<'a, AllocT>>,
 
     ctx: optix::DeviceContext,
 }
 
-impl SampleRenderer {
-    pub fn new(fb_size: V2i32) -> Result<SampleRenderer> {
+impl<'a, 't, AllocT> SampleRenderer<'a, 't, AllocT>
+where
+    AllocT: Allocator + 'a,
+    'a: 't,
+{
+    pub fn new(
+        fb_size: V2i32,
+        alloc: &'a AllocT,
+    ) -> Result<SampleRenderer<'a, 't, AllocT>> {
         // Make sure CUDA context is initialized
         cuda::init();
         // Check that we've got available devices
@@ -93,8 +152,8 @@ impl SampleRenderer {
             name: "launch_params.h".into(),
             contents: format!(
                 "{} {}",
-                optix::Buffer::<i32>::cuda_decl(),
-                LaunchParams::cuda_decl(),
+                optix::Buffer::<'a, AllocT, i32>::cuda_decl(),
+                LaunchParams::<AllocT>::cuda_decl(),
             ),
         };
         println!("header:\n{}", header.contents);
@@ -171,31 +230,63 @@ impl SampleRenderer {
         );
 
         // Build Shader Binding Table
-        let rg_rec =
-            SbtRecord::new(0i32, std::sync::Arc::clone(&program_groups[0]));
+        let rg_rec = SbtRecord::new(
+            optix::SharedVariable::<'a, AllocT, i32>::new(
+                0i32,
+                MemTags::SBT as u64,
+                alloc,
+            )
+            .unwrap(),
+            std::sync::Arc::clone(&program_groups[0]),
+        );
 
-        let miss_rec =
-            SbtRecord::new(0i32, std::sync::Arc::clone(&program_groups[1]));
+        let miss_rec = SbtRecord::new(
+            optix::SharedVariable::<'a, AllocT, i32>::new(
+                0i32,
+                MemTags::SBT as u64,
+                alloc,
+            )
+            .unwrap(),
+            std::sync::Arc::clone(&program_groups[1]),
+        );
 
-        let hg_rec =
-            SbtRecord::new(0i32, std::sync::Arc::clone(&program_groups[2]));
+        let hg_rec = SbtRecord::new(
+            optix::SharedVariable::<'a, AllocT, i32>::new(
+                0i32,
+                MemTags::SBT as u64,
+                alloc,
+            )
+            .unwrap(),
+            std::sync::Arc::clone(&program_groups[2]),
+        );
 
-        let sbt = optix::ShaderBindingTableBuilder::new(rg_rec)
-            .miss_records(vec![miss_rec])
-            .hitgroup_records(vec![hg_rec])
-            .build();
+        let sbt = optix::ShaderBindingTableBuilder::new(
+            rg_rec,
+            MemTags::SBT as u64,
+            alloc,
+        )
+        .miss_records(vec![miss_rec], MemTags::SBT as u64, alloc)
+        .hitgroup_records(vec![hg_rec], MemTags::SBT as u64, alloc)
+        .build();
 
-        let color_buffer = optix::Buffer::<V4f32>::uninitialized(
+        let color_buffer = optix::Buffer::<'a, AllocT, V4f32>::uninitialized(
             (fb_size.x * fb_size.y) as usize,
+            MemTags::OutputBuffer as u64,
+            alloc,
         )?;
 
-        let launch_params = SharedVariable::new(LaunchParams {
-            frame_id: 0,
-            color_buffer,
-            fb_size: fb_size.into(),
-        })?;
+        let launch_params = SharedVariable::new(
+            LaunchParams {
+                frame_id: 0,
+                color_buffer,
+                fb_size: fb_size.into(),
+            },
+            MemTags::LaunchParams as u64,
+            alloc,
+        )?;
 
-        Ok(SampleRenderer {
+        Ok(SampleRenderer::<'a, 't, AllocT> {
+            alloc,
             cuda_context,
             stream,
             device_prop,
@@ -232,8 +323,12 @@ impl SampleRenderer {
     pub fn resize(&mut self, size: V2i32) {
         self.launch_params.fb_size = size;
         self.launch_params.color_buffer =
-            optix::Buffer::<V4f32>::uninitialized((size.x * size.y) as usize)
-                .unwrap();
+            optix::Buffer::<'a, AllocT, V4f32>::uninitialized(
+                (size.x * size.y) as usize,
+                MemTags::OutputBuffer as u64,
+                self.alloc,
+            )
+            .unwrap();
     }
 
     pub fn download_pixels(&self, pixels: &mut [V4f32]) -> Result<()> {

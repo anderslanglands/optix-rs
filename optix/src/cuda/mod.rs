@@ -13,6 +13,8 @@ pub use texture_object::{
 };
 pub mod array;
 pub use array::{Array, ArrayFlags, ChannelFormatDesc, ChannelFormatKind};
+pub mod allocator;
+pub use allocator::{Allocator, Mallocator, TaggedAllocator, TaggedMallocator};
 
 pub use error::Error;
 type Result<T, E = Error> = std::result::Result<T, E>;
@@ -76,6 +78,26 @@ pub fn device_synchronize() -> Result<()> {
         Err(Error::DeviceSyncFailed { source: res.into() })
     } else {
         Ok(())
+    }
+}
+
+pub fn mem_get_info() -> Result<(usize, usize)> {
+    let (res, free, total) = unsafe {
+        let mut free = 0usize;
+        let mut total = 0usize;
+        (
+            sys::cudaMemGetInfo(
+                &mut free as *mut usize,
+                &mut total as *mut usize,
+            ),
+            free,
+            total,
+        )
+    };
+    if res != sys::cudaError_enum::CUDA_SUCCESS {
+        Err(Error::GetMemInfoFailed { source: res.into() })
+    } else {
+        Ok((free, total))
     }
 }
 

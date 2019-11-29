@@ -12,15 +12,6 @@ use syn::{
 pub fn device_shared(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(item as DeriveInput);
 
-    /*
-    let fields = match &input.data {
-        Data::Struct(DataStruct {
-            fields: Fields::Named(fields),
-            ..
-        }) => &fields.named,
-        _ => panic!("expected a struct with named fields"),
-    };
-    */
     let result = match &input.data {
         Data::Struct(DataStruct {
             fields: Fields::Named(fields),
@@ -51,7 +42,7 @@ fn do_enum(
     let result = quote! {
         #[repr(u32)]
         #[allow(dead_code)]
-        #[derive(Copy, Clone, PartialEq, PartialOrd)]
+        #[derive(Copy, Clone, PartialEq, PartialOrd, Debug)]
         #input
 
         impl DeviceShareable for #name {
@@ -92,6 +83,7 @@ fn do_struct(
         proc_macro2::Span::call_site(),
     );
     let generics = &input.generics;
+    let where_clause = &input.generics.where_clause;
 
     let field_vis = fields.iter().map(|field| &field.vis);
     let field_name = fields.iter().map(|field| &field.ident);
@@ -104,7 +96,7 @@ fn do_struct(
         // now device-compatible struct
         #[repr(C)]
         #[derive(Copy, Clone)]
-        pub struct #d_name#generics {
+        pub struct #d_name#generics #where_clause {
             #(
                 #field_vis #field_name: <#field_type as DeviceShareable>::Target,
             )*
@@ -147,7 +139,7 @@ fn do_struct(
         #result
 
         // now impl DeviceShareable for the original struct
-        impl#generics DeviceShareable for #name#generics {
+        impl#generics DeviceShareable for #name#generics #where_clause {
             type Target = #d_name#generics;
             fn to_device(&self) -> Self::Target {
                 #d_name {

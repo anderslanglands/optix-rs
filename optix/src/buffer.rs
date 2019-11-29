@@ -1,9 +1,10 @@
-use super::cuda;
+use super::cuda::{self, Allocator};
 use super::error::Error;
 type Result<T, E = Error> = std::result::Result<T, E>;
 
 use super::DeviceShareable;
 
+/*
 /// Runtime-typed buffer
 pub struct DynamicBuffer {
     buffer: cuda::Buffer,
@@ -74,22 +75,30 @@ impl DeviceShareable for DynamicBuffer {
         "struct DynamicBuffer { void* ptr; size_t len; };".into()
     }
 }
+*/
 
-pub struct Buffer<T>
+pub struct Buffer<'a, AllocT, T>
 where
+    AllocT: Allocator,
     T: BufferElement,
 {
-    buffer: cuda::Buffer,
+    buffer: cuda::Buffer<'a, AllocT>,
     count: usize,
     _t: std::marker::PhantomData<T>,
 }
 
-impl<T> Buffer<T>
+impl<'a, AllocT, T> Buffer<'a, AllocT, T>
 where
+    AllocT: Allocator,
     T: BufferElement,
 {
-    pub fn new(data: &[T]) -> Result<Buffer<T>> {
-        let buffer = cuda::Buffer::with_data(data)?;
+    pub fn new(
+        data: &[T],
+        tag: u64,
+        allocator: &'a AllocT,
+    ) -> Result<Buffer<'a, AllocT, T>> {
+        let buffer =
+            cuda::Buffer::with_data(data, T::ALIGNMENT, tag, allocator)?;
 
         Ok(Buffer {
             buffer,
@@ -98,8 +107,20 @@ where
         })
     }
 
-    pub fn uninitialized(count: usize) -> Result<Buffer<T>> {
-        let buffer = cuda::Buffer::new(count * std::mem::size_of::<T>())?;
+    pub fn uninitialized(
+        count: usize,
+        tag: u64,
+        allocator: &'a AllocT,
+    ) -> Result<Buffer<'a, AllocT, T>>
+    where
+        AllocT: Allocator,
+    {
+        let buffer = cuda::Buffer::new(
+            count * std::mem::size_of::<T>(),
+            T::ALIGNMENT,
+            tag,
+            allocator,
+        )?;
 
         Ok(Buffer {
             buffer,
@@ -139,8 +160,9 @@ pub struct BufferD {
     len: usize,
 }
 
-impl<T> DeviceShareable for Buffer<T>
+impl<'a, AllocT, T> DeviceShareable for Buffer<'a, AllocT, T>
 where
+    AllocT: Allocator,
     T: BufferElement,
 {
     type Target = BufferD;
@@ -178,6 +200,27 @@ struct Buffer {
 };
 "#
         .into()
+    }
+}
+
+impl<'a, T, AllocT> DeviceShareable
+    for Option<std::rc::Rc<Buffer<'a, AllocT, T>>>
+where
+    AllocT: 'a + Allocator,
+    T: BufferElement,
+{
+    type Target = BufferD;
+    fn to_device(&self) -> Self::Target {
+        match self {
+            Some(t) => t.to_device(),
+            None => BufferD { ptr: 0, len: 0 },
+        }
+    }
+    fn cuda_type() -> String {
+        Buffer::<'a, AllocT, T>::cuda_type()
+    }
+    fn cuda_decl() -> String {
+        Buffer::<'a, AllocT, T>::cuda_decl()
     }
 }
 
@@ -235,25 +278,25 @@ impl BufferFormat {
     pub fn device_name(&self) -> &'static str {
         match self {
             BufferFormat::U8 => "u8",
-            BufferFormat::U8x2 => "V2u8",
-            BufferFormat::U8x3 => "V3u8",
-            BufferFormat::U8x4 => "V4u8",
+            BufferFormat::U8x2 => "u8x2",
+            BufferFormat::U8x3 => "u8x3",
+            BufferFormat::U8x4 => "u8x4",
             BufferFormat::U16 => "u16",
-            BufferFormat::U16x2 => "V2u16",
-            BufferFormat::U16x3 => "V3u16",
-            BufferFormat::U16x4 => "V4u16",
+            BufferFormat::U16x2 => "u16x2",
+            BufferFormat::U16x3 => "u16x3",
+            BufferFormat::U16x4 => "u16x4",
             BufferFormat::F16 => "f16",
-            BufferFormat::F16x2 => "V2f16",
-            BufferFormat::F16x3 => "V3f16",
-            BufferFormat::F16x4 => "V4f16",
+            BufferFormat::F16x2 => "f16x2",
+            BufferFormat::F16x3 => "f16x3",
+            BufferFormat::F16x4 => "f16x4",
             BufferFormat::F32 => "f32",
-            BufferFormat::F32x2 => "V2f32",
-            BufferFormat::F32x3 => "V3f32",
-            BufferFormat::F32x4 => "V4f32",
+            BufferFormat::F32x2 => "f32x2",
+            BufferFormat::F32x3 => "f32x3",
+            BufferFormat::F32x4 => "f32x4",
             BufferFormat::I32 => "i32",
-            BufferFormat::I32x2 => "V2i32",
-            BufferFormat::I32x3 => "V3i32",
-            BufferFormat::I32x4 => "V4i32",
+            BufferFormat::I32x2 => "i32x2",
+            BufferFormat::I32x3 => "i32x3",
+            BufferFormat::I32x4 => "i32x4",
         }
     }
 }
@@ -261,101 +304,118 @@ impl BufferFormat {
 pub trait BufferElement {
     const FORMAT: BufferFormat;
     const COMPONENTS: usize;
+    const ALIGNMENT: usize;
     type ComponentType;
 }
 
 impl BufferElement for u8 {
     const FORMAT: BufferFormat = BufferFormat::U8;
     const COMPONENTS: usize = 1;
+    const ALIGNMENT: usize = 1;
     type ComponentType = u8;
 }
 
 impl BufferElement for [u8; 2] {
     const FORMAT: BufferFormat = BufferFormat::U8x2;
     const COMPONENTS: usize = 2;
+    const ALIGNMENT: usize = 2;
     type ComponentType = u8;
 }
 
 impl BufferElement for [u8; 3] {
     const FORMAT: BufferFormat = BufferFormat::U8x3;
     const COMPONENTS: usize = 3;
+    const ALIGNMENT: usize = 1;
     type ComponentType = u8;
 }
 
 impl BufferElement for [u8; 4] {
     const FORMAT: BufferFormat = BufferFormat::U8x4;
     const COMPONENTS: usize = 4;
+    const ALIGNMENT: usize = 4;
     type ComponentType = u8;
 }
 
 impl BufferElement for u16 {
     const FORMAT: BufferFormat = BufferFormat::U16;
     const COMPONENTS: usize = 1;
+    const ALIGNMENT: usize = 2;
     type ComponentType = u16;
 }
 
 impl BufferElement for [u16; 2] {
     const FORMAT: BufferFormat = BufferFormat::U16x2;
     const COMPONENTS: usize = 2;
+    const ALIGNMENT: usize = 4;
     type ComponentType = u16;
 }
 
 impl BufferElement for [u16; 3] {
     const FORMAT: BufferFormat = BufferFormat::U16x3;
     const COMPONENTS: usize = 3;
+    const ALIGNMENT: usize = 2;
     type ComponentType = u16;
 }
 
 impl BufferElement for [u16; 4] {
     const FORMAT: BufferFormat = BufferFormat::U16x4;
     const COMPONENTS: usize = 4;
+    const ALIGNMENT: usize = 8;
     type ComponentType = u16;
 }
 
 impl BufferElement for i32 {
     const FORMAT: BufferFormat = BufferFormat::I32;
     const COMPONENTS: usize = 1;
+    const ALIGNMENT: usize = 4;
     type ComponentType = i32;
 }
 
 impl BufferElement for [i32; 2] {
     const FORMAT: BufferFormat = BufferFormat::I32x2;
     const COMPONENTS: usize = 2;
+    const ALIGNMENT: usize = 8;
     type ComponentType = i32;
 }
 
 impl BufferElement for [i32; 3] {
     const FORMAT: BufferFormat = BufferFormat::I32x3;
     const COMPONENTS: usize = 3;
+    const ALIGNMENT: usize = 4;
     type ComponentType = i32;
 }
 
 impl BufferElement for [i32; 4] {
     const FORMAT: BufferFormat = BufferFormat::I32x4;
     const COMPONENTS: usize = 4;
+    const ALIGNMENT: usize = 16;
     type ComponentType = i32;
 }
 
 impl BufferElement for f32 {
     const FORMAT: BufferFormat = BufferFormat::F32;
     const COMPONENTS: usize = 1;
+    const ALIGNMENT: usize = 4;
     type ComponentType = f32;
 }
 
 impl BufferElement for [f32; 2] {
     const FORMAT: BufferFormat = BufferFormat::F32x2;
     const COMPONENTS: usize = 2;
+    const ALIGNMENT: usize = 8;
     type ComponentType = f32;
 }
 
 impl BufferElement for [f32; 3] {
     const FORMAT: BufferFormat = BufferFormat::F32x3;
     const COMPONENTS: usize = 3;
+    const ALIGNMENT: usize = 4;
     type ComponentType = f32;
 }
 
 impl BufferElement for [f32; 4] {
     const FORMAT: BufferFormat = BufferFormat::F32x4;
     const COMPONENTS: usize = 4;
+    const ALIGNMENT: usize = 16;
     type ComponentType = f32;
 }

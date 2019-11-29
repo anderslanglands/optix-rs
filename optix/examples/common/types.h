@@ -2,8 +2,10 @@
 
 #if __CUDACC__
 #define DEVICE __device__
+#define FORCEINLINE __forceinline__
 #else
 #define DEVICE
+#define FORCEINLINE
 #endif
 
 namespace osc {
