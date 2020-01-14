@@ -49,6 +49,10 @@ impl TaggedMallocator {
     pub fn tag_allocations(&self) -> Ref<HashMap<u64, usize>> {
         self.allocs_by_tag.borrow()
     }
+
+    pub fn total_allocated(&self) -> usize {
+        self.total_allocated.get()
+    }
 }
 
 pub struct Allocation {
@@ -143,8 +147,11 @@ impl Allocator for TaggedMallocator {
                 size: size,
             })
         } else {
-            self.total_allocated.set(self.total_allocated.get() + size);
-            *self.allocs_by_tag.borrow_mut().entry(tag).or_insert(0) += size;
+            let aligned_size = size.max(512);
+            self.total_allocated
+                .set(self.total_allocated.get() + aligned_size);
+            *self.allocs_by_tag.borrow_mut().entry(tag).or_insert(0) +=
+                aligned_size;
             Ok(Allocation::new(ptr as CUdeviceptr, size, tag))
         }
     }
