@@ -9,9 +9,9 @@ pub use imath::*;
 cfg_if::cfg_if! {
     if #[cfg(feature="math-nalgebra")] {
 
-        pub use nalgebra_glm::I8Vec2 as V2u8;
-        pub use nalgebra_glm::I8Vec3 as V3u8;
-        pub use nalgebra_glm::I8Vec4 as V4u8;
+        pub use nalgebra_glm::U8Vec2 as V2u8;
+        pub use nalgebra_glm::U8Vec3 as V3u8;
+        pub use nalgebra_glm::U8Vec4 as V4u8;
 
         pub use nalgebra_glm::I16Vec2 as V2u16;
         pub use nalgebra_glm::I16Vec3 as V3u16;
@@ -77,6 +77,21 @@ cfg_if::cfg_if! {
             V4i32::new(x, y, z, w)
         }
 
+        #[inline(always)]
+        pub fn v2u8(x: u8, y: u8) -> V2u8 {
+            V2u8::new(x, y)
+        }
+
+        #[inline(always)]
+        pub fn v3u8(x: u8, y: u8, z: u8) -> V3u8 {
+            V3u8::new(x, y, z)
+        }
+
+        #[inline(always)]
+        pub fn v4u8(x: u8, y: u8, z: u8, w: u8) -> V4u8 {
+            V4u8::new(x, y, z, w)
+        }
+
         pub use nalgebra_glm::{
             normalize,
             cross,
@@ -91,7 +106,10 @@ cfg_if::cfg_if! {
             perspective_fov_lh,
             inverse,
             inverse_transpose,
+            affine_inverse,
             transpose,
+            length,
+            determinant,
         };
 
         pub use nalgebra_glm::{Dimension, Scalar, Number, RealField};
@@ -201,6 +219,38 @@ cfg_if::cfg_if! {
 
         pub type Box3f32 = Box3<f32>;
         pub type Box3f64 = Box3<f64>;
+
+        #[inline(always)]
+        pub fn hmax(v: V3f32) -> f32 {
+            nalgebra_glm::comp_max(&v)
+        }
+
+        #[inline(always)]
+        pub fn hmin(v: V3f32) -> f32 {
+            nalgebra_glm::comp_min(&v)
+        }
+
+        pub fn m4f64_to_m4f32(m: &M4f64) -> M4f32 {
+            M4f32::new(
+                m[(0, 0)] as f32,
+                m[(0, 1)] as f32,
+                m[(0, 2)] as f32,
+                m[(0, 3)] as f32,
+                m[(1, 0)] as f32,
+                m[(1, 1)] as f32,
+                m[(1, 2)] as f32,
+                m[(1, 3)] as f32,
+                m[(2, 0)] as f32,
+                m[(2, 1)] as f32,
+                m[(2, 2)] as f32,
+                m[(2, 3)] as f32,
+                m[(3, 0)] as f32,
+                m[(3, 1)] as f32,
+                m[(3, 2)] as f32,
+                m[(3, 3)] as f32,
+            )
+        }
+
     }
 }
 
