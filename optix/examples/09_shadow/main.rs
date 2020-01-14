@@ -1,3 +1,7 @@
+#[macro_use]
+extern crate enum_primitive;
+use num::FromPrimitive;
+
 mod sample_renderer;
 use sample_renderer::*;
 
@@ -5,6 +9,7 @@ use glfw::{Action, Context, Key};
 pub mod gl_util;
 use crate::gl_util::*;
 
+use optix::cuda::TaggedMallocator;
 use optix::math::*;
 
 use std::rc::Rc;
