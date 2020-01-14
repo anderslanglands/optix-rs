@@ -247,6 +247,10 @@ pub enum BufferFormat {
     I32x2,
     I32x3,
     I32x4,
+    U32,
+    U32x2,
+    U32x3,
+    U32x4,
 }
 
 impl BufferFormat {
@@ -272,6 +276,10 @@ impl BufferFormat {
             BufferFormat::I32x2 => 8,
             BufferFormat::I32x3 => 12,
             BufferFormat::I32x4 => 16,
+            BufferFormat::U32 => 4,
+            BufferFormat::U32x2 => 8,
+            BufferFormat::U32x3 => 12,
+            BufferFormat::U32x4 => 16,
         }
     }
 
@@ -297,6 +305,10 @@ impl BufferFormat {
             BufferFormat::I32x2 => "i32x2",
             BufferFormat::I32x3 => "i32x3",
             BufferFormat::I32x4 => "i32x4",
+            BufferFormat::U32 => "u32",
+            BufferFormat::U32x2 => "u32x2",
+            BufferFormat::U32x3 => "u32x3",
+            BufferFormat::U32x4 => "u32x4",
         }
     }
 }
@@ -390,6 +402,34 @@ impl BufferElement for [i32; 4] {
     const COMPONENTS: usize = 4;
     const ALIGNMENT: usize = 16;
     type ComponentType = i32;
+}
+
+impl BufferElement for u32 {
+    const FORMAT: BufferFormat = BufferFormat::U32;
+    const COMPONENTS: usize = 1;
+    const ALIGNMENT: usize = 4;
+    type ComponentType = u32;
+}
+
+impl BufferElement for [u32; 2] {
+    const FORMAT: BufferFormat = BufferFormat::U32x2;
+    const COMPONENTS: usize = 2;
+    const ALIGNMENT: usize = 8;
+    type ComponentType = u32;
+}
+
+impl BufferElement for [u32; 3] {
+    const FORMAT: BufferFormat = BufferFormat::U32x3;
+    const COMPONENTS: usize = 3;
+    const ALIGNMENT: usize = 4;
+    type ComponentType = u32;
+}
+
+impl BufferElement for [u32; 4] {
+    const FORMAT: BufferFormat = BufferFormat::U32x4;
+    const COMPONENTS: usize = 4;
+    const ALIGNMENT: usize = 16;
+    type ComponentType = u32;
 }
 
 impl BufferElement for f32 {
