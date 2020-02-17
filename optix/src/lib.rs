@@ -70,6 +70,7 @@ pub trait DeviceShareable {
         Self::cuda_type()
     }
     fn cuda_type() -> String;
+    fn zero() -> Self::Target;
 }
 
 impl<'a, AllocT> DeviceShareable for cuda::Buffer<'a, AllocT>
@@ -83,6 +84,9 @@ where
     fn cuda_type() -> String {
         "void*".into()
     }
+    fn zero() -> Self::Target {
+        0
+    }
 }
 
 impl DeviceShareable for cuda::TextureObject {
@@ -93,31 +97,66 @@ impl DeviceShareable for cuda::TextureObject {
     fn cuda_type() -> String {
         "cudaTextureObject_t".into()
     }
-}
-
-impl DeviceShareable for Option<cuda::TextureObject> {
-    type Target = cuda::cudaTextureObject_t;
-    fn to_device(&self) -> Self::Target {
-        match self {
-            Some(t) => t.as_device_ptr(),
-            None => 0,
-        }
-    }
-    fn cuda_type() -> String {
-        "cudaTextureObject_t".into()
+    fn zero() -> Self::Target {
+        0
     }
 }
 
-impl DeviceShareable for Option<std::rc::Rc<cuda::TextureObject>> {
-    type Target = cuda::cudaTextureObject_t;
-    fn to_device(&self) -> Self::Target {
-        match self {
-            Some(t) => t.as_device_ptr(),
-            None => 0,
-        }
+// impl DeviceShareable for Option<cuda::TextureObject> {
+//     type Target = cuda::cudaTextureObject_t;
+//     fn to_device(&self) -> Self::Target {
+//         match self {
+//             Some(t) => t.to_device(),
+//             None => 0,
+//         }
+//     }
+//     fn cuda_type() -> String {
+//         "cudaTextureObject_t".into()
+//     }
+//     fn zero() -> Self::Target {
+//         0
+//     }
+// }
+
+// impl DeviceShareable for Option<std::rc::Rc<cuda::TextureObject>> {
+//     type Target = cuda::cudaTextureObject_t;
+//     fn to_device(&self) -> Self::Target {
+//         match self {
+//             Some(t) => t.to_device(),
+//             None => 0,
+//         }
+//     }
+//     fn cuda_type() -> String {
+//         "cudaTextureObject_t".into()
+//     }
+//     fn zero() -> Self::Target {
+//         0
+//     }
+// }
+
+impl DeviceShareable for i8 {
+    type Target = i8;
+    fn to_device(&self) -> i8 {
+        *self
     }
     fn cuda_type() -> String {
-        "cudaTextureObject_t".into()
+        "int".into()
+    }
+    fn zero() -> Self::Target {
+        0
+    }
+}
+
+impl DeviceShareable for i16 {
+    type Target = i16;
+    fn to_device(&self) -> i16 {
+        *self
+    }
+    fn cuda_type() -> String {
+        "int".into()
+    }
+    fn zero() -> Self::Target {
+        0
     }
 }
 
@@ -129,6 +168,22 @@ impl DeviceShareable for i32 {
     fn cuda_type() -> String {
         "int".into()
     }
+    fn zero() -> Self::Target {
+        0
+    }
+}
+
+impl DeviceShareable for i64 {
+    type Target = i64;
+    fn to_device(&self) -> i64 {
+        *self
+    }
+    fn cuda_type() -> String {
+        "int".into()
+    }
+    fn zero() -> Self::Target {
+        0
+    }
 }
 
 impl DeviceShareable for f32 {
@@ -138,6 +193,48 @@ impl DeviceShareable for f32 {
     }
     fn cuda_type() -> String {
         "float".into()
+    }
+    fn zero() -> Self::Target {
+        0.0
+    }
+}
+
+impl DeviceShareable for f64 {
+    type Target = f64;
+    fn to_device(&self) -> f64 {
+        *self
+    }
+    fn cuda_type() -> String {
+        "float".into()
+    }
+    fn zero() -> Self::Target {
+        0.0
+    }
+}
+
+impl DeviceShareable for u8 {
+    type Target = u8;
+    fn to_device(&self) -> u8 {
+        *self
+    }
+    fn cuda_type() -> String {
+        "unsigned int".into()
+    }
+    fn zero() -> Self::Target {
+        0
+    }
+}
+
+impl DeviceShareable for u16 {
+    type Target = u16;
+    fn to_device(&self) -> u16 {
+        *self
+    }
+    fn cuda_type() -> String {
+        "unsigned int".into()
+    }
+    fn zero() -> Self::Target {
+        0
     }
 }
 
@@ -149,6 +246,22 @@ impl DeviceShareable for u32 {
     fn cuda_type() -> String {
         "unsigned int".into()
     }
+    fn zero() -> Self::Target {
+        0
+    }
+}
+
+impl DeviceShareable for u64 {
+    type Target = u64;
+    fn to_device(&self) -> u64 {
+        *self
+    }
+    fn cuda_type() -> String {
+        "unsigned int".into()
+    }
+    fn zero() -> Self::Target {
+        0
+    }
 }
 
 impl DeviceShareable for bool {
@@ -158,6 +271,9 @@ impl DeviceShareable for bool {
     }
     fn cuda_type() -> String {
         "bool".into()
+    }
+    fn zero() -> Self::Target {
+        false
     }
 }
 
@@ -177,6 +293,10 @@ where
     fn cuda_decl() -> String {
         T::cuda_decl()
     }
+
+    fn zero() -> Self::Target {
+        T::zero()
+    }
 }
 
 impl<T> DeviceShareable for std::rc::Rc<T>
@@ -195,6 +315,10 @@ where
     fn cuda_decl() -> String {
         T::cuda_decl()
     }
+
+    fn zero() -> Self::Target {
+        T::zero()
+    }
 }
 
 impl<T> DeviceShareable for std::rc::Rc<std::cell::RefCell<T>>
@@ -212,6 +336,35 @@ where
 
     fn cuda_decl() -> String {
         T::cuda_decl()
+    }
+
+    fn zero() -> Self::Target {
+        T::zero()
+    }
+}
+
+impl<T> DeviceShareable for Option<T>
+where
+    T: DeviceShareable,
+{
+    type Target = T::Target;
+    fn to_device(&self) -> T::Target {
+        match self {
+            Some(t) => t.to_device(),
+            None => T::zero(),
+        }
+    }
+
+    fn cuda_type() -> String {
+        T::cuda_type()
+    }
+
+    fn cuda_decl() -> String {
+        T::cuda_decl()
+    }
+
+    fn zero() -> Self::Target {
+        T::zero()
     }
 }
 
@@ -285,6 +438,10 @@ where
 
     fn cuda_decl() -> String {
         format!("{}*", T::cuda_decl())
+    }
+
+    fn zero() -> Self::Target {
+        0
     }
 }
 
@@ -414,6 +571,10 @@ struct SharedVec {
         "#
         .into()
     }
+
+    fn zero() -> Self::Target {
+        SharedVecD { ptr: 0, len: 0 }
+    }
 }
 
 impl<'a, AllocT, T> std::ops::Deref for SharedVec<'a, AllocT, T>
@@ -452,6 +613,9 @@ macro_rules! wrap_copyable_for_device {
             }
             fn cuda_type() -> String {
                 stringify!($ty).into()
+            }
+            fn zero() -> Self::Target {
+                0
             }
         }
 
@@ -493,6 +657,9 @@ macro_rules! math_type {
             }
             fn cuda_type() -> String {
                 stringify!($cuty).into()
+            }
+            fn zero() -> Self::Target {
+                zero::<$ty>()
             }
         }
 

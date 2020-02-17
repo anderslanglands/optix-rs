@@ -101,6 +101,7 @@ cfg_if::cfg_if! {
             scaling,
             rotate,
             rotation,
+            ortho,
             perspective_fov_rh,
             perspective_fov_rh_zo,
             perspective_fov_lh,
@@ -110,6 +111,7 @@ cfg_if::cfg_if! {
             transpose,
             length,
             determinant,
+            zero,
         };
 
         pub use nalgebra_glm::{Dimension, Scalar, Number, RealField};
@@ -279,5 +281,9 @@ impl DeviceShareable for M4f32 {
 
     fn cuda_type() -> String {
         "M4f32".into()
+    }
+
+    fn zero() -> M4f32 {
+        zero::<M4f32>()
     }
 }

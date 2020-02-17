@@ -554,4 +554,7 @@ where
     fn cuda_type() -> String {
         "OptixTraversableHandle".into()
     }
+    fn zero() -> Self::Target {
+        0
+    }
 }

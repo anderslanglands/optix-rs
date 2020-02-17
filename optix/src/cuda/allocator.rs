@@ -17,7 +17,7 @@ pub trait Allocator {
 }
 
 pub trait TaggedAllocator: Allocator {
-    fn visit<F>(&self, mut closure: F)
+    fn visit<F>(&self, _: F)
     where
         F: FnMut(&HashMap<u64, usize>);
 

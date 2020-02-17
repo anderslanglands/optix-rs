@@ -137,30 +137,39 @@ impl DeviceShareable for Texture {
     fn cuda_type() -> String {
         "cudaTextureObject_t".into()
     }
-}
-
-impl DeviceShareable for Option<Texture> {
-    type Target = cuda::cudaTextureObject_t;
-    fn to_device(&self) -> Self::Target {
-        match self {
-            Some(t) => t.texture_object.as_device_ptr(),
-            None => 0,
-        }
-    }
-    fn cuda_type() -> String {
-        "cudaTextureObject_t".into()
+    fn zero() -> Self::Target {
+        0
     }
 }
 
-impl DeviceShareable for Option<std::rc::Rc<Texture>> {
-    type Target = cuda::cudaTextureObject_t;
-    fn to_device(&self) -> Self::Target {
-        match self {
-            Some(t) => t.texture_object.as_device_ptr(),
-            None => 0,
-        }
-    }
-    fn cuda_type() -> String {
-        "cudaTextureObject_t".into()
-    }
-}
+// impl DeviceShareable for Option<Texture> {
+//     type Target = cuda::cudaTextureObject_t;
+//     fn to_device(&self) -> Self::Target {
+//         match self {
+//             Some(t) => t.texture_object.as_device_ptr(),
+//             None => 0,
+//         }
+//     }
+//     fn cuda_type() -> String {
+//         "cudaTextureObject_t".into()
+//     }
+//     fn zero() -> Self::Target {
+//         0
+//     }
+// }
+
+// impl DeviceShareable for Option<std::rc::Rc<Texture>> {
+//     type Target = cuda::cudaTextureObject_t;
+//     fn to_device(&self) -> Self::Target {
+//         match self {
+//             Some(t) => t.texture_object.as_device_ptr(),
+//             None => 0,
+//         }
+//     }
+//     fn cuda_type() -> String {
+//         "cudaTextureObject_t".into()
+//     }
+//     fn zero() -> Self::Target {
+//         0
+//     }
+// }

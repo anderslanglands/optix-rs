@@ -67,6 +67,10 @@ fn do_enum(
 
                 s
             }
+
+            fn zero() -> Self::Target {
+                0
+            }
         }
     };
 
@@ -134,6 +138,18 @@ fn do_struct(
     };
 
     let field_name = fields.iter().map(|field| &field.ident);
+    let field_type = fields.iter().map(|field| &field.ty);
+    let zero = quote! {
+        fn zero() -> Self::Target {
+            #d_name {
+                #(
+                    #field_name:  <#field_type as DeviceShareable>::zero(),
+                )*
+            }
+        }
+    };
+
+    let field_name = fields.iter().map(|field| &field.ident);
 
     let result = quote! {
         #result
@@ -149,8 +165,11 @@ fn do_struct(
                 }
             }
             #cuda_decl
+            #zero
         }
     };
+
+    // panic!("{}", result);
 
     result
 }

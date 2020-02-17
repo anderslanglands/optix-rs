@@ -201,26 +201,165 @@ struct Buffer {
 "#
         .into()
     }
+
+    fn zero() -> Self::Target {
+        BufferD { ptr: 0, len: 0 }
+    }
 }
 
-impl<'a, T, AllocT> DeviceShareable
-    for Option<std::rc::Rc<Buffer<'a, AllocT, T>>>
+pub struct Buffer2d<'a, AllocT, T>
 where
-    AllocT: 'a + Allocator,
+    AllocT: Allocator,
     T: BufferElement,
 {
-    type Target = BufferD;
+    buffer: cuda::Buffer<'a, AllocT>,
+    width: usize,
+    height: usize,
+    _t: std::marker::PhantomData<T>,
+}
+
+impl<'a, AllocT, T> Buffer2d<'a, AllocT, T>
+where
+    AllocT: Allocator,
+    T: BufferElement,
+{
+    pub fn new(
+        data: &[T],
+        width: usize,
+        height: usize,
+        tag: u64,
+        allocator: &'a AllocT,
+    ) -> Result<Buffer2d<'a, AllocT, T>> {
+        let buffer =
+            cuda::Buffer::with_data(data, T::ALIGNMENT, tag, allocator)?;
+
+        if width * height != data.len() {
+            panic!(
+                "bad buffer dimensions: [{}] {}x{}",
+                data.len(),
+                width,
+                height
+            );
+        }
+
+        Ok(Buffer2d {
+            buffer,
+            width,
+            height,
+            _t: std::marker::PhantomData::<T> {},
+        })
+    }
+
+    pub fn uninitialized(
+        width: usize,
+        height: usize,
+        tag: u64,
+        allocator: &'a AllocT,
+    ) -> Result<Buffer2d<'a, AllocT, T>>
+    where
+        AllocT: Allocator,
+    {
+        let buffer = cuda::Buffer::new(
+            width * height * std::mem::size_of::<T>(),
+            T::ALIGNMENT,
+            tag,
+            allocator,
+        )?;
+
+        Ok(Buffer2d {
+            buffer,
+            width,
+            height,
+            _t: std::marker::PhantomData::<T> {},
+        })
+    }
+
+    pub fn as_ptr(&self) -> *const std::os::raw::c_void {
+        self.buffer.as_ptr()
+    }
+
+    pub fn as_device_ptr(&self) -> cuda::CUdeviceptr {
+        self.buffer.as_device_ptr()
+    }
+
+    pub fn width(&self) -> usize {
+        self.width
+    }
+
+    pub fn height(&self) -> usize {
+        self.height
+    }
+
+    pub fn format(&self) -> BufferFormat {
+        T::FORMAT
+    }
+
+    pub fn byte_size(&self) -> usize {
+        self.buffer.byte_size()
+    }
+
+    pub fn download(&self, dst: &mut [T]) -> Result<()> {
+        Ok(self.buffer.download(dst)?)
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct Buffer2dD {
+    ptr: cuda::CUdeviceptr,
+    width: usize,
+    height: usize,
+}
+
+impl<'a, AllocT, T> DeviceShareable for Buffer2d<'a, AllocT, T>
+where
+    AllocT: Allocator,
+    T: BufferElement,
+{
+    type Target = Buffer2dD;
     fn to_device(&self) -> Self::Target {
-        match self {
-            Some(t) => t.to_device(),
-            None => BufferD { ptr: 0, len: 0 },
+        Buffer2dD {
+            ptr: self.buffer.as_device_ptr(),
+            width: self.width(),
+            height: self.height(),
         }
     }
     fn cuda_type() -> String {
-        Buffer::<'a, AllocT, T>::cuda_type()
+        format!("Buffer2d<{}>", T::FORMAT.device_name())
     }
+
     fn cuda_decl() -> String {
-        Buffer::<'a, AllocT, T>::cuda_decl()
+        r#"
+template <typename ElemT> 
+struct Buffer2d { 
+    ElemT* ptr; size_t width; size_t height; 
+
+    const ElemT& operator[](uint2 i) const {
+        return ptr[i.y * width + i.x];
+    } 
+
+    ElemT& operator[](uint2 i) {
+        return ptr[i.y * width + i.x];
+    } 
+
+    bool is_null() const {
+        return ptr == nullptr;
+    }
+
+    bool is_empty() const {
+        return len == 0;
+    }
+
+};
+"#
+        .into()
+    }
+
+    fn zero() -> Self::Target {
+        Buffer2dD {
+            ptr: 0,
+            width: 0,
+            height: 0,
+        }
     }
 }
 
