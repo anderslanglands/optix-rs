@@ -40,6 +40,29 @@ pub struct cudaResourceDesc {
     pub res: cudaResourceDescUnion,
 }
 
+use std::os::raw::c_void;
+extern "C" {
+    pub fn cuLaunchKernel(
+        f: CUfunction,
+        gx: u32,
+        gy: u32,
+        gz: u32,
+        bx: u32,
+        by: u32,
+        bz: u32,
+        shared_mem_bytes: u32,
+        stream: CUstream,
+        kernel_params: *const *const c_void,
+        extra_options: *const *const c_void,
+    ) -> CUresult;
+}
+
+pub use cuCtxCreate_v2 as cuCtxCreate;
+pub use cuCtxDestroy_v2 as cuCtxDestroy;
+pub use cuMemAlloc_v2 as cuMemAlloc;
+pub use cuMemcpyDtoH_v2 as cuMemcpyDtoH;
+pub use cuMemcpyHtoD_v2 as cuMemcpyHtoD;
+
 impl From<cudaError::Type> for Error {
     fn from(e: cudaError::Type) -> Error {
         match e {
@@ -741,4 +764,46 @@ pub enum Error {
         "Any unhandled CUDA driver error is added to this value and returned via  the runtime. Production releases of CUDA should not return such errors.  deprecated  This error return is deprecated as of CUDA 4.1."
     )]
     ApiFailureBase,
+}
+
+pub mod cu {
+    #[derive(Debug, Copy, Clone)]
+    pub struct Error(pub CUresult);
+
+    use std::ffi::CStr;
+    use std::fmt;
+    use std::os::raw::c_char;
+
+    use super::{cuGetErrorName, cuGetErrorString, cudaError_enum, CUresult};
+
+    impl fmt::Display for Error {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            unsafe {
+                let mut name: *const c_char = std::ptr::null_mut();
+                let result = cuGetErrorName(self.0, &mut name);
+                if result != cudaError_enum::CUDA_SUCCESS {
+                    panic!("Error trying to get error name");
+                }
+                let name = CStr::from_ptr(name).to_string_lossy().to_string();
+
+                let mut message: *const c_char = std::ptr::null_mut();
+                let result = cuGetErrorString(self.0, &mut message);
+                if result != cudaError_enum::CUDA_SUCCESS {
+                    panic!("Error trying to get error message");
+                }
+                let message =
+                    CStr::from_ptr(message).to_string_lossy().to_string();
+
+                write!(f, "{}: {}", name, message)?;
+            }
+
+            Ok(())
+        }
+    }
+
+    impl std::error::Error for Error {
+        fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+            None
+        }
+    }
 }

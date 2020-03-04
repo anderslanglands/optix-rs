@@ -112,6 +112,7 @@ fn bindgen_cuda(cuda_root: &str) {
             .whitelist_function("cu.*")
             .whitelist_function("nvrtc.*")
             .blacklist_type("cudaResourceDesc")
+            .blacklist_function("cuLaunchKernel")
             .layout_tests(false)
             .constified_enum_module("CUresult")
             .constified_enum_module("nvrtcResult")

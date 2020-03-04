@@ -2,6 +2,7 @@ pub mod context;
 pub use context::{Context, ContextRef};
 pub mod buffer;
 pub use buffer::{Buffer, MemcpyKind};
+pub mod cu;
 pub mod error;
 pub mod nvrtc;
 pub mod stream;
