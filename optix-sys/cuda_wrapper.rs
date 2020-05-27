@@ -11721,32 +11721,6 @@ pub mod cudaMemcpyKind {
     #[doc = "< Direction of the transfer is inferred from the pointer values. Requires unified virtual addressing"]
     pub const cudaMemcpyDefault: Type = 4;
 }
-#[doc = " CUDA Pitched memory pointer"]
-#[doc = ""]
-#[doc = " \\sa ::make_cudaPitchedPtr"]
-#[repr(C)]
-pub struct cudaPitchedPtr {
-    #[doc = "< Pointer to allocated memory"]
-    pub ptr: *mut ::std::os::raw::c_void,
-    #[doc = "< Pitch of allocated memory in bytes"]
-    pub pitch: usize,
-    #[doc = "< Logical width of allocation in elements"]
-    pub xsize: usize,
-    #[doc = "< Logical height of allocation in elements"]
-    pub ysize: usize,
-}
-#[doc = " CUDA extent"]
-#[doc = ""]
-#[doc = " \\sa ::make_cudaExtent"]
-#[repr(C)]
-pub struct cudaExtent {
-    #[doc = "< Width in elements when referring to array memory, in bytes when referring to linear memory"]
-    pub width: usize,
-    #[doc = "< Height in elements"]
-    pub height: usize,
-    #[doc = "< Depth in elements"]
-    pub depth: usize,
-}
 #[doc = " CUDA 3D position"]
 #[doc = ""]
 #[doc = " \\sa ::make_cudaPos"]

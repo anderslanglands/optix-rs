@@ -77,6 +77,52 @@ impl Texture {
 
         Ok(Texture { texture_object })
     }
+
+    pub fn new_3d<T>(
+        pixels: &[T],
+        width: usize,
+        height: usize,
+        depth: usize,
+        wrap_mode: WrapMode,
+    ) -> Result<Texture>
+    where
+        T: TextureElement,
+    {
+        assert_eq!(pixels.len(), width * height * depth);
+
+        let pixels = unsafe {
+            std::slice::from_raw_parts(
+                pixels.as_ptr() as *const T::ComponentType,
+                pixels.len() * T::COMPONENTS,
+            )
+        };
+        let array = cuda::Array::new_3d(
+            pixels,
+            T::CHANNEL_DESC,
+            width,
+            height,
+            depth,
+            T::COMPONENTS,
+            cuda::ArrayFlags::DEFAULT,
+        )
+        .unwrap();
+
+        let tex_desc = cuda::TextureDesc::new()
+            .address_mode([wrap_mode.into(); 3])
+            .filter_mode(cuda::TextureFilterMode::Linear)
+            .read_mode(T::READ_MODE)
+            .normalized_coords(true)
+            .srgb(T::SRGB)
+            .build();
+
+        let texture_object = cuda::TextureObject::new(
+            cuda::ResourceDesc::Array(array),
+            &tex_desc,
+        )
+        .unwrap();
+
+        Ok(Texture { texture_object })
+    }
 }
 
 impl TextureElement for u8 {

@@ -40,6 +40,29 @@ pub struct cudaResourceDesc {
     pub res: cudaResourceDescUnion,
 }
 
+#[repr(C)]
+pub struct cudaPitchedPtr {
+    #[doc = "< Pointer to allocated memory"]
+    pub ptr: *const ::std::os::raw::c_void,
+    #[doc = "< Pitch of allocated memory in bytes"]
+    pub pitch: usize,
+    #[doc = "< Logical width of allocation in elements"]
+    pub xsize: usize,
+    #[doc = "< Logical height of allocation in elements"]
+    pub ysize: usize,
+}
+
+#[doc = " CUDA extent"]
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct cudaExtent {
+    #[doc = "Width in elements when referring to array memory, in bytes when referring to linear memory"]
+    pub width: usize,
+    #[doc = "Height in elements"]
+    pub height: usize,
+    #[doc = "Depth in elements"]
+    pub depth: usize,
+}
 use std::os::raw::c_void;
 extern "C" {
     pub fn cuLaunchKernel(

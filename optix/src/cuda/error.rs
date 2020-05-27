@@ -11,7 +11,7 @@ pub enum Error {
     #[error("Buffer allocation of size {size:} bytes failed.")]
     BufferAllocationFailed { source: CudaError, size: usize },
     #[error(
-        "Buffer allocation of {desc:?}, {width:}x{height:} flags: {flags:?}"
+        "Array allocation of {desc:?}, {width:}x{height:} flags: {flags:?}"
     )]
     ArrayAllocationFailed {
         source: CudaError,
@@ -21,8 +21,22 @@ pub enum Error {
         num_components: usize,
         flags: super::ArrayFlags,
     },
+    #[error(
+        "3D Array allocation of {desc:?}, {width:}x{height:}x{depth:} flags: {flags:?}"
+    )]
+    Array3DAllocationFailed {
+        source: CudaError,
+        desc: super::ChannelFormatDesc,
+        width: usize,
+        height: usize,
+        depth: usize,
+        num_components: usize,
+        flags: super::ArrayFlags,
+    },
     #[error("Array memcpy 2d failed.")]
     ArrayMemcpy2DFailed { source: CudaError },
+    #[error("Array memcpy 3d failed.")]
+    ArrayMemcpy3DFailed { source: CudaError },
     #[error("Buffer upload failed.")]
     BufferUploadFailed { source: CudaError },
     #[error("Buffer download failed.")]
