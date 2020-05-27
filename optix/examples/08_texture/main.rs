@@ -1,5 +1,6 @@
 #[macro_use]
-extern crate derive_more;
+extern crate enum_primitive;
+use num::FromPrimitive;
 
 mod sample_renderer;
 use sample_renderer::*;
@@ -8,6 +9,7 @@ use glfw::{Action, Context, Key};
 pub mod gl_util;
 use crate::gl_util::*;
 
+use optix::cuda::TaggedMallocator;
 use optix::math::*;
 
 use std::rc::Rc;
@@ -34,9 +36,14 @@ fn main() {
         up: v3f32(0.0, 1.0, 0.0),
     };
 
-    let mut sample =
-        SampleRenderer::new(v2i32(width as i32, height as i32), camera, model)
-            .unwrap();
+    let alloc = TaggedMallocator::new();
+    let mut sample = SampleRenderer::new(
+        v2i32(width as i32, height as i32),
+        camera,
+        model,
+        &alloc,
+    )
+    .unwrap();
 
     let (mut window, events) = glfw
         .create_window(

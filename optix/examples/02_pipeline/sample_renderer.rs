@@ -1,11 +1,14 @@
-use optix::cuda;
+use optix::cuda::{self, Allocator};
 use optix::math::*;
 
 type Result<T, E = Error> = std::result::Result<T, E>;
 
 use optix::SbtRecord;
 
-pub struct SampleRenderer {
+pub struct SampleRenderer<'a, 't, AllocT>
+where
+    AllocT: Allocator,
+{
     cuda_context: cuda::ContextRef,
     stream: cuda::Stream,
     device_prop: cuda::DeviceProp,
@@ -15,17 +18,35 @@ pub struct SampleRenderer {
     module: optix::ModuleRef,
 
     program_groups: Vec<optix::ProgramGroupRef>,
-    sbt: optix::ShaderBindingTable,
+    sbt: optix::ShaderBindingTable<'a, 't, AllocT>,
 
-    color_buffer: cuda::Buffer,
+    color_buffer: cuda::Buffer<'a, AllocT>,
     launch_params: LaunchParams,
-    launch_params_buffer: cuda::Buffer,
+    launch_params_buffer: cuda::Buffer<'a, AllocT>,
 
     ctx: optix::DeviceContext,
 }
 
-impl SampleRenderer {
-    pub fn new(fb_size: V2i32) -> Result<SampleRenderer> {
+enum_from_primitive! {
+#[repr(u64)]
+#[derive(Debug, PartialEq)]
+pub enum MemTags {
+    OutputBuffer = 1001,
+    SBT = 2001,
+    MissRecords = 2002,
+    HgRecords = 2003,
+    LaunchParams = 3001,
+}
+}
+
+impl<'a, 't, AllocT> SampleRenderer<'a, 't, AllocT>
+where
+    AllocT: Allocator,
+{
+    pub fn new(
+        fb_size: V2i32,
+        alloc: &'a AllocT,
+    ) -> Result<SampleRenderer<'a, 't, AllocT>> {
         // Make sure CUDA context is initialized
         cuda::init();
         // Check that we've got available devices
@@ -159,13 +180,20 @@ impl SampleRenderer {
         let hg_rec =
             SbtRecord::new(0i32, std::sync::Arc::clone(&program_groups[2]));
 
-        let sbt = optix::ShaderBindingTableBuilder::new(rg_rec)
-            .miss_records(vec![miss_rec])
-            .hitgroup_records(vec![hg_rec])
-            .build();
+        let sbt = optix::ShaderBindingTableBuilder::new(
+            rg_rec,
+            MemTags::SBT as u64,
+            alloc,
+        )
+        .miss_records(vec![miss_rec], MemTags::MissRecords as u64, alloc)
+        .hitgroup_records(vec![hg_rec], MemTags::HgRecords as u64, alloc)
+        .build();
 
         let mut color_buffer = cuda::Buffer::new(
             (fb_size.x * fb_size.y) as usize * std::mem::size_of::<u32>(),
+            std::mem::align_of::<u32>(),
+            MemTags::OutputBuffer as u64,
+            alloc,
         )
         .unwrap();
 
@@ -175,8 +203,12 @@ impl SampleRenderer {
             fb_size,
         };
 
-        let launch_params_buffer =
-            cuda::Buffer::with_data(std::slice::from_ref(&launch_params))?;
+        let launch_params_buffer = cuda::Buffer::with_data(
+            std::slice::from_ref(&launch_params),
+            std::mem::align_of::<LaunchParams>(),
+            MemTags::LaunchParams as u64,
+            alloc,
+        )?;
 
         Ok(SampleRenderer {
             cuda_context,
@@ -217,12 +249,12 @@ impl SampleRenderer {
     }
 }
 
-#[derive(Display, Debug, From)]
+#[derive(thiserror::Error, Debug)]
 pub enum Error {
-    #[display(fmt = "OptiX error: {}", _0)]
-    OptixError(optix::Error),
-    #[display(fmt = "CUDA error: {}", _0)]
-    CudaError(cuda::Error),
+    #[error("OptiX error: {}", _0)]
+    OptixError(#[from] optix::Error),
+    #[error("CUDA error: {}", _0)]
+    CudaError(#[from] cuda::Error),
 }
 
 fn compile_to_ptx(src: &str) -> String {

@@ -7,7 +7,7 @@ use super::device_context::DeviceContext;
 use super::module::{CompileDebugLevel, PipelineCompileOptions};
 use super::program_group::ProgramGroupRef;
 
-use std::ffi::{CStr, CString};
+use std::ffi::CStr;
 
 #[derive(Debug, Hash, PartialEq, Copy, Clone)]
 pub struct PipelineLinkOptions {
@@ -47,13 +47,6 @@ impl DeviceContext {
         link_options: PipelineLinkOptions,
         program_groups: &[ProgramGroupRef],
     ) -> Result<(PipelineRef, String)> {
-        let launch_param = CString::new(
-            pipeline_compile_options
-                .pipeline_launch_params_variable_name
-                .as_str(),
-        )
-        .unwrap();
-
         let popt = sys::OptixPipelineCompileOptions {
             usesMotionBlur: if pipeline_compile_options.uses_motion_blur {
                 1
@@ -66,7 +59,11 @@ impl DeviceContext {
             numPayloadValues: pipeline_compile_options.num_payload_values,
             numAttributeValues: pipeline_compile_options.num_attribute_values,
             exceptionFlags: pipeline_compile_options.exception_flags.bits(),
-            pipelineLaunchParamsVariableName: launch_param.as_ptr(),
+            pipelineLaunchParamsVariableName: unsafe {
+                pipeline_compile_options
+                    .pipeline_launch_params_variable_name
+                    .as_char_ptr()
+            },
         };
 
         let link_options: sys::OptixPipelineLinkOptions = link_options.into();
@@ -99,7 +96,7 @@ impl DeviceContext {
 
         if res != sys::OptixResult::OPTIX_SUCCESS {
             return Err(Error::PipelineCreationFailed {
-                cerr: res.into(),
+                source: res.into(),
                 log,
             });
         }

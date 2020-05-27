@@ -13,7 +13,7 @@ impl Stream {
         let res = unsafe { sys::cudaStreamCreate(&mut s) };
 
         if res != sys::cudaError::cudaSuccess {
-            return Err(Error::StreamCreationFailed { cerr: res.into() });
+            return Err(Error::StreamCreationFailed { source: res.into() });
         }
 
         Ok(Stream { s })

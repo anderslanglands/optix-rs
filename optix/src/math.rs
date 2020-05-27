@@ -9,9 +9,9 @@ pub use imath::*;
 cfg_if::cfg_if! {
     if #[cfg(feature="math-nalgebra")] {
 
-        pub use nalgebra_glm::I8Vec2 as V2u8;
-        pub use nalgebra_glm::I8Vec3 as V3u8;
-        pub use nalgebra_glm::I8Vec4 as V4u8;
+        pub use nalgebra_glm::U8Vec2 as V2u8;
+        pub use nalgebra_glm::U8Vec3 as V3u8;
+        pub use nalgebra_glm::U8Vec4 as V4u8;
 
         pub use nalgebra_glm::I16Vec2 as V2u16;
         pub use nalgebra_glm::I16Vec3 as V3u16;
@@ -77,6 +77,21 @@ cfg_if::cfg_if! {
             V4i32::new(x, y, z, w)
         }
 
+        #[inline(always)]
+        pub fn v2u8(x: u8, y: u8) -> V2u8 {
+            V2u8::new(x, y)
+        }
+
+        #[inline(always)]
+        pub fn v3u8(x: u8, y: u8, z: u8) -> V3u8 {
+            V3u8::new(x, y, z)
+        }
+
+        #[inline(always)]
+        pub fn v4u8(x: u8, y: u8, z: u8, w: u8) -> V4u8 {
+            V4u8::new(x, y, z, w)
+        }
+
         pub use nalgebra_glm::{
             normalize,
             cross,
@@ -86,15 +101,30 @@ cfg_if::cfg_if! {
             scaling,
             rotate,
             rotation,
+            ortho,
             perspective_fov_rh,
             perspective_fov_rh_zo,
             perspective_fov_lh,
             inverse,
             inverse_transpose,
+            affine_inverse,
             transpose,
+            length,
+            determinant,
+            zero,
         };
 
         pub use nalgebra_glm::{Dimension, Scalar, Number, RealField};
+
+        pub fn cast_slice_v4u8(s: &[u8]) -> &[V4u8] {
+            if s.len() % 4 != 0 {
+                panic!("Tried to cast slice of length {} to V4u8", s.len());
+            }
+
+            unsafe {
+                std::slice::from_raw_parts(s.as_ptr() as *const V4u8, s.len() / 4)
+            }
+        }
 
         pub fn cast_slice_v3i32(s: &[i32]) -> &[V3i32] {
             if s.len() % 3 != 0 {
@@ -113,6 +143,16 @@ cfg_if::cfg_if! {
 
             unsafe {
                 std::slice::from_raw_parts(s.as_ptr() as *const V3f32, s.len() / 3)
+            }
+        }
+
+        pub fn cast_slice_v4f32(s: &[f32]) -> &[V4f32] {
+            if s.len() % 4 != 0 {
+                panic!("Tried to cast slice of length {} to V4f32", s.len());
+            }
+
+            unsafe {
+                std::slice::from_raw_parts(s.as_ptr() as *const V4f32, s.len() / 4)
             }
         }
 
@@ -181,24 +221,56 @@ cfg_if::cfg_if! {
 
         pub type Box3f32 = Box3<f32>;
         pub type Box3f64 = Box3<f64>;
+
+        #[inline(always)]
+        pub fn hmax(v: V3f32) -> f32 {
+            nalgebra_glm::comp_max(&v)
+        }
+
+        #[inline(always)]
+        pub fn hmin(v: V3f32) -> f32 {
+            nalgebra_glm::comp_min(&v)
+        }
+
+        pub fn m4f64_to_m4f32(m: &M4f64) -> M4f32 {
+            M4f32::new(
+                m[(0, 0)] as f32,
+                m[(0, 1)] as f32,
+                m[(0, 2)] as f32,
+                m[(0, 3)] as f32,
+                m[(1, 0)] as f32,
+                m[(1, 1)] as f32,
+                m[(1, 2)] as f32,
+                m[(1, 3)] as f32,
+                m[(2, 0)] as f32,
+                m[(2, 1)] as f32,
+                m[(2, 2)] as f32,
+                m[(2, 3)] as f32,
+                m[(3, 0)] as f32,
+                m[(3, 1)] as f32,
+                m[(3, 2)] as f32,
+                m[(3, 3)] as f32,
+            )
+        }
+
     }
 }
 
-math_type!(V2u8, BufferFormat::U8x2, 2);
-math_type!(V3u8, BufferFormat::U8x3, 3);
-math_type!(V4u8, BufferFormat::U8x4, 4);
+math_type!(V2u8, uchar2, BufferFormat::U8x2, 2, u8, 2);
+math_type!(V3u8, uchar3, BufferFormat::U8x3, 3, u8, 1);
+math_type!(V4u8, uchar4, BufferFormat::U8x4, 4, u8, 4);
 
-math_type!(V2u16, BufferFormat::U16x2, 2);
-math_type!(V3u16, BufferFormat::U16x3, 3);
-math_type!(V4u16, BufferFormat::U16x4, 4);
+math_type!(V2u16, ushort2, BufferFormat::U16x2, 2, u16, 4);
+math_type!(V3u16, ushort3, BufferFormat::U16x3, 3, u16, 2);
+math_type!(V4u16, ushort4, BufferFormat::U16x4, 4, u16, 8);
 
-math_type!(V2i32, BufferFormat::I32x2, 2);
-math_type!(V3i32, BufferFormat::I32x3, 3);
-math_type!(V4i32, BufferFormat::I32x4, 4);
+math_type!(V2i32, i32x2, BufferFormat::I32x2, 2, i32, 8);
+math_type!(V3i32, i32x3, BufferFormat::I32x3, 3, i32, 4);
+math_type!(V4i32, i32x4, BufferFormat::I32x4, 4, i32, 16);
 
-math_type!(V2f32, BufferFormat::F32x2, 2);
-math_type!(V3f32, BufferFormat::F32x3, 3);
-math_type!(V4f32, BufferFormat::F32x4, 4);
+math_type!(V2f32, f32x2, BufferFormat::F32x2, 2, f32, 8);
+math_type!(V3f32, f32x3, BufferFormat::F32x3, 3, f32, 4);
+math_type!(V4f32, f32x4, BufferFormat::F32x4, 4, f32, 16);
 
 impl DeviceShareable for M4f32 {
     type Target = M4f32;
@@ -209,5 +281,9 @@ impl DeviceShareable for M4f32 {
 
     fn cuda_type() -> String {
         "M4f32".into()
+    }
+
+    fn zero() -> M4f32 {
+        zero::<M4f32>()
     }
 }

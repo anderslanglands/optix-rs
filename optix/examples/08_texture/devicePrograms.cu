@@ -53,11 +53,11 @@ template <typename T> static __forceinline__ __device__ T* getPRD() {
 }
 
 /*! helper function that creates a semi-random color from an ID */
-inline __device__ V3f32 randomColor(int i) {
+inline __device__ f32x3 randomColor(int i) {
     int r = unsigned(i) * 13 * 17 + 0x234235;
     int g = unsigned(i) * 7 * 3 * 5 + 0x773477;
     int b = unsigned(i) * 11 * 19 + 0x223766;
-    return V3f32((r & 255) / 255.f, (g & 255) / 255.f, (b & 255) / 255.f);
+    return make_f32x3((r & 255) / 255.f, (g & 255) / 255.f, (b & 255) / 255.f);
 }
 
 //------------------------------------------------------------------------------
@@ -77,7 +77,7 @@ extern "C" __global__ void __closesthit__radiance() {
     // gather some basic hit information
     // ------------------------------------------------------------------
     const int primID = optixGetPrimitiveIndex();
-    const V3i32 index = sbtData.index[primID];
+    const i32x3 index = sbtData.index[primID];
     const float u = optixGetTriangleBarycentrics().x;
     const float v = optixGetTriangleBarycentrics().y;
 
@@ -85,14 +85,14 @@ extern "C" __global__ void __closesthit__radiance() {
     // compute normal, using either shading normal (if avail), or
     // geometry normal (fallback)
     // ------------------------------------------------------------------
-    V3f32 N(0.0f, 0.0f, 0.0f);
+    auto N = make_f32x3(0.0f, 0.0f, 0.0f);
     if (!sbtData.normal.is_null()) {
         N = (1.f - u - v) * sbtData.normal[index.x] +
             u * sbtData.normal[index.y] + v * sbtData.normal[index.z];
     } else {
-        const V3f32& A = sbtData.vertex[index.x];
-        const V3f32& B = sbtData.vertex[index.y];
-        const V3f32& C = sbtData.vertex[index.z];
+        const f32x3& A = sbtData.vertex[index.x];
+        const f32x3& B = sbtData.vertex[index.y];
+        const f32x3& C = sbtData.vertex[index.z];
         N = normalize(cross(B - A, C - A));
     }
     N = normalize(N);
@@ -101,23 +101,23 @@ extern "C" __global__ void __closesthit__radiance() {
     // compute diffuse material color, including diffuse texture, if
     // available
     // ------------------------------------------------------------------
-    V3f32 diffuseColor = sbtData.color;
+    f32x3 diffuseColor = sbtData.color;
     if (sbtData.has_texture && !sbtData.texcoord.is_null()) {
-        const V2f32 tc = (1.f - u - v) * sbtData.texcoord[index.x] +
+        const f32x2 tc = (1.f - u - v) * sbtData.texcoord[index.x] +
                          u * sbtData.texcoord[index.y] +
                          v * sbtData.texcoord[index.z];
 
-        V4f32 fromTexture = tex2D<float4>(sbtData.texture, tc.x, 1.0f - tc.y);
-        diffuseColor = diffuseColor * fromTexture.xyz();
+        f32x4 fromTexture = tex2D<float4>(sbtData.texture, tc.x, 1.0f - tc.y);
+        diffuseColor = diffuseColor * make_f32x3(fromTexture);
     }
 
     // ------------------------------------------------------------------
     // perform some simple "NdotD" shading
     // ------------------------------------------------------------------
-    const V3f32 rayDir = optixGetWorldRayDirection();
+    const f32x3 rayDir = optixGetWorldRayDirection();
     const float cosDN = 0.2f + .8f * fabsf(dot(rayDir, N));
 
-    V3f32& prd = *(V3f32*)getPRD<V3f32>();
+    f32x3& prd = *(f32x3*)getPRD<f32x3>();
     prd = cosDN * diffuseColor;
 }
 
@@ -134,9 +134,9 @@ __anyhit__radiance() { /*! for this simple example, this will remain empty */
 // ------------------------------------------------------------------------------
 
 extern "C" __global__ void __miss__radiance() {
-    V3f32& prd = *(V3f32*)getPRD<V3f32>();
+    f32x3& prd = *(f32x3*)getPRD<f32x3>();
     // set to constant white as background color
-    prd = V3f32(1.f, 1.0f, 1.0f);
+    prd = make_f32x3(1.f, 1.0f, 1.0f);
 }
 
 //------------------------------------------------------------------------------
@@ -152,19 +152,19 @@ extern "C" __global__ void __raygen__renderFrame() {
     // our per-ray data for this example. what we initialize it to
     // won't matter, since this value will be overwritten by either
     // the miss or hit program, anyway
-    V3f32 pixelColorPRD = V3f32(0.f, 0.0f, 0.0f);
+    f32x3 pixelColorPRD = make_f32x3(0.f, 0.0f, 0.0f);
 
     // the values we store the PRD pointer in:
     u32 u0, u1;
     packPointer(&pixelColorPRD, u0, u1);
 
     // normalized screen plane position, in [0,1]^2
-    const V2f32 screen =
-        V2f32(f32(ix) + .5f, f32(iy) + .5f) /
-        V2f32(optixLaunchParams.frame.size.x, optixLaunchParams.frame.size.y);
+    const f32x2 screen = make_f32x2(f32(ix) + .5f, f32(iy) + .5f) /
+                         make_f32x2(optixLaunchParams.frame.size.x,
+                                    optixLaunchParams.frame.size.y);
 
     // generate ray direction
-    V3f32 rayDir =
+    f32x3 rayDir =
         normalize(camera.direction + (screen.x - 0.5f) * camera.horizontal +
                   (screen.y - 0.5f) * camera.vertical);
 

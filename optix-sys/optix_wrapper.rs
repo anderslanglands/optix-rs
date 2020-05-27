@@ -1164,6 +1164,11 @@ pub struct OptixFunctionTable {
 }
 pub const OptixSbtRecordHeaderSize: usize = 32;
 pub const OptixSbtRecordAlignment: usize = 16;
+pub const OptixAccelBufferByteAlignment: usize = 128;
+pub const OptixInstanceByteAlignment: usize = 16;
+pub const OptixAabbBufferByteAlignment: usize = 8;
+pub const OptixGeometryTransformByteAlignment: usize = 16;
+pub const OptixTransformByteAlignment: usize = 64;
 #[repr(u32)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum OptixGeometryFlags {

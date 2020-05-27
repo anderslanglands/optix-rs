@@ -6,6 +6,7 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 pub use super::device_context::DeviceContext;
 
 use std::ffi::{CStr, CString};
+use ustr::Ustr;
 
 #[repr(u32)]
 #[derive(Debug, Hash, PartialEq, Copy, Clone)]
@@ -63,14 +64,14 @@ bitflags! {
     }
 }
 
-#[derive(Debug, Hash, PartialEq)]
+#[derive(Debug, Hash, PartialEq, Clone)]
 pub struct PipelineCompileOptions {
     pub uses_motion_blur: bool,
     pub traversable_graph_flags: TraversableGraphFlags,
     pub num_payload_values: i32,
     pub num_attribute_values: i32,
     pub exception_flags: ExceptionFlags,
-    pub pipeline_launch_params_variable_name: String,
+    pub pipeline_launch_params_variable_name: Ustr,
 }
 
 pub struct Module {
@@ -134,7 +135,7 @@ impl DeviceContext {
 
         if res != sys::OptixResult::OPTIX_SUCCESS {
             return Err(Error::ModuleCreationFailed {
-                cerr: res.into(),
+                source: res.into(),
                 log,
             });
         }

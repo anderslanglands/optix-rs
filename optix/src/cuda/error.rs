@@ -1,69 +1,72 @@
 use optix_sys::cuda_sys::Error as CudaError;
 
-#[derive(Display, Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[display(fmt = "Buffer allocation of size {} bytes failed.", size)]
-    BufferAllocationFailed { cerr: CudaError, size: usize },
-    #[display(
-        fmt = "Buffer allocation of {:?}, {}x{} flags: {:?}",
-        desc,
-        width,
-        height,
-        flags
+    #[error("allocation of size {size:} bytes failed.")]
+    AllocationFailed { source: CudaError, size: usize },
+    #[error("allocation of size {size:} bytes failed as could not satisfy alignment of {align:} bytes.")]
+    AllocationAlignment { size: usize, align: usize },
+    #[error("Tried to allocate zero bytes")]
+    ZeroAllocation,
+    #[error("Buffer allocation of size {size:} bytes failed.")]
+    BufferAllocationFailed { source: CudaError, size: usize },
+    #[error(
+        "Array allocation of {desc:?}, {width:}x{height:} flags: {flags:?}"
     )]
     ArrayAllocationFailed {
-        cerr: CudaError,
+        source: CudaError,
         desc: super::ChannelFormatDesc,
         width: usize,
         height: usize,
+        num_components: usize,
         flags: super::ArrayFlags,
     },
-    #[display(fmt = "Array memcpy 2d failed.")]
-    ArrayMemcpy2DFailed { cerr: CudaError },
-    #[display(fmt = "Buffer upload failed.")]
-    BufferUploadFailed { cerr: CudaError },
-    #[display(fmt = "Buffer download failed.")]
-    BufferDownloadFailed { cerr: CudaError },
-    #[display(
-        fmt = "Tried to upload {} bytes of data to a buffer of {} bytes",
-        upload_size,
-        buffer_size
+    #[error(
+        "3D Array allocation of {desc:?}, {width:}x{height:}x{depth:} flags: {flags:?}"
+    )]
+    Array3DAllocationFailed {
+        source: CudaError,
+        desc: super::ChannelFormatDesc,
+        width: usize,
+        height: usize,
+        depth: usize,
+        num_components: usize,
+        flags: super::ArrayFlags,
+    },
+    #[error("Array memcpy 2d failed.")]
+    ArrayMemcpy2DFailed { source: CudaError },
+    #[error("Array memcpy 3d failed.")]
+    ArrayMemcpy3DFailed { source: CudaError },
+    #[error("Buffer upload failed.")]
+    BufferUploadFailed { source: CudaError },
+    #[error("Buffer download failed.")]
+    BufferDownloadFailed { source: CudaError },
+    #[error(
+        "Tried to upload {upload_size:} bytes of data to a buffer of {buffer_size:} bytes"
     )]
     BufferUploadWrongSize {
         upload_size: usize,
         buffer_size: usize,
     },
-    #[display(
-        fmt = "Tried to download {} bytes of data from a buffer of {} bytes",
-        download_size,
-        buffer_size
+    #[error(
+        "Tried to download {download_size:} bytes of data from a buffer of {buffer_size:} bytes"
     )]
     BufferDownloadWrongSize {
         download_size: usize,
         buffer_size: usize,
     },
-    #[display(fmt = "Could not set device {}", device)]
-    CouldNotSetDevice { cerr: CudaError, device: i32 },
-    #[display(fmt = "Failed to create stream")]
-    StreamCreationFailed { cerr: CudaError },
-    #[display(fmt = "Could not get device {} properties", device)]
-    CouldNotGetDeviceProperties { cerr: CudaError, device: i32 },
-    #[display(fmt = "Could not get current context")]
-    CouldNotGetCurrentContext { cerr: CudaError },
-    #[display(fmt = "Device sync failed")]
-    DeviceSyncFailed { cerr: CudaError },
-    #[display(fmt = "Texture object creation failed")]
-    TextureObjectCreationFailed { cerr: CudaError },
-}
-
-impl std::error::Error for Error {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            Error::BufferAllocationFailed { cerr, .. } => Some(cerr),
-            Error::BufferUploadFailed { cerr, .. } => Some(cerr),
-            Error::CouldNotSetDevice { cerr, .. } => Some(cerr),
-            Error::StreamCreationFailed { cerr, .. } => Some(cerr),
-            _ => None,
-        }
-    }
+    #[error("Could not set device {device:}")]
+    CouldNotSetDevice { source: CudaError, device: i32 },
+    #[error("Failed to create stream")]
+    StreamCreationFailed { source: CudaError },
+    #[error("Could not get device {device:} properties")]
+    CouldNotGetDeviceProperties { source: CudaError, device: i32 },
+    #[error("Could not get current context")]
+    CouldNotGetCurrentContext { source: CudaError },
+    #[error("Device sync failed")]
+    DeviceSyncFailed { source: CudaError },
+    #[error("Texture object creation failed")]
+    TextureObjectCreationFailed { source: CudaError },
+    #[error("Could not get mem info")]
+    GetMemInfoFailed { source: CudaError },
 }

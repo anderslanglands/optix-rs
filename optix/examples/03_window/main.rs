@@ -1,8 +1,10 @@
 #[macro_use]
-extern crate derive_more;
+extern crate enum_primitive;
 
+use num::FromPrimitive;
 mod sample_renderer;
-use sample_renderer::SampleRenderer;
+use optix::cuda::{TaggedAllocator, TaggedMallocator};
+use sample_renderer::*;
 
 use glfw::{Action, Context, Key};
 pub mod gl_util;
@@ -21,8 +23,10 @@ fn main() {
     let mut width = 960u32;
     let mut height = 540u32;
 
+    let alloc = TaggedMallocator::new();
     let mut sample =
-        SampleRenderer::new(v2i32(width as i32, height as i32)).unwrap();
+        SampleRenderer::new(v2i32(width as i32, height as i32), &alloc)
+            .unwrap();
 
     let (mut window, events) = glfw
         .create_window(
@@ -80,6 +84,12 @@ fn main() {
         fsq.draw();
 
         window.swap_buffers();
+    }
+
+    println!("Total allocated: {}", alloc.total_allocated());
+    let tags = alloc.tag_allocations();
+    for (tag, size) in tags.iter() {
+        println!("{:?}: {}", MemTags::from_u64(*tag).unwrap(), size);
     }
 }
 

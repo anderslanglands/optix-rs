@@ -49,6 +49,13 @@ pub struct Header {
     pub contents: String,
 }
 
+impl fmt::Debug for Header {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "// HEADER: {}", self.name)?;
+        write!(f, "{}", self.contents)
+    }
+}
+
 pub type Result<T> = std::result::Result<T, Error>;
 
 impl Program {

@@ -14,4 +14,4 @@ bindgen = "0.51.0"
 cmake = "0.1.41"
 
 [dependencies]
-derive_more = "0.15.0"
+thiserror = "1.0"

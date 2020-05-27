@@ -1,11 +1,10 @@
 #[macro_use]
-extern crate derive_more;
-#[macro_use]
 extern crate bitflags;
 
 use optix_sys as sys;
 
 pub mod cuda;
+use cuda::Allocator;
 
 pub mod error;
 pub use error::Error;
@@ -32,7 +31,7 @@ pub use pipeline::{PipelineLinkOptions, PipelineRef};
 
 pub mod shader_binding_table;
 pub use shader_binding_table::{
-    SbtRecord, ShaderBindingTable, ShaderBindingTableBuilder,
+    SbtData, SbtRecord, ShaderBindingTable, ShaderBindingTableBuilder,
 };
 
 pub mod acceleration;
@@ -40,6 +39,9 @@ pub use acceleration::*;
 
 pub mod buffer;
 pub use buffer::*;
+
+pub mod texture;
+pub use texture::*;
 
 pub mod instance;
 pub use instance::{make_instance, Instance, InstanceFlags};
@@ -52,7 +54,7 @@ pub fn init() -> Result<()> {
     unsafe {
         let res = sys::optixInit();
         if res != sys::OptixResult::OPTIX_SUCCESS {
-            return Err(Error::InitializationFailed { cerr: res.into() });
+            return Err(Error::InitializationFailed { source: res.into() });
         }
 
         Ok(())
@@ -62,21 +64,28 @@ pub fn init() -> Result<()> {
 /// Trait to represent a type that can convert itself to a CUDA-compatible
 /// target type.
 pub trait DeviceShareable {
-    type Target: Copy;
+    type Target;
     fn to_device(&self) -> Self::Target;
     fn cuda_decl() -> String {
         Self::cuda_type()
     }
     fn cuda_type() -> String;
+    fn zero() -> Self::Target;
 }
 
-impl DeviceShareable for cuda::Buffer {
+impl<'a, AllocT> DeviceShareable for cuda::Buffer<'a, AllocT>
+where
+    AllocT: Allocator,
+{
     type Target = cuda::CUdeviceptr;
     fn to_device(&self) -> Self::Target {
         self.as_device_ptr()
     }
     fn cuda_type() -> String {
         "void*".into()
+    }
+    fn zero() -> Self::Target {
+        0
     }
 }
 
@@ -88,31 +97,66 @@ impl DeviceShareable for cuda::TextureObject {
     fn cuda_type() -> String {
         "cudaTextureObject_t".into()
     }
-}
-
-impl DeviceShareable for Option<cuda::TextureObject> {
-    type Target = cuda::cudaTextureObject_t;
-    fn to_device(&self) -> Self::Target {
-        match self {
-            Some(t) => t.as_device_ptr(),
-            None => 0,
-        }
-    }
-    fn cuda_type() -> String {
-        "cudaTextureObject_t".into()
+    fn zero() -> Self::Target {
+        0
     }
 }
 
-impl DeviceShareable for Option<std::rc::Rc<cuda::TextureObject>> {
-    type Target = cuda::cudaTextureObject_t;
-    fn to_device(&self) -> Self::Target {
-        match self {
-            Some(t) => t.as_device_ptr(),
-            None => 0,
-        }
+// impl DeviceShareable for Option<cuda::TextureObject> {
+//     type Target = cuda::cudaTextureObject_t;
+//     fn to_device(&self) -> Self::Target {
+//         match self {
+//             Some(t) => t.to_device(),
+//             None => 0,
+//         }
+//     }
+//     fn cuda_type() -> String {
+//         "cudaTextureObject_t".into()
+//     }
+//     fn zero() -> Self::Target {
+//         0
+//     }
+// }
+
+// impl DeviceShareable for Option<std::rc::Rc<cuda::TextureObject>> {
+//     type Target = cuda::cudaTextureObject_t;
+//     fn to_device(&self) -> Self::Target {
+//         match self {
+//             Some(t) => t.to_device(),
+//             None => 0,
+//         }
+//     }
+//     fn cuda_type() -> String {
+//         "cudaTextureObject_t".into()
+//     }
+//     fn zero() -> Self::Target {
+//         0
+//     }
+// }
+
+impl DeviceShareable for i8 {
+    type Target = i8;
+    fn to_device(&self) -> i8 {
+        *self
     }
     fn cuda_type() -> String {
-        "cudaTextureObject_t".into()
+        "int".into()
+    }
+    fn zero() -> Self::Target {
+        0
+    }
+}
+
+impl DeviceShareable for i16 {
+    type Target = i16;
+    fn to_device(&self) -> i16 {
+        *self
+    }
+    fn cuda_type() -> String {
+        "int".into()
+    }
+    fn zero() -> Self::Target {
+        0
     }
 }
 
@@ -124,6 +168,22 @@ impl DeviceShareable for i32 {
     fn cuda_type() -> String {
         "int".into()
     }
+    fn zero() -> Self::Target {
+        0
+    }
+}
+
+impl DeviceShareable for i64 {
+    type Target = i64;
+    fn to_device(&self) -> i64 {
+        *self
+    }
+    fn cuda_type() -> String {
+        "int".into()
+    }
+    fn zero() -> Self::Target {
+        0
+    }
 }
 
 impl DeviceShareable for f32 {
@@ -133,6 +193,48 @@ impl DeviceShareable for f32 {
     }
     fn cuda_type() -> String {
         "float".into()
+    }
+    fn zero() -> Self::Target {
+        0.0
+    }
+}
+
+impl DeviceShareable for f64 {
+    type Target = f64;
+    fn to_device(&self) -> f64 {
+        *self
+    }
+    fn cuda_type() -> String {
+        "float".into()
+    }
+    fn zero() -> Self::Target {
+        0.0
+    }
+}
+
+impl DeviceShareable for u8 {
+    type Target = u8;
+    fn to_device(&self) -> u8 {
+        *self
+    }
+    fn cuda_type() -> String {
+        "unsigned int".into()
+    }
+    fn zero() -> Self::Target {
+        0
+    }
+}
+
+impl DeviceShareable for u16 {
+    type Target = u16;
+    fn to_device(&self) -> u16 {
+        *self
+    }
+    fn cuda_type() -> String {
+        "unsigned int".into()
+    }
+    fn zero() -> Self::Target {
+        0
     }
 }
 
@@ -144,6 +246,22 @@ impl DeviceShareable for u32 {
     fn cuda_type() -> String {
         "unsigned int".into()
     }
+    fn zero() -> Self::Target {
+        0
+    }
+}
+
+impl DeviceShareable for u64 {
+    type Target = u64;
+    fn to_device(&self) -> u64 {
+        *self
+    }
+    fn cuda_type() -> String {
+        "unsigned int".into()
+    }
+    fn zero() -> Self::Target {
+        0
+    }
 }
 
 impl DeviceShareable for bool {
@@ -153,6 +271,9 @@ impl DeviceShareable for bool {
     }
     fn cuda_type() -> String {
         "bool".into()
+    }
+    fn zero() -> Self::Target {
+        false
     }
 }
 
@@ -172,6 +293,10 @@ where
     fn cuda_decl() -> String {
         T::cuda_decl()
     }
+
+    fn zero() -> Self::Target {
+        T::zero()
+    }
 }
 
 impl<T> DeviceShareable for std::rc::Rc<T>
@@ -189,6 +314,10 @@ where
 
     fn cuda_decl() -> String {
         T::cuda_decl()
+    }
+
+    fn zero() -> Self::Target {
+        T::zero()
     }
 }
 
@@ -208,19 +337,50 @@ where
     fn cuda_decl() -> String {
         T::cuda_decl()
     }
+
+    fn zero() -> Self::Target {
+        T::zero()
+    }
 }
 
-/// Wrapper type to represent a variable that is shared between Rust and CUDA.
-pub struct SharedVariable<T>
+impl<T> DeviceShareable for Option<T>
 where
     T: DeviceShareable,
 {
-    var: T,
-    buffer: cuda::Buffer,
+    type Target = T::Target;
+    fn to_device(&self) -> T::Target {
+        match self {
+            Some(t) => t.to_device(),
+            None => T::zero(),
+        }
+    }
+
+    fn cuda_type() -> String {
+        T::cuda_type()
+    }
+
+    fn cuda_decl() -> String {
+        T::cuda_decl()
+    }
+
+    fn zero() -> Self::Target {
+        T::zero()
+    }
 }
 
-impl<T> SharedVariable<T>
+/// Wrapper type to represent a variable that is shared between Rust and CUDA.
+pub struct SharedVariable<'a, AllocT, T>
 where
+    AllocT: Allocator,
+    T: DeviceShareable,
+{
+    var: T,
+    buffer: cuda::Buffer<'a, AllocT>,
+}
+
+impl<'a, AllocT, T> SharedVariable<'a, AllocT, T>
+where
+    AllocT: Allocator,
     T: DeviceShareable,
 {
     /// Create a new SharedVariable, taking ownership of the variable `var`.
@@ -230,9 +390,19 @@ where
     /// handles management of the underlying CUDA buffer used for device-side
     /// storage. `SharedVariable` implements Deref targeting the wrapped
     /// variable type for easy access.
-    pub fn new(var: T) -> Result<SharedVariable<T>> {
+    pub fn new(
+        var: T,
+        tag: u64,
+        allocator: &'a AllocT,
+    ) -> Result<SharedVariable<'a, AllocT, T>> {
         let cvar = var.to_device();
-        let buffer = cuda::Buffer::with_data(std::slice::from_ref(&cvar))?;
+        let buffer = cuda::Buffer::with_data(
+            std::slice::from_ref(&cvar),
+            // FIXME: let trait implementors declare their preferred alignment
+            std::mem::align_of::<T>(),
+            tag,
+            allocator,
+        )?;
         Ok(SharedVariable { var, buffer })
     }
 
@@ -247,13 +417,37 @@ where
 
     /// Get a reference to the `cuda::Buffer` representing the device-side
     /// storage for this variable.
-    pub fn variable_buffer(&self) -> &cuda::Buffer {
+    pub fn variable_buffer(&self) -> &cuda::Buffer<'a, AllocT> {
         &self.buffer
     }
 }
 
-impl<T> std::ops::Deref for SharedVariable<T>
+impl<'a, AllocT, T> DeviceShareable for SharedVariable<'a, AllocT, T>
 where
+    AllocT: Allocator,
+    T: DeviceShareable,
+{
+    type Target = cuda::CUdeviceptr;
+    fn to_device(&self) -> Self::Target {
+        self.buffer.as_device_ptr()
+    }
+
+    fn cuda_type() -> String {
+        format!("{}*", T::cuda_type())
+    }
+
+    fn cuda_decl() -> String {
+        format!("{}*", T::cuda_decl())
+    }
+
+    fn zero() -> Self::Target {
+        0
+    }
+}
+
+impl<'a, AllocT, T> std::ops::Deref for SharedVariable<'a, AllocT, T>
+where
+    AllocT: Allocator,
     T: DeviceShareable,
 {
     type Target = T;
@@ -262,8 +456,9 @@ where
     }
 }
 
-impl<T> std::ops::DerefMut for SharedVariable<T>
+impl<'a, AllocT, T> std::ops::DerefMut for SharedVariable<'a, AllocT, T>
 where
+    AllocT: Allocator,
     T: DeviceShareable,
 {
     fn deref_mut(&mut self) -> &mut T {
@@ -272,18 +467,19 @@ where
 }
 
 /// Wrapper type to share a Vec with CUDA as a buffer.
-pub struct SharedVec<T>
+pub struct SharedVec<'a, AllocT, T>
 where
+    AllocT: Allocator,
     T: DeviceShareable,
 {
     vec: Vec<T>,
-    buffer: cuda::Buffer,
+    buffer: cuda::Buffer<'a, AllocT>,
 }
 
-impl<T> SharedVec<T>
+impl<'a, AllocT, T> SharedVec<'a, AllocT, T>
 where
+    AllocT: Allocator,
     T: DeviceShareable,
-    T::Target: std::fmt::Debug,
 {
     /// Create a new SharedVec, taking ownership of the Vec `vec`.
     ///
@@ -292,9 +488,19 @@ where
     /// handles management of the underlying CUDA buffer used for device-side
     /// storage. `SharedVec` implements Deref targeting the wrapped
     /// vec for easy access.
-    pub fn new(vec: Vec<T>) -> Result<SharedVec<T>> {
+    pub fn new(
+        vec: Vec<T>,
+        tag: u64,
+        allocator: &'a AllocT,
+    ) -> Result<SharedVec<'a, AllocT, T>> {
         let cvec: Vec<T::Target> = vec.iter().map(|t| t.to_device()).collect();
-        let buffer = cuda::Buffer::with_data(&cvec)?;
+        let buffer = cuda::Buffer::with_data(
+            &cvec,
+            // FIXME: let trait implementors declare their preferred alignemnt
+            std::mem::align_of::<T>(),
+            tag,
+            allocator,
+        )?;
         Ok(SharedVec { vec, buffer })
     }
 
@@ -302,21 +508,15 @@ where
     /// on the Rust side will not be reflected on the device until this is
     /// called.
     pub fn upload(&mut self) -> Result<()> {
-        let cvec: Vec<T::Target> = self
-            .vec
-            .iter()
-            .map(|t| {
-                println!("upload: {:?}", t.to_device());
-                t.to_device()
-            })
-            .collect();
+        let cvec: Vec<T::Target> =
+            self.vec.iter().map(|t| t.to_device()).collect();
         self.buffer.upload(&cvec)?;
         Ok(())
     }
 
     /// Get a reference to the `cuda::Buffer` representing the device-side
     /// storage for this variable.
-    pub fn variable_buffer(&self) -> &cuda::Buffer {
+    pub fn variable_buffer(&self) -> &cuda::Buffer<'a, AllocT> {
         &self.buffer
     }
 }
@@ -328,8 +528,9 @@ pub struct SharedVecD {
     pub len: usize,
 }
 
-impl<T> DeviceShareable for SharedVec<T>
+impl<'a, AllocT, T> DeviceShareable for SharedVec<'a, AllocT, T>
 where
+    AllocT: Allocator,
     T: DeviceShareable,
 {
     type Target = SharedVecD;
@@ -370,10 +571,15 @@ struct SharedVec {
         "#
         .into()
     }
+
+    fn zero() -> Self::Target {
+        SharedVecD { ptr: 0, len: 0 }
+    }
 }
 
-impl<T> std::ops::Deref for SharedVec<T>
+impl<'a, AllocT, T> std::ops::Deref for SharedVec<'a, AllocT, T>
 where
+    AllocT: Allocator,
     T: DeviceShareable,
 {
     type Target = Vec<T>;
@@ -382,8 +588,9 @@ where
     }
 }
 
-impl<T> std::ops::DerefMut for SharedVec<T>
+impl<'a, AllocT, T> std::ops::DerefMut for SharedVec<'a, AllocT, T>
 where
+    AllocT: Allocator,
     T: DeviceShareable,
 {
     fn deref_mut(&mut self) -> &mut Vec<T> {
@@ -406,6 +613,9 @@ macro_rules! wrap_copyable_for_device {
             }
             fn cuda_type() -> String {
                 stringify!($ty).into()
+            }
+            fn zero() -> Self::Target {
+                0
             }
         }
 
@@ -439,20 +649,25 @@ macro_rules! wrap_copyable_for_device {
 /// implemented
 #[macro_export]
 macro_rules! math_type {
-    ($ty:ty, $fmt:expr, $cmp:literal) => {
+    ($ty:ty, $cuty:ty, $fmt:expr, $cmp:literal, $cmpty:ty, $align:literal) => {
         impl DeviceShareable for $ty {
             type Target = $ty;
             fn to_device(&self) -> Self::Target {
                 *self
             }
             fn cuda_type() -> String {
-                stringify!($ty).into()
+                stringify!($cuty).into()
+            }
+            fn zero() -> Self::Target {
+                zero::<$ty>()
             }
         }
 
         impl BufferElement for $ty {
             const FORMAT: BufferFormat = $fmt;
             const COMPONENTS: usize = $cmp;
+            const ALIGNMENT: usize = $align;
+            type ComponentType = $cmpty;
         }
     };
 }

@@ -6,11 +6,13 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 use super::device_context::DeviceContext;
 use super::module::ModuleRef;
 
-use std::ffi::{CStr, CString};
+use std::ffi::CStr;
+use ustr::Ustr;
 
+#[derive(Clone)]
 pub struct ProgramGroupModule {
     pub module: ModuleRef,
-    pub entry_function_name: String,
+    pub entry_function_name: Ustr,
 }
 
 pub enum ProgramGroupDesc {
@@ -20,6 +22,10 @@ pub enum ProgramGroupDesc {
         ch: Option<ProgramGroupModule>,
         ah: Option<ProgramGroupModule>,
         is: Option<ProgramGroupModule>,
+    },
+    Callables {
+        dc: Option<ProgramGroupModule>,
+        cc: Option<ProgramGroupModule>,
     },
 }
 
@@ -68,15 +74,13 @@ impl DeviceContext {
                     module,
                     entry_function_name,
                 }) => {
-                    let entry_function_name =
-                        CString::new(entry_function_name.as_str()).unwrap();
                     let pg_desc = sys::OptixProgramGroupDesc {
                     kind:
                         sys::OptixProgramGroupKind::OPTIX_PROGRAM_GROUP_KIND_RAYGEN,
                     __bindgen_anon_1: sys::OptixProgramGroupDesc__bindgen_ty_1 {
                         raygen: sys::OptixProgramGroupSingleModule {
                             module: module.module,
-                            entryFunctionName: entry_function_name.as_ptr(),
+                            entryFunctionName: entry_function_name.as_char_ptr(),
                         },
                     },
                     flags: 0,
@@ -98,7 +102,7 @@ impl DeviceContext {
 
                     if res != sys::OptixResult::OPTIX_SUCCESS {
                         return Err(Error::ProgramGroupCreationFailed {
-                            cerr: res.into(),
+                            source: res.into(),
                             log,
                         });
                     }
@@ -111,15 +115,13 @@ impl DeviceContext {
                     module,
                     entry_function_name,
                 }) => {
-                    let entry_function_name =
-                        CString::new(entry_function_name.as_str()).unwrap();
                     let pg_desc = sys::OptixProgramGroupDesc {
                     kind:
                         sys::OptixProgramGroupKind::OPTIX_PROGRAM_GROUP_KIND_MISS,
                     __bindgen_anon_1: sys::OptixProgramGroupDesc__bindgen_ty_1 {
                         miss: sys::OptixProgramGroupSingleModule {
                             module: module.module,
-                            entryFunctionName: entry_function_name.as_ptr(),
+                            entryFunctionName: entry_function_name.as_char_ptr(),
                         },
                     },
                     flags: 0,
@@ -141,7 +143,7 @@ impl DeviceContext {
 
                     if res != sys::OptixResult::OPTIX_SUCCESS {
                         return Err(Error::ProgramGroupCreationFailed {
-                            cerr: res.into(),
+                            source: res.into(),
                             log,
                         });
                     }
@@ -151,41 +153,26 @@ impl DeviceContext {
                     Ok((pg, log))
                 }
                 ProgramGroupDesc::Hitgroup { ch, ah, is } => {
-                    #[allow(unused_assignments)]
-                    let mut efn_ch = CString::new("").unwrap();
                     let mut efn_ch_ptr = std::ptr::null();
-                    #[allow(unused_assignments)]
-                    let mut efn_ah = CString::new("").unwrap();
                     let mut efn_ah_ptr = std::ptr::null();
-                    #[allow(unused_assignments)]
-                    let mut efn_is = CString::new("").unwrap();
                     let mut efn_is_ptr = std::ptr::null();
 
                     let module_ch = if let Some(pg_ch) = &ch {
-                        efn_ch =
-                            CString::new(pg_ch.entry_function_name.as_str())
-                                .unwrap();
-                        efn_ch_ptr = efn_ch.as_ptr();
+                        efn_ch_ptr = pg_ch.entry_function_name.as_char_ptr();
                         pg_ch.module.module
                     } else {
                         std::ptr::null_mut()
                     };
 
                     let module_ah = if let Some(pg_ah) = &ah {
-                        efn_ah =
-                            CString::new(pg_ah.entry_function_name.as_str())
-                                .unwrap();
-                        efn_ah_ptr = efn_ah.as_ptr();
+                        efn_ah_ptr = pg_ah.entry_function_name.as_char_ptr();
                         pg_ah.module.module
                     } else {
                         std::ptr::null_mut()
                     };
 
                     let module_is = if let Some(pg_is) = &is {
-                        efn_is =
-                            CString::new(pg_is.entry_function_name.as_str())
-                                .unwrap();
-                        efn_is_ptr = efn_is.as_ptr();
+                        efn_is_ptr = pg_is.entry_function_name.as_char_ptr();
                         pg_is.module.module
                     } else {
                         std::ptr::null_mut()
@@ -223,13 +210,71 @@ impl DeviceContext {
 
                     if res != sys::OptixResult::OPTIX_SUCCESS {
                         return Err(Error::ProgramGroupCreationFailed {
-                            cerr: res.into(),
+                            source: res.into(),
                             log,
                         });
                     }
 
                     let pg = super::Ref::new(ProgramGroup { pg, _desc: desc });
                     // self.program_groups.push(super::Ref::clone(&pg));
+                    Ok((pg, log))
+                }
+                ProgramGroupDesc::Callables { dc, cc } => {
+                    let (module_dc, efn_dc) = if let Some(pg_dc) = &dc {
+                        (
+                            pg_dc.module.module,
+                            pg_dc.entry_function_name.as_char_ptr(),
+                        )
+                    } else {
+                        (std::ptr::null_mut(), std::ptr::null())
+                    };
+
+                    let (module_cc, efn_cc) = if let Some(pg_cc) = &cc {
+                        (
+                            pg_cc.module.module,
+                            pg_cc.entry_function_name.as_char_ptr(),
+                        )
+                    } else {
+                        (std::ptr::null_mut(), std::ptr::null())
+                    };
+
+                    let pg_desc = sys::OptixProgramGroupDesc {
+                    kind:
+                        sys::OptixProgramGroupKind::OPTIX_PROGRAM_GROUP_KIND_CALLABLES,
+                    __bindgen_anon_1: sys::OptixProgramGroupDesc__bindgen_ty_1 {
+                        callables: sys::OptixProgramGroupCallables {
+                            moduleDC: module_dc,
+                            entryFunctionNameDC: efn_dc,
+                            moduleCC: module_cc,
+                            entryFunctionNameCC: efn_cc,
+                        },
+                        },
+                    flags: 0,
+                    };
+
+                    let res = sys::optixProgramGroupCreate(
+                        self.ctx,
+                        &pg_desc,
+                        1,
+                        &pg_options,
+                        log.as_mut_ptr() as *mut i8,
+                        &mut log_len,
+                        &mut pg,
+                    );
+
+                    let log = CStr::from_bytes_with_nul(&log[0..log_len])
+                        .unwrap()
+                        .to_string_lossy()
+                        .into_owned();
+
+                    if res != sys::OptixResult::OPTIX_SUCCESS {
+                        return Err(Error::ProgramGroupCreationFailed {
+                            source: res.into(),
+                            log,
+                        });
+                    }
+
+                    let pg = super::Ref::new(ProgramGroup { pg, _desc: desc });
                     Ok((pg, log))
                 }
             }

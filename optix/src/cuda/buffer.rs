@@ -1,6 +1,5 @@
-use optix_sys::cuda_sys::{
-    cudaError, cudaFree, cudaMalloc, cudaMemcpy, cudaMemcpyKind, CUdeviceptr,
-};
+use super::allocator::{Allocation, Allocator, Mallocator};
+use optix_sys::cuda_sys::{cudaError, cudaMemcpy, cudaMemcpyKind, CUdeviceptr};
 
 use std::os::raw::c_void;
 
@@ -8,17 +7,17 @@ use super::error::Error;
 type Result<T, E = Error> = std::result::Result<T, E>;
 
 #[repr(u32)]
-#[derive(Debug, Copy, Clone, Display)]
+#[derive(Debug, Copy, Clone, thiserror::Error)]
 pub enum MemcpyKind {
-    #[display(fmt = "Host to Host")]
+    #[error("Host to Host")]
     HostToHost = cudaMemcpyKind::cudaMemcpyHostToHost,
-    #[display(fmt = "Host to Device")]
+    #[error("Host to Device")]
     HostToDevice = cudaMemcpyKind::cudaMemcpyHostToDevice,
-    #[display(fmt = "Device to Host")]
+    #[error("Device to Host")]
     DeviceToHost = cudaMemcpyKind::cudaMemcpyDeviceToHost,
-    #[display(fmt = "Device to Device")]
+    #[error("Device to Device")]
     DeviceToDevice = cudaMemcpyKind::cudaMemcpyDeviceToDevice,
-    #[display(fmt = "Default")]
+    #[error("Default")]
     Default = cudaMemcpyKind::cudaMemcpyDefault,
 }
 
@@ -51,82 +50,93 @@ impl From<MemcpyKind> for cudaMemcpyKind::Type {
     }
 }
 
-pub struct Buffer {
-    size_in_bytes: usize,
-    d_ptr: *mut c_void,
+pub struct Buffer<'a, AllocT = Mallocator>
+where
+    AllocT: Allocator,
+{
+    allocation: Allocation,
+    _alloc: &'a AllocT,
 }
 
-impl Buffer {
-    pub fn new(size_in_bytes: usize) -> Result<Buffer> {
-        unsafe {
-            let mut d_ptr = std::ptr::null_mut();
-            let res = cudaMalloc(&mut d_ptr, size_in_bytes);
-            if res != cudaError::cudaSuccess {
-                Err(Error::BufferAllocationFailed {
-                    cerr: res.into(),
-                    size: size_in_bytes,
-                })
-            } else {
-                Ok(Buffer {
-                    size_in_bytes,
-                    d_ptr,
-                })
-            }
-        }
+impl<'a, AllocT> Buffer<'a, AllocT>
+where
+    AllocT: Allocator,
+{
+    pub fn new(
+        size_in_bytes: usize,
+        alignment: usize,
+        tag: u64,
+        allocator: &'a AllocT,
+    ) -> Result<Buffer<'a, AllocT>> {
+        let allocation =
+            unsafe { allocator.alloc(size_in_bytes, alignment, tag)? };
+        Ok(Buffer {
+            allocation,
+            _alloc: allocator,
+        })
     }
 
-    pub fn with_data<T>(data: &[T]) -> Result<Buffer>
+    pub fn with_data<T>(
+        data: &[T],
+        alignment: usize,
+        tag: u64,
+        allocator: &'a AllocT,
+    ) -> Result<Buffer<'a, AllocT>>
     where
         T: Sized,
     {
-        unsafe {
-            let size_in_bytes = std::mem::size_of::<T>() * data.len();
-            let mut d_ptr = std::ptr::null_mut();
+        let size_in_bytes = std::mem::size_of::<T>() * data.len();
 
-            if size_in_bytes != 0 {
-                let res = cudaMalloc(&mut d_ptr, size_in_bytes);
-                if res != cudaError::cudaSuccess {
-                    return Err(Error::BufferAllocationFailed {
-                        cerr: res.into(),
-                        size: size_in_bytes,
-                    });
-                }
+        if size_in_bytes != 0 {
+            let allocation =
+                unsafe { allocator.alloc(size_in_bytes, alignment, tag)? };
 
-                let res = cudaMemcpy(
-                    d_ptr,
+            let res = unsafe {
+                cudaMemcpy(
+                    allocation.ptr() as *mut c_void,
                     data.as_ptr() as *const c_void,
                     size_in_bytes,
                     cudaMemcpyKind::cudaMemcpyHostToDevice,
-                );
-                if res != cudaError::cudaSuccess {
-                    return Err(Error::BufferUploadFailed { cerr: res.into() });
-                }
+                )
+            };
+            if res != cudaError::cudaSuccess {
+                return Err(Error::BufferUploadFailed { source: res.into() });
             }
-
             Ok(Buffer {
-                size_in_bytes,
-                d_ptr,
+                allocation,
+                _alloc: allocator,
+            })
+        } else {
+            // TODO: we rely on being able to create zero-sized allocations in
+            // rama, to simplify passing optional stuff to cuda that we can
+            // represent as a null ptr. Is this the right wat to do this? Or
+            // should we ban zero-length allocations and have rama use Option
+            // etc to represent those situations at the expense of complexity?
+            // Err(Error::ZeroAllocation)
+            Ok(Buffer {
+                allocation: Allocation::new(0, 0, tag),
+                _alloc: allocator,
             })
         }
     }
 
     pub fn upload<T>(&mut self, data: &[T]) -> Result<()> {
         let sz = data.len() * std::mem::size_of::<T>();
-        if sz != self.size_in_bytes {
+        if sz != self.allocation.size() {
             return Err(Error::BufferUploadWrongSize {
                 upload_size: sz,
-                buffer_size: self.size_in_bytes,
+                buffer_size: self.allocation.size(),
             });
         }
         unsafe {
             let res = cudaMemcpy(
-                self.d_ptr,
+                self.allocation.ptr() as *mut c_void,
                 data.as_ptr() as *const c_void,
-                self.size_in_bytes,
+                self.allocation.size(),
                 cudaMemcpyKind::cudaMemcpyHostToDevice,
             );
             if res != cudaError::cudaSuccess {
-                return Err(Error::BufferUploadFailed { cerr: res.into() });
+                return Err(Error::BufferUploadFailed { source: res.into() });
             }
         }
 
@@ -139,13 +149,13 @@ impl Buffer {
         size: usize,
     ) -> Result<()> {
         let res = cudaMemcpy(
-            self.d_ptr,
+            self.allocation.ptr() as *mut c_void,
             data as *const c_void,
             size,
             cudaMemcpyKind::cudaMemcpyHostToDevice,
         );
         if res != cudaError::cudaSuccess {
-            return Err(Error::BufferUploadFailed { cerr: res.into() });
+            return Err(Error::BufferUploadFailed { source: res.into() });
         }
 
         Ok(())
@@ -153,21 +163,21 @@ impl Buffer {
 
     pub fn download<T>(&self, data: &mut [T]) -> Result<()> {
         let sz = data.len() * std::mem::size_of::<T>();
-        if sz != self.size_in_bytes {
+        if sz != self.allocation.size() {
             return Err(Error::BufferDownloadWrongSize {
                 download_size: sz,
-                buffer_size: self.size_in_bytes,
+                buffer_size: self.allocation.size(),
             });
         }
         unsafe {
             let res = cudaMemcpy(
                 data.as_mut_ptr() as *mut c_void,
-                self.d_ptr,
-                self.size_in_bytes,
+                self.allocation.ptr() as *mut c_void,
+                self.allocation.size(),
                 cudaMemcpyKind::cudaMemcpyDeviceToHost,
             );
             if res != cudaError::cudaSuccess {
-                return Err(Error::BufferDownloadFailed { cerr: res.into() });
+                return Err(Error::BufferDownloadFailed { source: res.into() });
             }
         }
 
@@ -179,10 +189,10 @@ impl Buffer {
         T: Default,
     {
         let sz = std::mem::size_of::<T>();
-        if sz != self.size_in_bytes {
+        if sz != self.allocation.size() {
             return Err(Error::BufferDownloadWrongSize {
                 download_size: sz,
-                buffer_size: self.size_in_bytes,
+                buffer_size: self.allocation.size(),
             });
         }
 
@@ -190,12 +200,12 @@ impl Buffer {
         unsafe {
             let res = cudaMemcpy(
                 &mut data as *mut T as *mut c_void,
-                self.d_ptr,
-                self.size_in_bytes,
+                self.allocation.ptr() as *mut c_void,
+                self.allocation.size(),
                 cudaMemcpyKind::cudaMemcpyDeviceToHost,
             );
             if res != cudaError::cudaSuccess {
-                return Err(Error::BufferDownloadFailed { cerr: res.into() });
+                return Err(Error::BufferDownloadFailed { source: res.into() });
             }
         }
 
@@ -203,60 +213,31 @@ impl Buffer {
     }
 
     pub fn as_ptr(&self) -> *const c_void {
-        self.d_ptr
+        self.allocation.ptr() as *const c_void
     }
 
     pub fn as_device_ptr(&self) -> CUdeviceptr {
-        self.d_ptr as CUdeviceptr
+        self.allocation.ptr() as CUdeviceptr
     }
 
     pub fn as_mut_ptr(&mut self) -> *mut c_void {
-        self.d_ptr
+        self.allocation.ptr() as *mut c_void
     }
 
     pub fn byte_size(&self) -> usize {
-        self.size_in_bytes
+        self.allocation.size()
     }
 }
 
-impl Drop for Buffer {
+impl<'a, AllocT> Drop for Buffer<'a, AllocT>
+where
+    AllocT: Allocator,
+{
     fn drop(&mut self) {
         unsafe {
-            cudaFree(self.d_ptr);
+            let mut a = Allocation::new(0, 0, 0);
+            std::mem::swap(&mut self.allocation, &mut a);
+            self._alloc.dealloc(a).expect("dealloc failed")
         }
-    }
-}
-
-pub struct BufferArray {
-    d_ptrs: Vec<*mut c_void>,
-    size_in_bytes: usize,
-}
-
-impl BufferArray {
-    pub fn new(bufs: Vec<Buffer>) -> BufferArray {
-        let size_in_bytes = bufs[0].size_in_bytes;
-        let d_ptrs: Vec<*mut c_void> =
-            bufs.into_iter().map(|b| b.d_ptr).collect();
-
-        BufferArray {
-            d_ptrs,
-            size_in_bytes,
-        }
-    }
-
-    pub fn as_ptr(&self) -> *const *const c_void {
-        self.d_ptrs.as_ptr() as *const *const c_void
-    }
-
-    pub fn as_device_ptr(&self) -> *const CUdeviceptr {
-        self.d_ptrs.as_ptr() as *const CUdeviceptr
-    }
-
-    pub fn as_mut_ptr(&mut self) -> *mut *mut c_void {
-        self.d_ptrs.as_mut_ptr()
-    }
-
-    pub fn byte_size(&self) -> usize {
-        self.size_in_bytes
     }
 }

@@ -1,4 +1,4 @@
-use super::cuda;
+use super::cuda::{self, Allocator};
 use cuda::ContextRef;
 use optix_sys as sys;
 
@@ -42,7 +42,7 @@ impl DeviceContext {
             );
             if res != sys::OptixResult::OPTIX_SUCCESS {
                 return Err(Error::DeviceContextCreateFailed {
-                    cerr: res.into(),
+                    source: res.into(),
                 });
             }
             if ctx.is_null() {
@@ -332,7 +332,7 @@ impl DeviceContext {
             sys::optixDeviceContextSetCacheLocation(self.ctx, cs.as_ptr())
         };
         if res != sys::OptixResult::OPTIX_SUCCESS {
-            return Err(Error::SetCacheLocationFailed{cerr: res.into(), path: path.as_ref().to_path_buf()});
+            return Err(Error::SetCacheLocationFailed{source: res.into(), path: path.as_ref().to_path_buf()});
         }
 
         Ok(())
@@ -367,7 +367,7 @@ impl DeviceContext {
         }
     }
 
-    pub fn launch(&self, pipeline: &PipelineRef, stream: &cuda::Stream, launch_params: &cuda::Buffer, sbt: &ShaderBindingTable, width: u32, height: u32, depth: u32) -> Result<()> {
+    pub fn launch<'a, 't, AllocT>(&self, pipeline: &PipelineRef, stream: &cuda::Stream, launch_params: &cuda::Buffer<'a, AllocT>, sbt: &ShaderBindingTable<'a, 't, AllocT>, width: u32, height: u32, depth: u32) -> Result<()> where AllocT: Allocator{
         let res = unsafe {
             sys::optixLaunch(
                 pipeline.pipeline,
@@ -379,7 +379,7 @@ impl DeviceContext {
             )
         };
         if res != sys::OptixResult::OPTIX_SUCCESS {
-            return Err(Error::LaunchFailed{cerr: res.into()});
+            return Err(Error::LaunchFailed{source: res.into()});
         }
 
         Ok(())

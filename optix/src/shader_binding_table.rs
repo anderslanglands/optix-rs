@@ -1,62 +1,92 @@
-use super::cuda;
+use super::cuda::{self, Allocator};
 use optix_sys as sys;
 
 use super::{DeviceShareable, ProgramGroupRef};
 
-use std::any::Any;
+pub trait SbtData {}
+
+impl<T> SbtData for SbtRecord<T> where T: DeviceShareable {}
+
+impl<T> SbtData for T where T: DeviceShareable {}
 
 #[allow(dead_code)]
-pub struct ShaderBindingTable {
+pub struct ShaderBindingTable<'a, 't, AllocT>
+where
+    AllocT: Allocator,
+{
     pub(crate) sbt: sys::OptixShaderBindingTable,
-    rg: cuda::Buffer,
-    rec_rg: Box<dyn Any>,
-    ex: Option<cuda::Buffer>,
-    rec_ex: Option<Box<dyn Any>>,
-    ms: Option<cuda::Buffer>,
-    rec_ms: Vec<Box<dyn Any>>,
-    hg: Option<cuda::Buffer>,
-    rec_hg: Vec<Box<dyn Any>>,
-    cl: Option<cuda::Buffer>,
-    rec_cl: Vec<Box<dyn Any>>,
+    rg: cuda::Buffer<'a, AllocT>,
+    rec_rg: Box<dyn SbtData + 't>,
+    ex: Option<cuda::Buffer<'a, AllocT>>,
+    rec_ex: Option<Box<dyn SbtData + 't>>,
+    ms: Option<cuda::Buffer<'a, AllocT>>,
+    rec_ms: Vec<Box<dyn SbtData + 't>>,
+    hg: Option<cuda::Buffer<'a, AllocT>>,
+    rec_hg: Vec<Box<dyn SbtData + 't>>,
+    cl: Option<cuda::Buffer<'a, AllocT>>,
+    rec_cl: Vec<Box<dyn SbtData + 't>>,
 }
 
-pub struct ShaderBindingTableBuilder {
-    rg: cuda::Buffer,
-    rec_rg: Box<dyn Any>,
-    ex: Option<cuda::Buffer>,
-    rec_ex: Option<Box<dyn Any>>,
-    ms: Option<cuda::Buffer>,
+pub struct ShaderBindingTableBuilder<'a, 't, AllocT>
+where
+    AllocT: Allocator,
+{
+    rg: cuda::Buffer<'a, AllocT>,
+    rec_rg: Box<dyn SbtData + 't>,
+    ex: Option<cuda::Buffer<'a, AllocT>>,
+    rec_ex: Option<Box<dyn SbtData + 't>>,
+    ms: Option<cuda::Buffer<'a, AllocT>>,
     ms_stride: u32,
     ms_count: u32,
-    rec_ms: Vec<Box<dyn Any>>,
-    hg: Option<cuda::Buffer>,
+    rec_ms: Vec<Box<dyn SbtData + 't>>,
+    hg: Option<cuda::Buffer<'a, AllocT>>,
     hg_stride: u32,
     hg_count: u32,
-    rec_hg: Vec<Box<dyn Any>>,
-    cl: Option<cuda::Buffer>,
+    rec_hg: Vec<Box<dyn SbtData + 't>>,
+    cl: Option<cuda::Buffer<'a, AllocT>>,
     cl_stride: u32,
     cl_count: u32,
-    rec_cl: Vec<Box<dyn Any>>,
+    rec_cl: Vec<Box<dyn SbtData + 't>>,
 }
 
-impl ShaderBindingTable {
-    pub fn new<T>(rec_rg: SbtRecord<T>) -> ShaderBindingTableBuilder
+impl<'a, 't, AllocT> ShaderBindingTable<'a, 't, AllocT>
+where
+    AllocT: Allocator,
+{
+    pub fn new<T>(
+        rec_rg: SbtRecord<T>,
+        tag: u64,
+        allocator: &'a AllocT,
+    ) -> ShaderBindingTableBuilder<'a, 't, AllocT>
     where
-        T: DeviceShareable + 'static,
+        T: DeviceShareable + SbtData + 't,
     {
-        ShaderBindingTableBuilder::new(rec_rg)
+        ShaderBindingTableBuilder::new(rec_rg, tag, allocator)
     }
 }
 
-impl ShaderBindingTableBuilder {
-    pub fn new<T>(rec_rg: SbtRecord<T>) -> ShaderBindingTableBuilder
+impl<'a, 't, AllocT> ShaderBindingTableBuilder<'a, 't, AllocT>
+where
+    AllocT: Allocator,
+{
+    pub fn new<T>(
+        rec_rg: SbtRecord<T>,
+        tag: u64,
+        allocator: &'a AllocT,
+    ) -> ShaderBindingTableBuilder<'a, 't, AllocT>
     where
-        T: DeviceShareable + 'static,
+        AllocT: Allocator,
+        T: 't + DeviceShareable + SbtData,
     {
         let rec_rg_d = rec_rg.to_device_record();
         ShaderBindingTableBuilder {
-            rg: cuda::Buffer::with_data(std::slice::from_ref(&rec_rg_d))
-                .unwrap(),
+            rg: cuda::Buffer::with_data(
+                std::slice::from_ref(&rec_rg_d),
+                sys::OptixSbtRecordAlignment,
+                tag,
+                allocator,
+            )
+            .unwrap(),
             rec_rg: Box::new(rec_rg),
             ex: None,
             rec_ex: None,
@@ -78,13 +108,21 @@ impl ShaderBindingTableBuilder {
     pub fn exception_record<T>(
         mut self,
         rec_ex: SbtRecord<T>,
-    ) -> ShaderBindingTableBuilder
+        tag: u64,
+        allocator: &'a AllocT,
+    ) -> ShaderBindingTableBuilder<'a, 't, AllocT>
     where
-        T: DeviceShareable + 'static,
+        T: DeviceShareable + SbtData + 't,
     {
         let rec_ex_d = rec_ex.to_device_record();
         self.ex = Some(
-            cuda::Buffer::with_data(std::slice::from_ref(&rec_ex_d)).unwrap(),
+            cuda::Buffer::with_data(
+                std::slice::from_ref(&rec_ex_d),
+                sys::OptixSbtRecordAlignment,
+                tag,
+                allocator,
+            )
+            .unwrap(),
         );
         self.rec_ex = Some(Box::new(rec_ex));
 
@@ -94,13 +132,23 @@ impl ShaderBindingTableBuilder {
     pub fn miss_records<T>(
         mut self,
         rec_miss: Vec<SbtRecord<T>>,
-    ) -> ShaderBindingTableBuilder
+        tag: u64,
+        allocator: &'a AllocT,
+    ) -> ShaderBindingTableBuilder<'a, 't, AllocT>
     where
-        T: DeviceShareable + 'static,
+        T: DeviceShareable + SbtData + 't,
     {
         let rec_miss_d: Vec<SbtRecordDevice<T::Target>> =
             rec_miss.iter().map(|r| r.to_device_record()).collect();
-        self.ms = Some(cuda::Buffer::with_data(&rec_miss_d).unwrap());
+        self.ms = Some(
+            cuda::Buffer::with_data(
+                &rec_miss_d,
+                sys::OptixSbtRecordAlignment,
+                tag,
+                allocator,
+            )
+            .unwrap(),
+        );
         self.ms_stride =
             std::mem::size_of::<SbtRecordDevice<T::Target>>() as u32;
         self.ms_count = rec_miss.len() as u32;
@@ -114,13 +162,23 @@ impl ShaderBindingTableBuilder {
     pub fn hitgroup_records<T>(
         mut self,
         rec_hg: Vec<SbtRecord<T>>,
-    ) -> ShaderBindingTableBuilder
+        tag: u64,
+        allocator: &'a AllocT,
+    ) -> ShaderBindingTableBuilder<'a, 't, AllocT>
     where
-        T: DeviceShareable,
+        T: DeviceShareable + SbtData + 't,
     {
         let rec_hg_d: Vec<SbtRecordDevice<T::Target>> =
             rec_hg.iter().map(|r| r.to_device_record()).collect();
-        self.hg = Some(cuda::Buffer::with_data(&rec_hg_d).unwrap());
+        self.hg = Some(
+            cuda::Buffer::with_data(
+                &rec_hg_d,
+                sys::OptixSbtRecordAlignment,
+                tag,
+                allocator,
+            )
+            .unwrap(),
+        );
         self.hg_stride =
             std::mem::size_of::<SbtRecordDevice<T::Target>>() as u32;
         self.hg_count = rec_hg.len() as u32;
@@ -134,13 +192,23 @@ impl ShaderBindingTableBuilder {
     pub fn callables_records<T>(
         mut self,
         rec_cl: Vec<SbtRecord<T>>,
-    ) -> ShaderBindingTableBuilder
+        tag: u64,
+        allocator: &'a AllocT,
+    ) -> ShaderBindingTableBuilder<'a, 't, AllocT>
     where
-        T: DeviceShareable,
+        T: DeviceShareable + SbtData + 't,
     {
         let rec_cl_d: Vec<SbtRecordDevice<T::Target>> =
             rec_cl.iter().map(|r| r.to_device_record()).collect();
-        self.cl = Some(cuda::Buffer::with_data(&rec_cl_d).unwrap());
+        self.cl = Some(
+            cuda::Buffer::with_data(
+                &rec_cl_d,
+                sys::OptixSbtRecordAlignment,
+                tag,
+                allocator,
+            )
+            .unwrap(),
+        );
         self.cl_stride =
             std::mem::size_of::<SbtRecordDevice<T::Target>>() as u32;
         self.cl_count = rec_cl.len() as u32;
@@ -151,7 +219,7 @@ impl ShaderBindingTableBuilder {
         self
     }
 
-    pub fn build(self) -> ShaderBindingTable {
+    pub fn build(self) -> ShaderBindingTable<'a, 't, AllocT> {
         ShaderBindingTable {
             sbt: sys::OptixShaderBindingTable {
                 raygenRecord: self.rg.as_device_ptr(),
@@ -198,7 +266,7 @@ impl ShaderBindingTableBuilder {
 
 pub struct SbtRecord<T>
 where
-    T: DeviceShareable + 'static,
+    T: DeviceShareable,
 {
     program_group: ProgramGroupRef,
     pub data: T,
@@ -206,7 +274,7 @@ where
 
 impl<T> SbtRecord<T>
 where
-    T: DeviceShareable + 'static,
+    T: DeviceShareable,
 {
     pub fn new(data: T, program_group: ProgramGroupRef) -> SbtRecord<T> {
         SbtRecord {
