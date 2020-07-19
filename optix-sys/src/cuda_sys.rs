@@ -204,7 +204,7 @@ impl From<cudaError::Type> for Error {
 
             cudaError::cudaErrorInvalidKernelImage => Error::InvalidKernelImage,
 
-            cudaError::cudaErrorDeviceUninitilialized => {
+            cudaError::cudaErrorDeviceUninitialized => {
                 Error::DeviceUninitilialized
             }
 

@@ -620,8 +620,28 @@ pub const CUdevice_attribute_enum_CU_DEVICE_ATTRIBUTE_HOST_REGISTER_SUPPORTED : 
 pub const CUdevice_attribute_enum_CU_DEVICE_ATTRIBUTE_PAGEABLE_MEMORY_ACCESS_USES_HOST_PAGE_TABLES : CUdevice_attribute_enum = 100 ;
 #[doc = "< The host can directly access managed memory on the device without migration."]
 pub const CUdevice_attribute_enum_CU_DEVICE_ATTRIBUTE_DIRECT_MANAGED_MEM_ACCESS_FROM_HOST : CUdevice_attribute_enum = 101 ;
+#[doc = "< Device supports virtual address management APIs like ::cuMemAddressReserve, ::cuMemCreate, ::cuMemMap and related APIs"]
+pub const CUdevice_attribute_enum_CU_DEVICE_ATTRIBUTE_VIRTUAL_ADDRESS_MANAGEMENT_SUPPORTED : CUdevice_attribute_enum = 102 ;
+#[doc = "< Device supports exporting memory to a posix file descriptor with ::cuMemExportToShareableHandle, if requested via ::cuMemCreate"]
+pub const CUdevice_attribute_enum_CU_DEVICE_ATTRIBUTE_HANDLE_TYPE_POSIX_FILE_DESCRIPTOR_SUPPORTED : CUdevice_attribute_enum = 103 ;
+#[doc = "< Device supports exporting memory to a Win32 NT handle with ::cuMemExportToShareableHandle, if requested via ::cuMemCreate"]
+pub const CUdevice_attribute_enum_CU_DEVICE_ATTRIBUTE_HANDLE_TYPE_WIN32_HANDLE_SUPPORTED : CUdevice_attribute_enum = 104 ;
+#[doc = "< Device supports exporting memory to a Win32 KMT handle with ::cuMemExportToShareableHandle, if requested ::cuMemCreate"]
+pub const CUdevice_attribute_enum_CU_DEVICE_ATTRIBUTE_HANDLE_TYPE_WIN32_KMT_HANDLE_SUPPORTED : CUdevice_attribute_enum = 105 ;
+#[doc = "< Maximum number of blocks per multiprocessor"]
+pub const CUdevice_attribute_enum_CU_DEVICE_ATTRIBUTE_MAX_BLOCKS_PER_MULTIPROCESSOR : CUdevice_attribute_enum = 106 ;
+#[doc = "< Device supports compression of memory"]
+pub const CUdevice_attribute_enum_CU_DEVICE_ATTRIBUTE_GENERIC_COMPRESSION_SUPPORTED : CUdevice_attribute_enum = 107 ;
+#[doc = "< Device's maximum L2 persisting lines capacity setting in bytes"]
+pub const CUdevice_attribute_enum_CU_DEVICE_ATTRIBUTE_MAX_PERSISTING_L2_CACHE_SIZE : CUdevice_attribute_enum = 108 ;
+#[doc = "< The maximum value of CUaccessPolicyWindow::num_bytes."]
+pub const CUdevice_attribute_enum_CU_DEVICE_ATTRIBUTE_MAX_ACCESS_POLICY_WINDOW_SIZE : CUdevice_attribute_enum = 109 ;
+#[doc = "< Device supports specifying the GPUDirect RDMA flag with ::cuMemCreate"]
+pub const CUdevice_attribute_enum_CU_DEVICE_ATTRIBUTE_GPU_DIRECT_RDMA_WITH_CUDA_VMM_SUPPORTED : CUdevice_attribute_enum = 110 ;
+#[doc = "< Shared memory reserved by CUDA driver per block in bytes"]
+pub const CUdevice_attribute_enum_CU_DEVICE_ATTRIBUTE_RESERVED_SHARED_MEMORY_PER_BLOCK : CUdevice_attribute_enum = 111 ;
 pub const CUdevice_attribute_enum_CU_DEVICE_ATTRIBUTE_MAX:
-    CUdevice_attribute_enum = 102;
+    CUdevice_attribute_enum = 112;
 #[doc = " Device properties"]
 pub type CUdevice_attribute_enum = u32;
 pub use self::CUdevice_attribute_enum as CUdevice_attribute;
@@ -678,6 +698,22 @@ pub const CUpointer_attribute_enum_CU_POINTER_ATTRIBUTE_IS_MANAGED:
 #[doc = "< A device ordinal of a device on which a pointer was allocated or registered"]
 pub const CUpointer_attribute_enum_CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL:
     CUpointer_attribute_enum = 9;
+#[doc = "< 1 if this pointer maps to an allocation that is suitable for ::cudaIpcGetMemHandle, 0 otherwise"]
+pub const CUpointer_attribute_enum_CU_POINTER_ATTRIBUTE_IS_LEGACY_CUDA_IPC_CAPABLE : CUpointer_attribute_enum = 10 ;
+#[doc = "< Starting address for this requested pointer"]
+pub const CUpointer_attribute_enum_CU_POINTER_ATTRIBUTE_RANGE_START_ADDR:
+    CUpointer_attribute_enum = 11;
+#[doc = "< Size of the address range for this requested pointer"]
+pub const CUpointer_attribute_enum_CU_POINTER_ATTRIBUTE_RANGE_SIZE:
+    CUpointer_attribute_enum = 12;
+#[doc = "< 1 if this pointer is in a valid address range that is mapped to a backing allocation, 0 otherwise"]
+pub const CUpointer_attribute_enum_CU_POINTER_ATTRIBUTE_MAPPED:
+    CUpointer_attribute_enum = 13;
+#[doc = "< Bitmask of allowed ::CUmemAllocationHandleType for this allocation"]
+pub const CUpointer_attribute_enum_CU_POINTER_ATTRIBUTE_ALLOWED_HANDLE_TYPES:
+    CUpointer_attribute_enum = 14;
+#[doc = "< 1 if the memory this pointer is referencing can be used with the GPUDirect RDMA API"]
+pub const CUpointer_attribute_enum_CU_POINTER_ATTRIBUTE_IS_GPU_DIRECT_RDMA_CAPABLE : CUpointer_attribute_enum = 15 ;
 #[doc = " Pointer information"]
 pub type CUpointer_attribute_enum = u32;
 pub use self::CUpointer_attribute_enum as CUpointer_attribute;
@@ -980,6 +1016,8 @@ pub const CUjit_target_enum_CU_TARGET_COMPUTE_70: CUjit_target_enum = 70;
 pub const CUjit_target_enum_CU_TARGET_COMPUTE_72: CUjit_target_enum = 72;
 #[doc = "< Compute device class 7.5."]
 pub const CUjit_target_enum_CU_TARGET_COMPUTE_75: CUjit_target_enum = 75;
+#[doc = "< Compute device class 8.0."]
+pub const CUjit_target_enum_CU_TARGET_COMPUTE_80: CUjit_target_enum = 80;
 #[doc = " Online compilation targets"]
 pub type CUjit_target_enum = u32;
 pub use self::CUjit_target_enum as CUjit_target;
@@ -1077,7 +1115,9 @@ pub const CUlimit_enum_CU_LIMIT_DEV_RUNTIME_PENDING_LAUNCH_COUNT: CUlimit_enum =
     4;
 #[doc = "< A value between 0 and 128 that indicates the maximum fetch granularity of L2 (in Bytes). This is a hint"]
 pub const CUlimit_enum_CU_LIMIT_MAX_L2_FETCH_GRANULARITY: CUlimit_enum = 5;
-pub const CUlimit_enum_CU_LIMIT_MAX: CUlimit_enum = 6;
+#[doc = "< A size in bytes for L2 persisting lines cache size"]
+pub const CUlimit_enum_CU_LIMIT_PERSISTING_L2_CACHE_SIZE: CUlimit_enum = 6;
+pub const CUlimit_enum_CU_LIMIT_MAX: CUlimit_enum = 7;
 #[doc = " Limits"]
 pub type CUlimit_enum = u32;
 pub use self::CUlimit_enum as CUlimit;
@@ -1098,6 +1138,42 @@ pub use self::CUresourcetype_enum as CUresourcetype;
 pub type CUhostFn = ::std::option::Option<
     unsafe extern "C" fn(userData: *mut ::std::os::raw::c_void),
 >;
+#[doc = "< Normal cache persistence."]
+pub const CUaccessProperty_enum_CU_ACCESS_PROPERTY_NORMAL:
+    CUaccessProperty_enum = 0;
+#[doc = "< Streaming access is less likely to persit from cache."]
+pub const CUaccessProperty_enum_CU_ACCESS_PROPERTY_STREAMING:
+    CUaccessProperty_enum = 1;
+#[doc = "< Persisting access is more likely to persist in cache."]
+pub const CUaccessProperty_enum_CU_ACCESS_PROPERTY_PERSISTING:
+    CUaccessProperty_enum = 2;
+#[doc = " Specifies performance hint with ::CUaccessPolicyWindow for hitProp and missProp members"]
+pub type CUaccessProperty_enum = u32;
+pub use self::CUaccessProperty_enum as CUaccessProperty;
+#[doc = " Specifies an access policy for a window, a contiguous extent of memory"]
+#[doc = " beginning at base_ptr and ending at base_ptr + num_bytes."]
+#[doc = " num_bytes is limited by CU_DEVICE_ATTRIBUTE_MAX_ACCESS_POLICY_WINDOW_SIZE."]
+#[doc = " Partition into many segments and assign segments such that:"]
+#[doc = " sum of \"hit segments\" / window == approx. ratio."]
+#[doc = " sum of \"miss segments\" / window == approx 1-ratio."]
+#[doc = " Segments and ratio specifications are fitted to the capabilities of"]
+#[doc = " the architecture."]
+#[doc = " Accesses in a hit segment apply the hitProp access policy."]
+#[doc = " Accesses in a miss segment apply the missProp access policy."]
+#[repr(C)]
+pub struct CUaccessPolicyWindow_st {
+    #[doc = "< Starting address of the access policy window. CUDA driver may align it."]
+    pub base_ptr: *mut ::std::os::raw::c_void,
+    #[doc = "< Size in bytes of the window policy. CUDA driver may restrict the maximum size and alignment."]
+    pub num_bytes: usize,
+    #[doc = "< hitRatio specifies percentage of lines assigned hitProp, rest are assigned missProp."]
+    pub hitRatio: f32,
+    #[doc = "< ::CUaccessProperty set for hit."]
+    pub hitProp: CUaccessProperty,
+    #[doc = "< ::CUaccessProperty set for miss. Must be either NORMAL or STREAMING"]
+    pub missProp: CUaccessProperty,
+}
+pub type CUaccessPolicyWindow = CUaccessPolicyWindow_st;
 #[doc = " GPU kernel node parameters"]
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -1169,11 +1245,37 @@ pub const CUgraphNodeType_enum_CU_GRAPH_NODE_TYPE_GRAPH: CUgraphNodeType_enum =
 #[doc = "< Empty (no-op) node"]
 pub const CUgraphNodeType_enum_CU_GRAPH_NODE_TYPE_EMPTY: CUgraphNodeType_enum =
     5;
-pub const CUgraphNodeType_enum_CU_GRAPH_NODE_TYPE_COUNT: CUgraphNodeType_enum =
-    6;
 #[doc = " Graph node types"]
 pub type CUgraphNodeType_enum = u32;
 pub use self::CUgraphNodeType_enum as CUgraphNodeType;
+pub const CUsynchronizationPolicy_enum_CU_SYNC_POLICY_AUTO:
+    CUsynchronizationPolicy_enum = 1;
+pub const CUsynchronizationPolicy_enum_CU_SYNC_POLICY_SPIN:
+    CUsynchronizationPolicy_enum = 2;
+pub const CUsynchronizationPolicy_enum_CU_SYNC_POLICY_YIELD:
+    CUsynchronizationPolicy_enum = 3;
+pub const CUsynchronizationPolicy_enum_CU_SYNC_POLICY_BLOCKING_SYNC:
+    CUsynchronizationPolicy_enum = 4;
+pub type CUsynchronizationPolicy_enum = u32;
+pub use self::CUsynchronizationPolicy_enum as CUsynchronizationPolicy;
+#[doc = "< Identifier for ::CUkernelNodeAttrValue::accessPolicyWindow."]
+pub const CUkernelNodeAttrID_enum_CU_KERNEL_NODE_ATTRIBUTE_ACCESS_POLICY_WINDOW : CUkernelNodeAttrID_enum = 1 ;
+#[doc = "< Allows a kernel node to be cooperative (see ::cuLaunchCooperativeKernel)."]
+pub const CUkernelNodeAttrID_enum_CU_KERNEL_NODE_ATTRIBUTE_COOPERATIVE:
+    CUkernelNodeAttrID_enum = 2;
+#[doc = " Graph kernel node Attributes"]
+pub type CUkernelNodeAttrID_enum = u32;
+pub use self::CUkernelNodeAttrID_enum as CUkernelNodeAttrID;
+#[doc = " Graph attributes union, used with ::cuKernelNodeSetAttribute/::cuKernelNodeGetAttribute"]
+#[repr(C)]
+pub struct CUkernelNodeAttrValue_union {
+    #[doc = "< Attribute ::CUaccessPolicyWindow."]
+    pub accessPolicyWindow: __BindgenUnionField<CUaccessPolicyWindow>,
+    #[doc = "< Nonzero indicates a cooperative kernel (see ::cuLaunchCooperativeKernel)."]
+    pub cooperative: __BindgenUnionField<::std::os::raw::c_int>,
+    pub bindgen_union_field: [u64; 4usize],
+}
+pub type CUkernelNodeAttrValue = CUkernelNodeAttrValue_union;
 #[doc = "< Stream is not capturing"]
 pub const CUstreamCaptureStatus_enum_CU_STREAM_CAPTURE_STATUS_NONE:
     CUstreamCaptureStatus_enum = 0;
@@ -1197,6 +1299,25 @@ pub const CUstreamCaptureMode_enum_CU_STREAM_CAPTURE_MODE_RELAXED:
 #[doc = " ::cuStreamBeginCapture and ::cuThreadExchangeStreamCaptureMode"]
 pub type CUstreamCaptureMode_enum = u32;
 pub use self::CUstreamCaptureMode_enum as CUstreamCaptureMode;
+#[doc = "< Identifier for ::CUstreamAttrValue::accessPolicyWindow."]
+pub const CUstreamAttrID_enum_CU_STREAM_ATTRIBUTE_ACCESS_POLICY_WINDOW:
+    CUstreamAttrID_enum = 1;
+#[doc = "< ::CUsynchronizationPolicy for work queued up in this stream"]
+pub const CUstreamAttrID_enum_CU_STREAM_ATTRIBUTE_SYNCHRONIZATION_POLICY:
+    CUstreamAttrID_enum = 3;
+#[doc = " Stream Attributes"]
+pub type CUstreamAttrID_enum = u32;
+pub use self::CUstreamAttrID_enum as CUstreamAttrID;
+#[doc = " Stream attributes union, used with ::cuStreamSetAttribute/::cuStreamGetAttribute"]
+#[repr(C)]
+pub struct CUstreamAttrValue_union {
+    #[doc = "< Attribute ::CUaccessPolicyWindow."]
+    pub accessPolicyWindow: __BindgenUnionField<CUaccessPolicyWindow>,
+    #[doc = "< Value for ::CU_STREAM_ATTRIBUTE_SYNCHRONIZATION_POLICY."]
+    pub syncPolicy: __BindgenUnionField<CUsynchronizationPolicy>,
+    pub bindgen_union_field: [u64; 4usize],
+}
+pub type CUstreamAttrValue = CUstreamAttrValue_union;
 pub mod cudaError_enum {
     #[doc = " Error codes"]
     pub type Type = u32;
@@ -1471,6 +1592,11 @@ pub mod cudaError_enum {
     #[doc = " argument to ::cuStreamBeginCapture was passed to ::cuStreamEndCapture in a"]
     #[doc = " different thread."]
     pub const CUDA_ERROR_STREAM_CAPTURE_WRONG_THREAD: Type = 908;
+    #[doc = " This error indicates that the timeout specified for the wait operation has lapsed."]
+    pub const CUDA_ERROR_TIMEOUT: Type = 909;
+    #[doc = " This error indicates that the graph update was not performed because it included"]
+    #[doc = " changes which violated constraints specific to instantiated graph update."]
+    pub const CUDA_ERROR_GRAPH_EXEC_UPDATE_FAILURE: Type = 910;
     #[doc = " This indicates that an unknown internal error has occurred."]
     pub const CUDA_ERROR_UNKNOWN: Type = 999;
 }
@@ -1950,6 +2076,12 @@ pub const CUexternalMemoryHandleType_enum_CU_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_
 pub const CUexternalMemoryHandleType_enum_CU_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_HEAP : CUexternalMemoryHandleType_enum = 4 ;
 #[doc = " Handle is a D3D12 committed resource"]
 pub const CUexternalMemoryHandleType_enum_CU_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE : CUexternalMemoryHandleType_enum = 5 ;
+#[doc = " Handle is a shared NT handle to a D3D11 resource"]
+pub const CUexternalMemoryHandleType_enum_CU_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_RESOURCE : CUexternalMemoryHandleType_enum = 6 ;
+#[doc = " Handle is a globally shared handle to a D3D11 resource"]
+pub const CUexternalMemoryHandleType_enum_CU_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_RESOURCE_KMT : CUexternalMemoryHandleType_enum = 7 ;
+#[doc = " Handle is an NvSciBuf object"]
+pub const CUexternalMemoryHandleType_enum_CU_EXTERNAL_MEMORY_HANDLE_TYPE_NVSCIBUF : CUexternalMemoryHandleType_enum = 8 ;
 #[doc = " External memory handle types"]
 pub type CUexternalMemoryHandleType_enum = u32;
 pub use self::CUexternalMemoryHandleType_enum as CUexternalMemoryHandleType;
@@ -1974,6 +2106,9 @@ pub union CUDA_EXTERNAL_MEMORY_HANDLE_DESC_st__bindgen_ty_1 {
     #[doc = " ::CU_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD"]
     pub fd: ::std::os::raw::c_int,
     pub win32: CUDA_EXTERNAL_MEMORY_HANDLE_DESC_st__bindgen_ty_1__bindgen_ty_1,
+    #[doc = " A handle representing an NvSciBuf Object. Valid when type"]
+    #[doc = " is ::CU_EXTERNAL_MEMORY_HANDLE_TYPE_NVSCIBUF"]
+    pub nvSciBufObject: *const ::std::os::raw::c_void,
     _bindgen_union_align: [u64; 2usize],
 }
 #[doc = " Win32 handle referencing the semaphore object. Valid when"]
@@ -1982,9 +2117,12 @@ pub union CUDA_EXTERNAL_MEMORY_HANDLE_DESC_st__bindgen_ty_1 {
 #[doc = " - ::CU_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT"]
 #[doc = " - ::CU_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_HEAP"]
 #[doc = " - ::CU_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE"]
+#[doc = " - ::CU_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_RESOURCE"]
+#[doc = " - ::CU_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_RESOURCE_KMT"]
 #[doc = " Exactly one of 'handle' and 'name' must be non-NULL. If"]
-#[doc = " type is"]
-#[doc = " ::CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT"]
+#[doc = " type is one of the following:"]
+#[doc = " ::CU_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT"]
+#[doc = " ::CU_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_RESOURCE_KMT"]
 #[doc = " then 'name' must be NULL."]
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -2031,6 +2169,14 @@ pub const CUexternalSemaphoreHandleType_enum_CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_O
 pub const CUexternalSemaphoreHandleType_enum_CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT : CUexternalSemaphoreHandleType_enum = 3 ;
 #[doc = " Handle is a shared NT handle referencing a D3D12 fence object"]
 pub const CUexternalSemaphoreHandleType_enum_CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE : CUexternalSemaphoreHandleType_enum = 4 ;
+#[doc = " Handle is a shared NT handle referencing a D3D11 fence object"]
+pub const CUexternalSemaphoreHandleType_enum_CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D11_FENCE : CUexternalSemaphoreHandleType_enum = 5 ;
+#[doc = " Opaque handle to NvSciSync Object"]
+pub const CUexternalSemaphoreHandleType_enum_CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_NVSCISYNC : CUexternalSemaphoreHandleType_enum = 6 ;
+#[doc = " Handle is a shared NT handle referencing a D3D11 keyed mutex object"]
+pub const CUexternalSemaphoreHandleType_enum_CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D11_KEYED_MUTEX : CUexternalSemaphoreHandleType_enum = 7 ;
+#[doc = " Handle is a globally shared handle referencing a D3D11 keyed mutex object"]
+pub const CUexternalSemaphoreHandleType_enum_CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D11_KEYED_MUTEX_KMT : CUexternalSemaphoreHandleType_enum = 8 ;
 #[doc = " External semaphore handle types"]
 pub type CUexternalSemaphoreHandleType_enum = u32;
 pub use self::CUexternalSemaphoreHandleType_enum as CUexternalSemaphoreHandleType;
@@ -2054,6 +2200,8 @@ pub union CUDA_EXTERNAL_SEMAPHORE_HANDLE_DESC_st__bindgen_ty_1 {
     pub fd: ::std::os::raw::c_int,
     pub win32:
         CUDA_EXTERNAL_SEMAPHORE_HANDLE_DESC_st__bindgen_ty_1__bindgen_ty_1,
+    #[doc = " Valid NvSciSyncObj. Must be non NULL"]
+    pub nvSciSyncObj: *const ::std::os::raw::c_void,
     _bindgen_union_align: [u64; 2usize],
 }
 #[doc = " Win32 handle referencing the semaphore object. Valid when"]
@@ -2061,9 +2209,12 @@ pub union CUDA_EXTERNAL_SEMAPHORE_HANDLE_DESC_st__bindgen_ty_1 {
 #[doc = " - ::CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32"]
 #[doc = " - ::CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT"]
 #[doc = " - ::CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE"]
+#[doc = " - ::CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D11_FENCE"]
+#[doc = " - ::CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D11_KEYED_MUTEX"]
 #[doc = " Exactly one of 'handle' and 'name' must be non-NULL. If"]
-#[doc = " type is"]
+#[doc = " type is one of the following:"]
 #[doc = " ::CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT"]
+#[doc = " ::CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D11_KEYED_MUTEX_KMT"]
 #[doc = " then 'name' must be NULL."]
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -2078,19 +2229,30 @@ pub type CUDA_EXTERNAL_SEMAPHORE_HANDLE_DESC =
     CUDA_EXTERNAL_SEMAPHORE_HANDLE_DESC_st;
 #[doc = " External semaphore signal parameters"]
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
+#[derive(Copy, Clone)]
 pub struct CUDA_EXTERNAL_SEMAPHORE_SIGNAL_PARAMS_st {
     pub params: CUDA_EXTERNAL_SEMAPHORE_SIGNAL_PARAMS_st__bindgen_ty_1,
-    #[doc = " Flags reserved for the future. Must be zero."]
+    #[doc = " Only when ::CUDA_EXTERNAL_SEMAPHORE_SIGNAL_PARAMS is used to"]
+    #[doc = " signal a ::CUexternalSemaphore of type"]
+    #[doc = " ::CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_NVSCISYNC, the valid flag is"]
+    #[doc = " ::CUDA_EXTERNAL_SEMAPHORE_SIGNAL_SKIP_NVSCIBUF_MEMSYNC which indicates"]
+    #[doc = " that while signaling the ::CUexternalSemaphore, no memory synchronization"]
+    #[doc = " operations should be performed for any external memory object imported"]
+    #[doc = " as ::CU_EXTERNAL_MEMORY_HANDLE_TYPE_NVSCIBUF."]
+    #[doc = " For all other types of ::CUexternalSemaphore, flags must be zero."]
     pub flags: ::std::os::raw::c_uint,
     pub reserved: [::std::os::raw::c_uint; 16usize],
 }
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
+#[derive(Copy, Clone)]
 pub struct CUDA_EXTERNAL_SEMAPHORE_SIGNAL_PARAMS_st__bindgen_ty_1 {
     pub fence:
         CUDA_EXTERNAL_SEMAPHORE_SIGNAL_PARAMS_st__bindgen_ty_1__bindgen_ty_1,
-    pub reserved: [::std::os::raw::c_uint; 16usize],
+    pub nvSciSync:
+        CUDA_EXTERNAL_SEMAPHORE_SIGNAL_PARAMS_st__bindgen_ty_1__bindgen_ty_2,
+    pub keyedMutex:
+        CUDA_EXTERNAL_SEMAPHORE_SIGNAL_PARAMS_st__bindgen_ty_1__bindgen_ty_3,
+    pub reserved: [::std::os::raw::c_uint; 12usize],
 }
 #[doc = " Parameters for fence objects"]
 #[repr(C)]
@@ -2100,23 +2262,50 @@ pub struct CUDA_EXTERNAL_SEMAPHORE_SIGNAL_PARAMS_st__bindgen_ty_1__bindgen_ty_1
     #[doc = " Value of fence to be signaled"]
     pub value: ::std::os::raw::c_ulonglong,
 }
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub union CUDA_EXTERNAL_SEMAPHORE_SIGNAL_PARAMS_st__bindgen_ty_1__bindgen_ty_2 {
+    #[doc = " Pointer to NvSciSyncFence. Valid if ::CUexternalSemaphoreHandleType"]
+    #[doc = " is of type ::CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_NVSCISYNC."]
+    pub fence: *mut ::std::os::raw::c_void,
+    pub reserved: ::std::os::raw::c_ulonglong,
+    _bindgen_union_align: u64,
+}
+#[doc = " Parameters for keyed mutex objects"]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct CUDA_EXTERNAL_SEMAPHORE_SIGNAL_PARAMS_st__bindgen_ty_1__bindgen_ty_3
+{
+    #[doc = " Value of key to release the mutex with"]
+    pub key: ::std::os::raw::c_ulonglong,
+}
 pub type CUDA_EXTERNAL_SEMAPHORE_SIGNAL_PARAMS =
     CUDA_EXTERNAL_SEMAPHORE_SIGNAL_PARAMS_st;
 #[doc = " External semaphore wait parameters"]
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
+#[derive(Copy, Clone)]
 pub struct CUDA_EXTERNAL_SEMAPHORE_WAIT_PARAMS_st {
     pub params: CUDA_EXTERNAL_SEMAPHORE_WAIT_PARAMS_st__bindgen_ty_1,
-    #[doc = " Flags reserved for the future. Must be zero."]
+    #[doc = " Only when ::CUDA_EXTERNAL_SEMAPHORE_WAIT_PARAMS is used to wait on"]
+    #[doc = " a ::CUexternalSemaphore of type ::CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_NVSCISYNC,"]
+    #[doc = " the valid flag is ::CUDA_EXTERNAL_SEMAPHORE_WAIT_SKIP_NVSCIBUF_MEMSYNC"]
+    #[doc = " which indicates that while waiting for the ::CUexternalSemaphore, no memory"]
+    #[doc = " synchronization operations should be performed for any external memory"]
+    #[doc = " object imported as ::CU_EXTERNAL_MEMORY_HANDLE_TYPE_NVSCIBUF."]
+    #[doc = " For all other types of ::CUexternalSemaphore, flags must be zero."]
     pub flags: ::std::os::raw::c_uint,
     pub reserved: [::std::os::raw::c_uint; 16usize],
 }
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
+#[derive(Copy, Clone)]
 pub struct CUDA_EXTERNAL_SEMAPHORE_WAIT_PARAMS_st__bindgen_ty_1 {
     pub fence:
         CUDA_EXTERNAL_SEMAPHORE_WAIT_PARAMS_st__bindgen_ty_1__bindgen_ty_1,
-    pub reserved: [::std::os::raw::c_uint; 16usize],
+    pub nvSciSync:
+        CUDA_EXTERNAL_SEMAPHORE_WAIT_PARAMS_st__bindgen_ty_1__bindgen_ty_2,
+    pub keyedMutex:
+        CUDA_EXTERNAL_SEMAPHORE_WAIT_PARAMS_st__bindgen_ty_1__bindgen_ty_3,
+    pub reserved: [::std::os::raw::c_uint; 10usize],
 }
 #[doc = " Parameters for fence objects"]
 #[repr(C)]
@@ -2125,8 +2314,160 @@ pub struct CUDA_EXTERNAL_SEMAPHORE_WAIT_PARAMS_st__bindgen_ty_1__bindgen_ty_1 {
     #[doc = " Value of fence to be waited on"]
     pub value: ::std::os::raw::c_ulonglong,
 }
+#[doc = " Pointer to NvSciSyncFence. Valid if CUexternalSemaphoreHandleType"]
+#[doc = " is of type CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_NVSCISYNC."]
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub union CUDA_EXTERNAL_SEMAPHORE_WAIT_PARAMS_st__bindgen_ty_1__bindgen_ty_2 {
+    pub fence: *mut ::std::os::raw::c_void,
+    pub reserved: ::std::os::raw::c_ulonglong,
+    _bindgen_union_align: u64,
+}
+#[doc = " Parameters for keyed mutex objects"]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct CUDA_EXTERNAL_SEMAPHORE_WAIT_PARAMS_st__bindgen_ty_1__bindgen_ty_3 {
+    #[doc = " Value of key to acquire the mutex with"]
+    pub key: ::std::os::raw::c_ulonglong,
+    #[doc = " Timeout in milliseconds to wait to acquire the mutex"]
+    pub timeoutMs: ::std::os::raw::c_uint,
+}
 pub type CUDA_EXTERNAL_SEMAPHORE_WAIT_PARAMS =
     CUDA_EXTERNAL_SEMAPHORE_WAIT_PARAMS_st;
+pub type CUmemGenericAllocationHandle = ::std::os::raw::c_ulonglong;
+#[doc = "< Allows a file descriptor to be used for exporting. Permitted only on POSIX systems. (int)"]
+pub const CUmemAllocationHandleType_enum_CU_MEM_HANDLE_TYPE_POSIX_FILE_DESCRIPTOR : CUmemAllocationHandleType_enum = 1 ;
+#[doc = "< Allows a Win32 NT handle to be used for exporting. (HANDLE)"]
+pub const CUmemAllocationHandleType_enum_CU_MEM_HANDLE_TYPE_WIN32:
+    CUmemAllocationHandleType_enum = 2;
+#[doc = "< Allows a Win32 KMT handle to be used for exporting. (D3DKMT_HANDLE)"]
+pub const CUmemAllocationHandleType_enum_CU_MEM_HANDLE_TYPE_WIN32_KMT:
+    CUmemAllocationHandleType_enum = 4;
+pub const CUmemAllocationHandleType_enum_CU_MEM_HANDLE_TYPE_MAX:
+    CUmemAllocationHandleType_enum = 4294967295;
+#[doc = " Flags for specifying particular handle types"]
+pub type CUmemAllocationHandleType_enum = u32;
+pub use self::CUmemAllocationHandleType_enum as CUmemAllocationHandleType;
+#[doc = "< Default, make the address range not accessible"]
+pub const CUmemAccess_flags_enum_CU_MEM_ACCESS_FLAGS_PROT_NONE:
+    CUmemAccess_flags_enum = 0;
+#[doc = "< Make the address range read accessible"]
+pub const CUmemAccess_flags_enum_CU_MEM_ACCESS_FLAGS_PROT_READ:
+    CUmemAccess_flags_enum = 1;
+#[doc = "< Make the address range read-write accessible"]
+pub const CUmemAccess_flags_enum_CU_MEM_ACCESS_FLAGS_PROT_READWRITE:
+    CUmemAccess_flags_enum = 3;
+pub const CUmemAccess_flags_enum_CU_MEM_ACCESS_FLAGS_PROT_MAX:
+    CUmemAccess_flags_enum = 4294967295;
+#[doc = " Specifies the memory protection flags for mapping."]
+pub type CUmemAccess_flags_enum = u32;
+pub use self::CUmemAccess_flags_enum as CUmemAccess_flags;
+pub const CUmemLocationType_enum_CU_MEM_LOCATION_TYPE_INVALID:
+    CUmemLocationType_enum = 0;
+#[doc = "< Location is a device location, thus id is a device ordinal"]
+pub const CUmemLocationType_enum_CU_MEM_LOCATION_TYPE_DEVICE:
+    CUmemLocationType_enum = 1;
+pub const CUmemLocationType_enum_CU_MEM_LOCATION_TYPE_MAX:
+    CUmemLocationType_enum = 4294967295;
+#[doc = " Specifies the type of location"]
+pub type CUmemLocationType_enum = u32;
+pub use self::CUmemLocationType_enum as CUmemLocationType;
+pub const CUmemAllocationType_enum_CU_MEM_ALLOCATION_TYPE_INVALID:
+    CUmemAllocationType_enum = 0;
+#[doc = " This allocation type is 'pinned', i.e. cannot migrate from its current"]
+#[doc = " location while the application is actively using it"]
+pub const CUmemAllocationType_enum_CU_MEM_ALLOCATION_TYPE_PINNED:
+    CUmemAllocationType_enum = 1;
+#[doc = " This allocation type is 'pinned', i.e. cannot migrate from its current"]
+#[doc = " location while the application is actively using it"]
+pub const CUmemAllocationType_enum_CU_MEM_ALLOCATION_TYPE_MAX:
+    CUmemAllocationType_enum = 4294967295;
+#[doc = " Defines the allocation types available"]
+pub type CUmemAllocationType_enum = u32;
+pub use self::CUmemAllocationType_enum as CUmemAllocationType;
+#[doc = "< Minimum required granularity for allocation"]
+pub const CUmemAllocationGranularity_flags_enum_CU_MEM_ALLOC_GRANULARITY_MINIMUM : CUmemAllocationGranularity_flags_enum = 0 ;
+#[doc = "< Recommended granularity for allocation for best performance"]
+pub const CUmemAllocationGranularity_flags_enum_CU_MEM_ALLOC_GRANULARITY_RECOMMENDED : CUmemAllocationGranularity_flags_enum = 1 ;
+#[doc = " Flag for requesting different optimal and required granularities for an allocation."]
+pub type CUmemAllocationGranularity_flags_enum = u32;
+pub use self::CUmemAllocationGranularity_flags_enum as CUmemAllocationGranularity_flags;
+#[doc = " Specifies a location for an allocation."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct CUmemLocation_st {
+    #[doc = "< Specifies the location type, which modifies the meaning of id."]
+    pub type_: CUmemLocationType,
+    #[doc = "< identifier for a given this location's ::CUmemLocationType."]
+    pub id: ::std::os::raw::c_int,
+}
+pub type CUmemLocation = CUmemLocation_st;
+#[doc = "< Allocating non-compressible memory"]
+pub const CUmemAllocationCompType_enum_CU_MEM_ALLOCATION_COMP_NONE:
+    CUmemAllocationCompType_enum = 0;
+#[doc = "< Allocating  compressible memory"]
+pub const CUmemAllocationCompType_enum_CU_MEM_ALLOCATION_COMP_GENERIC:
+    CUmemAllocationCompType_enum = 1;
+#[doc = " Specifies compression attribute for an allocation."]
+pub type CUmemAllocationCompType_enum = u32;
+pub use self::CUmemAllocationCompType_enum as CUmemAllocationCompType;
+#[doc = " Specifies the allocation properties for a allocation."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct CUmemAllocationProp_st {
+    #[doc = " Allocation type"]
+    pub type_: CUmemAllocationType,
+    #[doc = " requested ::CUmemAllocationHandleType"]
+    pub requestedHandleTypes: CUmemAllocationHandleType,
+    #[doc = " Location of allocation"]
+    pub location: CUmemLocation,
+    #[doc = " Windows-specific LPSECURITYATTRIBUTES required when"]
+    #[doc = " ::CU_MEM_HANDLE_TYPE_WIN32 is specified.  This security attribute defines"]
+    #[doc = " the scope of which exported allocations may be tranferred to other"]
+    #[doc = " processes.  In all other cases, this field is required to be zero."]
+    pub win32HandleMetaData: *mut ::std::os::raw::c_void,
+    pub allocFlags: CUmemAllocationProp_st__bindgen_ty_1,
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct CUmemAllocationProp_st__bindgen_ty_1 {
+    #[doc = " Additional allocation hint for requesting compressible memory."]
+    #[doc = " Compressed memory allows higher bandwidth, but may cause"]
+    #[doc = " compression resource thrashing, and compressed memory may not be"]
+    #[doc = " mappeable on all devices."]
+    pub compressionType: ::std::os::raw::c_uchar,
+    pub gpuDirectRDMACapable: ::std::os::raw::c_uchar,
+    pub reserved: [::std::os::raw::c_uchar; 6usize],
+}
+pub type CUmemAllocationProp = CUmemAllocationProp_st;
+#[doc = " Memory access descriptor"]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct CUmemAccessDesc_st {
+    #[doc = "< Location on which the request is to change it's accessibility"]
+    pub location: CUmemLocation,
+    #[doc = "< ::CUmemProt accessibility flags to set on the request"]
+    pub flags: CUmemAccess_flags,
+}
+pub type CUmemAccessDesc = CUmemAccessDesc_st;
+#[doc = "< The update succeeded"]
+pub const CUgraphExecUpdateResult_enum_CU_GRAPH_EXEC_UPDATE_SUCCESS:
+    CUgraphExecUpdateResult_enum = 0;
+#[doc = "< The update failed for an unexpected reason which is described in the return value of the function"]
+pub const CUgraphExecUpdateResult_enum_CU_GRAPH_EXEC_UPDATE_ERROR:
+    CUgraphExecUpdateResult_enum = 1;
+#[doc = "< The update failed because the topology changed"]
+pub const CUgraphExecUpdateResult_enum_CU_GRAPH_EXEC_UPDATE_ERROR_TOPOLOGY_CHANGED : CUgraphExecUpdateResult_enum = 2 ;
+#[doc = "< The update failed because a node type changed"]
+pub const CUgraphExecUpdateResult_enum_CU_GRAPH_EXEC_UPDATE_ERROR_NODE_TYPE_CHANGED : CUgraphExecUpdateResult_enum = 3 ;
+#[doc = "< The update failed because the function of a kernel node changed"]
+pub const CUgraphExecUpdateResult_enum_CU_GRAPH_EXEC_UPDATE_ERROR_FUNCTION_CHANGED : CUgraphExecUpdateResult_enum = 4 ;
+#[doc = "< The update failed because the parameters changed in a way that is not supported"]
+pub const CUgraphExecUpdateResult_enum_CU_GRAPH_EXEC_UPDATE_ERROR_PARAMETERS_CHANGED : CUgraphExecUpdateResult_enum = 5 ;
+#[doc = "< The update failed because something about the node is not supported"]
+pub const CUgraphExecUpdateResult_enum_CU_GRAPH_EXEC_UPDATE_ERROR_NOT_SUPPORTED : CUgraphExecUpdateResult_enum = 6 ;
+pub type CUgraphExecUpdateResult_enum = u32;
+pub use self::CUgraphExecUpdateResult_enum as CUgraphExecUpdateResult;
 extern "C" {
     #[doc = " \\brief Gets the string description of an error code"]
     #[doc = ""]
@@ -2517,6 +2858,14 @@ extern "C" {
     #[doc = " - ::CU_DEVICE_ATTRIBUTE_PAGEABLE_MEMORY_ACCESS_USES_HOST_PAGE_TABLES: Device accesses pageable memory via the host's"]
     #[doc = "   page tables."]
     #[doc = " - ::CU_DEVICE_ATTRIBUTE_DIRECT_MANAGED_MEM_ACCESS_FROM_HOST: The host can directly access managed memory on the device without migration."]
+    #[doc = " - ::CU_DEVICE_ATTRIBUTE_VIRTUAL_ADDRESS_MANAGEMENT_SUPPORTED:  Device supports virtual address management APIs like ::cuMemAddressReserve, ::cuMemCreate, ::cuMemMap and related APIs"]
+    #[doc = " - ::CU_DEVICE_ATTRIBUTE_HANDLE_TYPE_POSIX_FILE_DESCRIPTOR_SUPPORTED: Device supports exporting memory to a posix file descriptor with ::cuMemExportToShareableHandle, if requested via ::cuMemCreate"]
+    #[doc = " - ::CU_DEVICE_ATTRIBUTE_HANDLE_TYPE_WIN32_HANDLE_SUPPORTED:  Device supports exporting memory to a Win32 NT handle with ::cuMemExportToShareableHandle, if requested via ::cuMemCreate"]
+    #[doc = " - ::CU_DEVICE_ATTRIBUTE_HANDLE_TYPE_WIN32_KMT_HANDLE_SUPPORTED: Device supports exporting memory to a Win32 KMT handle with ::cuMemExportToShareableHandle, if requested ::cuMemCreate"]
+    #[doc = " - ::CU_DEVICE_ATTRIBUTE_MAX_PERSISTING_L2_CACHE_SIZE: maximum L2 cache size in byte for persisting lines"]
+    #[doc = " - ::CU_DEVICE_ATTRIBUTE_MAX_BLOCKS_PER_MULTIPROCESSOR: Maximum number of thread blocks that can reside on a multiprocessor."]
+    #[doc = " - ::CU_DEVICE_ATTRIBUTE_GENERIC_COMPRESSION_SUPPORTED: Device supports compressible memory allocation via ::cuMemCreate"]
+    #[doc = " - ::CU_DEVICE_ATTRIBUTE_RESERVED_SHARED_MEMORY_PER_BLOCK: Amount of shared memory per block reserved by CUDA driver in bytes."]
     #[doc = ""]
     #[doc = " \\param pi     - Returned device attribute value"]
     #[doc = " \\param attrib - Device attribute to query"]
@@ -2543,6 +2892,58 @@ extern "C" {
         pi: *mut ::std::os::raw::c_int,
         attrib: CUdevice_attribute,
         dev: CUdevice,
+    ) -> CUresult;
+}
+extern "C" {
+    #[doc = " \\brief Return NvSciSync attributes that this device can support."]
+    #[doc = ""]
+    #[doc = " Returns in \\p nvSciSyncAttrList, the properties of NvSciSync that"]
+    #[doc = " this CUDA device, \\p dev can support. The returned \\p nvSciSyncAttrList"]
+    #[doc = " can be used to create an NvSciSync object that matches this device's capabilities."]
+    #[doc = ""]
+    #[doc = " If NvSciSyncAttrKey_RequiredPerm field in \\p nvSciSyncAttrList is"]
+    #[doc = " already set this API will return ::CUDA_ERROR_INVALID_VALUE."]
+    #[doc = ""]
+    #[doc = " The applications should set \\p nvSciSyncAttrList to a valid"]
+    #[doc = " NvSciSyncAttrList failing which this API will return"]
+    #[doc = " ::CUDA_ERROR_INVALID_HANDLE."]
+    #[doc = ""]
+    #[doc = " The \\p flags controls how applications intends to use"]
+    #[doc = " the NvSciSync created from the \\p nvSciSyncAttrList. The valid flags are:"]
+    #[doc = " - ::CUDA_NVSCISYNC_ATTR_SIGNAL, specifies that the applications intends to"]
+    #[doc = " signal an NvSciSync on this CUDA device."]
+    #[doc = " - ::CUDA_NVSCISYNC_ATTR_WAIT, specifies that the applications intends to"]
+    #[doc = " wait on an NvSciSync on this CUDA device."]
+    #[doc = ""]
+    #[doc = " At least one of these flags must be set, failing which the API"]
+    #[doc = " returns ::CUDA_ERROR_INVALID_VALUE. Both the flags are orthogonal"]
+    #[doc = " to one another: a developer may set both these flags that allows to"]
+    #[doc = " set both wait and signal specific attributes in the same \\p nvSciSyncAttrList."]
+    #[doc = ""]
+    #[doc = " \\param nvSciSyncAttrList     - Return NvSciSync attributes supported."]
+    #[doc = " \\param dev                   - Valid Cuda Device to get NvSciSync attributes for."]
+    #[doc = " \\param flags                 - flags describing NvSciSync usage."]
+    #[doc = ""]
+    #[doc = " \\return"]
+    #[doc = ""]
+    #[doc = " ::CUDA_SUCCESS,"]
+    #[doc = " ::CUDA_ERROR_DEINITIALIZED,"]
+    #[doc = " ::CUDA_ERROR_NOT_INITIALIZED,"]
+    #[doc = " ::CUDA_ERROR_INVALID_VALUE,"]
+    #[doc = " ::CUDA_ERROR_INVALID_HANDLE,"]
+    #[doc = " ::CUDA_ERROR_INVALID_DEVICE,"]
+    #[doc = " ::CUDA_ERROR_NOT_SUPPORTED,"]
+    #[doc = " ::CUDA_ERROR_OUT_OF_MEMORY"]
+    #[doc = ""]
+    #[doc = " \\sa"]
+    #[doc = " ::cuImportExternalSemaphore,"]
+    #[doc = " ::cuDestroyExternalSemaphore,"]
+    #[doc = " ::cuSignalExternalSemaphoresAsync,"]
+    #[doc = " ::cuWaitExternalSemaphoresAsync"]
+    pub fn cuDeviceGetNvSciSyncAttributes(
+        nvSciSyncAttrList: *mut ::std::os::raw::c_void,
+        dev: CUdevice,
+        flags: ::std::os::raw::c_int,
     ) -> CUresult;
 }
 extern "C" {
@@ -2700,101 +3101,10 @@ extern "C" {
     ) -> CUresult;
 }
 extern "C" {
-    #[doc = " \\brief Release the primary context on the GPU"]
-    #[doc = ""]
-    #[doc = " Releases the primary context interop on the device by decreasing the usage"]
-    #[doc = " count by 1. If the usage drops to 0 the primary context of device \\p dev"]
-    #[doc = " will be destroyed regardless of how many threads it is current to."]
-    #[doc = ""]
-    #[doc = " Please note that unlike ::cuCtxDestroy() this method does not pop the context"]
-    #[doc = " from stack in any circumstances."]
-    #[doc = ""]
-    #[doc = " \\param dev - Device which primary context is released"]
-    #[doc = ""]
-    #[doc = " \\return"]
-    #[doc = " ::CUDA_SUCCESS,"]
-    #[doc = " ::CUDA_ERROR_DEINITIALIZED,"]
-    #[doc = " ::CUDA_ERROR_NOT_INITIALIZED,"]
-    #[doc = " ::CUDA_ERROR_INVALID_DEVICE"]
-    #[doc = " \\notefnerr"]
-    #[doc = ""]
-    #[doc = " \\sa ::cuDevicePrimaryCtxRetain,"]
-    #[doc = " ::cuCtxDestroy,"]
-    #[doc = " ::cuCtxGetApiVersion,"]
-    #[doc = " ::cuCtxGetCacheConfig,"]
-    #[doc = " ::cuCtxGetDevice,"]
-    #[doc = " ::cuCtxGetFlags,"]
-    #[doc = " ::cuCtxGetLimit,"]
-    #[doc = " ::cuCtxPopCurrent,"]
-    #[doc = " ::cuCtxPushCurrent,"]
-    #[doc = " ::cuCtxSetCacheConfig,"]
-    #[doc = " ::cuCtxSetLimit,"]
-    #[doc = " ::cuCtxSynchronize"]
-    pub fn cuDevicePrimaryCtxRelease(dev: CUdevice) -> CUresult;
+    pub fn cuDevicePrimaryCtxRelease_v2(dev: CUdevice) -> CUresult;
 }
 extern "C" {
-    #[doc = " \\brief Set flags for the primary context"]
-    #[doc = ""]
-    #[doc = " Sets the flags for the primary context on the device overwriting perviously"]
-    #[doc = " set ones. If the primary context is already created"]
-    #[doc = " ::CUDA_ERROR_PRIMARY_CONTEXT_ACTIVE is returned."]
-    #[doc = ""]
-    #[doc = " The three LSBs of the \\p flags parameter can be used to control how the OS"]
-    #[doc = " thread, which owns the CUDA context at the time of an API call, interacts"]
-    #[doc = " with the OS scheduler when waiting for results from the GPU. Only one of"]
-    #[doc = " the scheduling flags can be set when creating a context."]
-    #[doc = ""]
-    #[doc = " - ::CU_CTX_SCHED_SPIN: Instruct CUDA to actively spin when waiting for"]
-    #[doc = " results from the GPU. This can decrease latency when waiting for the GPU,"]
-    #[doc = " but may lower the performance of CPU threads if they are performing work in"]
-    #[doc = " parallel with the CUDA thread."]
-    #[doc = ""]
-    #[doc = " - ::CU_CTX_SCHED_YIELD: Instruct CUDA to yield its thread when waiting for"]
-    #[doc = " results from the GPU. This can increase latency when waiting for the GPU,"]
-    #[doc = " but can increase the performance of CPU threads performing work in parallel"]
-    #[doc = " with the GPU."]
-    #[doc = ""]
-    #[doc = " - ::CU_CTX_SCHED_BLOCKING_SYNC: Instruct CUDA to block the CPU thread on a"]
-    #[doc = " synchronization primitive when waiting for the GPU to finish work."]
-    #[doc = ""]
-    #[doc = " - ::CU_CTX_BLOCKING_SYNC: Instruct CUDA to block the CPU thread on a"]
-    #[doc = " synchronization primitive when waiting for the GPU to finish work. <br>"]
-    #[doc = " <b>Deprecated:</b> This flag was deprecated as of CUDA 4.0 and was"]
-    #[doc = " replaced with ::CU_CTX_SCHED_BLOCKING_SYNC."]
-    #[doc = ""]
-    #[doc = " - ::CU_CTX_SCHED_AUTO: The default value if the \\p flags parameter is zero,"]
-    #[doc = " uses a heuristic based on the number of active CUDA contexts in the"]
-    #[doc = " process \\e C and the number of logical processors in the system \\e P. If"]
-    #[doc = " \\e C > \\e P, then CUDA will yield to other OS threads when waiting for"]
-    #[doc = " the GPU (::CU_CTX_SCHED_YIELD), otherwise CUDA will not yield while"]
-    #[doc = " waiting for results and actively spin on the processor (::CU_CTX_SCHED_SPIN)."]
-    #[doc = " Additionally, on Tegra devices, ::CU_CTX_SCHED_AUTO uses a heuristic based on"]
-    #[doc = " the power profile of the platform and may choose ::CU_CTX_SCHED_BLOCKING_SYNC"]
-    #[doc = " for low-powered devices."]
-    #[doc = ""]
-    #[doc = " - ::CU_CTX_LMEM_RESIZE_TO_MAX: Instruct CUDA to not reduce local memory"]
-    #[doc = " after resizing local memory for a kernel. This can prevent thrashing by"]
-    #[doc = " local memory allocations when launching many kernels with high local"]
-    #[doc = " memory usage at the cost of potentially increased memory usage."]
-    #[doc = ""]
-    #[doc = " \\param dev   - Device for which the primary context flags are set"]
-    #[doc = " \\param flags - New flags for the device"]
-    #[doc = ""]
-    #[doc = " \\return"]
-    #[doc = " ::CUDA_SUCCESS,"]
-    #[doc = " ::CUDA_ERROR_DEINITIALIZED,"]
-    #[doc = " ::CUDA_ERROR_NOT_INITIALIZED,"]
-    #[doc = " ::CUDA_ERROR_INVALID_DEVICE,"]
-    #[doc = " ::CUDA_ERROR_INVALID_VALUE,"]
-    #[doc = " ::CUDA_ERROR_PRIMARY_CONTEXT_ACTIVE"]
-    #[doc = " \\notefnerr"]
-    #[doc = ""]
-    #[doc = " \\sa ::cuDevicePrimaryCtxRetain,"]
-    #[doc = " ::cuDevicePrimaryCtxGetState,"]
-    #[doc = " ::cuCtxCreate,"]
-    #[doc = " ::cuCtxGetFlags,"]
-    #[doc = " ::cudaSetDeviceFlags"]
-    pub fn cuDevicePrimaryCtxSetFlags(
+    pub fn cuDevicePrimaryCtxSetFlags_v2(
         dev: CUdevice,
         flags: ::std::os::raw::c_uint,
     ) -> CUresult;
@@ -2829,41 +3139,7 @@ extern "C" {
     ) -> CUresult;
 }
 extern "C" {
-    #[doc = " \\brief Destroy all allocations and reset all state on the primary context"]
-    #[doc = ""]
-    #[doc = " Explicitly destroys and cleans up all resources associated with the current"]
-    #[doc = " device in the current process."]
-    #[doc = ""]
-    #[doc = " Note that it is responsibility of the calling function to ensure that no"]
-    #[doc = " other module in the process is using the device any more. For that reason"]
-    #[doc = " it is recommended to use ::cuDevicePrimaryCtxRelease() in most cases."]
-    #[doc = " However it is safe for other modules to call ::cuDevicePrimaryCtxRelease()"]
-    #[doc = " even after resetting the device."]
-    #[doc = ""]
-    #[doc = " \\param dev - Device for which primary context is destroyed"]
-    #[doc = ""]
-    #[doc = " \\return"]
-    #[doc = " ::CUDA_SUCCESS,"]
-    #[doc = " ::CUDA_ERROR_DEINITIALIZED,"]
-    #[doc = " ::CUDA_ERROR_NOT_INITIALIZED,"]
-    #[doc = " ::CUDA_ERROR_INVALID_DEVICE,"]
-    #[doc = " ::CUDA_ERROR_PRIMARY_CONTEXT_ACTIVE"]
-    #[doc = " \\notefnerr"]
-    #[doc = ""]
-    #[doc = " \\sa ::cuDevicePrimaryCtxRetain,"]
-    #[doc = " ::cuDevicePrimaryCtxRelease,"]
-    #[doc = " ::cuCtxGetApiVersion,"]
-    #[doc = " ::cuCtxGetCacheConfig,"]
-    #[doc = " ::cuCtxGetDevice,"]
-    #[doc = " ::cuCtxGetFlags,"]
-    #[doc = " ::cuCtxGetLimit,"]
-    #[doc = " ::cuCtxPopCurrent,"]
-    #[doc = " ::cuCtxPushCurrent,"]
-    #[doc = " ::cuCtxSetCacheConfig,"]
-    #[doc = " ::cuCtxSetLimit,"]
-    #[doc = " ::cuCtxSynchronize,"]
-    #[doc = " ::cudaDeviceReset"]
-    pub fn cuDevicePrimaryCtxReset(dev: CUdevice) -> CUresult;
+    pub fn cuDevicePrimaryCtxReset_v2(dev: CUdevice) -> CUresult;
 }
 extern "C" {
     pub fn cuCtxCreate_v2(
@@ -3031,8 +3307,11 @@ extern "C" {
     #[doc = " discussed here."]
     #[doc = ""]
     #[doc = " - ::CU_LIMIT_STACK_SIZE controls the stack size in bytes of each GPU thread."]
-    #[doc = " Note that the CUDA driver will set the \\p limit to the maximum of \\p value"]
-    #[doc = " and what the kernel function requires."]
+    #[doc = "   The driver automatically increases the per-thread stack size"]
+    #[doc = "   for each kernel launch as needed. This size isn't reset back to the"]
+    #[doc = "   original value after each launch. Setting this value will take effect"]
+    #[doc = "   immediately, and if necessary, the device will block until all preceding"]
+    #[doc = "   requested tasks are complete."]
     #[doc = ""]
     #[doc = " - ::CU_LIMIT_PRINTF_FIFO_SIZE controls the size in bytes of the FIFO used"]
     #[doc = "   by the ::printf() device system call. Setting ::CU_LIMIT_PRINTF_FIFO_SIZE"]
@@ -3055,7 +3334,7 @@ extern "C" {
     #[doc = "   launch depth of 24. When setting this limit, keep in mind that additional"]
     #[doc = "   levels of sync depth require the driver to reserve large amounts of device"]
     #[doc = "   memory which can no longer be used for user allocations. If these"]
-    #[doc = "   reservations of device memory fail, ::cuCtxSetLimit will return"]
+    #[doc = "   reservations of device memory fail, ::cuCtxSetLimit() will return"]
     #[doc = "   ::CUDA_ERROR_OUT_OF_MEMORY, and the limit can be reset to a lower value."]
     #[doc = "   This limit is only applicable to devices of compute capability 3.5 and"]
     #[doc = "   higher. Attempting to set this limit on devices of compute capability less"]
@@ -3072,7 +3351,7 @@ extern "C" {
     #[doc = "   runtime, this limit can be increased. Keep in mind that being able to"]
     #[doc = "   sustain additional pending launches will require the driver to reserve"]
     #[doc = "   larger amounts of device memory upfront which can no longer be used for"]
-    #[doc = "   allocations. If these reservations fail, ::cuCtxSetLimit will return"]
+    #[doc = "   allocations. If these reservations fail, ::cuCtxSetLimit() will return"]
     #[doc = "   ::CUDA_ERROR_OUT_OF_MEMORY, and the limit can be reset to a lower value."]
     #[doc = "   This limit is only applicable to devices of compute capability 3.5 and"]
     #[doc = "   higher. Attempting to set this limit on devices of compute capability less"]
@@ -3415,6 +3694,21 @@ extern "C" {
         leastPriority: *mut ::std::os::raw::c_int,
         greatestPriority: *mut ::std::os::raw::c_int,
     ) -> CUresult;
+}
+extern "C" {
+    #[doc = " \\brief Resets all persisting lines in cache to normal status."]
+    #[doc = ""]
+    #[doc = " ::cuCtxResetPersistingL2Cache Resets all persisting lines in cache to normal"]
+    #[doc = " status. Takes effect on function return."]
+    #[doc = ""]
+    #[doc = " \\return"]
+    #[doc = " ::CUDA_SUCCESS,"]
+    #[doc = " ::CUDA_ERROR_NOT_SUPPORTED"]
+    #[doc = " \\notefnerr"]
+    #[doc = ""]
+    #[doc = " \\sa"]
+    #[doc = " ::CUaccessPolicyWindow"]
+    pub fn cuCtxResetPersistingL2Cache() -> CUresult;
 }
 extern "C" {
     #[doc = " \\brief Increment a context's usage-count"]
@@ -4348,6 +4642,7 @@ extern "C" {
     #[doc = " \\returns"]
     #[doc = " ::CUDA_SUCCESS,"]
     #[doc = " ::CUDA_ERROR_INVALID_HANDLE,"]
+    #[doc = " ::CUDA_ERROR_INVALID_CONTEXT,"]
     #[doc = " ::CUDA_ERROR_OUT_OF_MEMORY,"]
     #[doc = " ::CUDA_ERROR_MAP_FAILED,"]
     #[doc = " ::CUDA_ERROR_INVALID_VALUE"]
@@ -4511,6 +4806,7 @@ extern "C" {
     #[doc = " ::CUDA_ERROR_INVALID_VALUE"]
     #[doc = " \\notefnerr"]
     #[doc = " \\note_sync"]
+    #[doc = " \\note_memcpy"]
     #[doc = ""]
     #[doc = " \\sa ::cuArray3DCreate, ::cuArray3DGetDescriptor, ::cuArrayCreate,"]
     #[doc = " ::cuArrayDestroy, ::cuArrayGetDescriptor, ::cuMemAlloc, ::cuMemAllocHost,"]
@@ -4685,6 +4981,7 @@ extern "C" {
     #[doc = " \\notefnerr"]
     #[doc = " \\note_async"]
     #[doc = " \\note_null_stream"]
+    #[doc = " \\note_memcpy"]
     #[doc = ""]
     #[doc = " \\sa ::cuArray3DCreate, ::cuArray3DGetDescriptor, ::cuArrayCreate,"]
     #[doc = " ::cuArrayDestroy, ::cuArrayGetDescriptor, ::cuMemAlloc, ::cuMemAllocHost,"]
@@ -5404,6 +5701,388 @@ extern "C" {
     ) -> CUresult;
 }
 extern "C" {
+    #[doc = " \\brief Allocate an address range reservation."]
+    #[doc = ""]
+    #[doc = " Reserves a virtual address range based on the given parameters, giving"]
+    #[doc = " the starting address of the range in \\p ptr.  This API requires a system that"]
+    #[doc = " supports UVA.  The size and address parameters must be a multiple of the"]
+    #[doc = " host page size and the alignment must be a power of two or zero for default"]
+    #[doc = " alignment."]
+    #[doc = ""]
+    #[doc = " \\param[out] ptr       - Resulting pointer to start of virtual address range allocated"]
+    #[doc = " \\param[in]  size      - Size of the reserved virtual address range requested"]
+    #[doc = " \\param[in]  alignment - Alignment of the reserved virtual address range requested"]
+    #[doc = " \\param[in]  addr      - Fixed starting address range requested"]
+    #[doc = " \\param[in]  flags     - Currently unused, must be zero"]
+    #[doc = " \\return"]
+    #[doc = " ::CUDA_SUCCESS,"]
+    #[doc = " ::CUDA_ERROR_INVALID_VALUE,"]
+    #[doc = " ::CUDA_ERROR_OUT_OF_MEMORY,"]
+    #[doc = " ::CUDA_ERROR_NOT_INITIALIZED,"]
+    #[doc = " ::CUDA_ERROR_DEINITIALIZED,"]
+    #[doc = " ::CUDA_ERROR_NOT_PERMITTED,"]
+    #[doc = " ::CUDA_ERROR_NOT_SUPPORTED"]
+    #[doc = ""]
+    #[doc = " \\sa ::cuMemAddressFree"]
+    pub fn cuMemAddressReserve(
+        ptr: *mut CUdeviceptr,
+        size: usize,
+        alignment: usize,
+        addr: CUdeviceptr,
+        flags: ::std::os::raw::c_ulonglong,
+    ) -> CUresult;
+}
+extern "C" {
+    #[doc = " \\brief Free an address range reservation."]
+    #[doc = ""]
+    #[doc = " Frees a virtual address range reserved by cuMemAddressReserve.  The size"]
+    #[doc = " must match what was given to memAddressReserve and the ptr given must"]
+    #[doc = " match what was returned from memAddressReserve."]
+    #[doc = ""]
+    #[doc = " \\param[in] ptr  - Starting address of the virtual address range to free"]
+    #[doc = " \\param[in] size - Size of the virtual address region to free"]
+    #[doc = " \\return"]
+    #[doc = " ::CUDA_SUCCESS,"]
+    #[doc = " ::CUDA_ERROR_INVALID_VALUE,"]
+    #[doc = " ::CUDA_ERROR_NOT_INITIALIZED,"]
+    #[doc = " ::CUDA_ERROR_DEINITIALIZED,"]
+    #[doc = " ::CUDA_ERROR_NOT_PERMITTED,"]
+    #[doc = " ::CUDA_ERROR_NOT_SUPPORTED"]
+    #[doc = ""]
+    #[doc = " \\sa ::cuMemAddressReserve"]
+    pub fn cuMemAddressFree(ptr: CUdeviceptr, size: usize) -> CUresult;
+}
+extern "C" {
+    #[doc = " \\brief Create a shareable memory handle representing a memory allocation of a given size described by the given properties"]
+    #[doc = ""]
+    #[doc = " This creates a memory allocation on the target device specified through the"]
+    #[doc = " \\p prop strcuture. The created allocation will not have any device or host"]
+    #[doc = " mappings. The generic memory \\p handle for the allocation can be"]
+    #[doc = " mapped to the address space of calling process via ::cuMemMap. This handle"]
+    #[doc = " cannot be transmitted directly to other processes (see"]
+    #[doc = " ::cuMemExportToShareableHandle).  On Windows, the caller must also pass"]
+    #[doc = " an LPSECURITYATTRIBUTE in \\p prop to be associated with this handle which"]
+    #[doc = " limits or allows access to this handle for a recepient process (see"]
+    #[doc = " ::CUmemAllocationProp::win32HandleMetaData for more).  The \\p size of this"]
+    #[doc = " allocation must be a multiple of the the value given via"]
+    #[doc = " ::cuMemGetAllocationGranularity with the ::CU_MEM_ALLOC_GRANULARITY_MINIMUM"]
+    #[doc = " flag."]
+    #[doc = ""]
+    #[doc = " \\param[out] handle - Value of handle returned. All operations on this allocation are to be performed using this handle."]
+    #[doc = " \\param[in]  size   - Size of the allocation requested"]
+    #[doc = " \\param[in]  prop   - Properties of the allocation to create."]
+    #[doc = " \\param[in]  flags  - flags for future use, must be zero now."]
+    #[doc = " \\return"]
+    #[doc = " ::CUDA_SUCCESS,"]
+    #[doc = " ::CUDA_ERROR_INVALID_VALUE,"]
+    #[doc = " ::CUDA_ERROR_OUT_OF_MEMORY,"]
+    #[doc = " ::CUDA_ERROR_INVALID_DEVICE,"]
+    #[doc = " ::CUDA_ERROR_NOT_INITIALIZED,"]
+    #[doc = " ::CUDA_ERROR_DEINITIALIZED,"]
+    #[doc = " ::CUDA_ERROR_NOT_PERMITTED,"]
+    #[doc = " ::CUDA_ERROR_NOT_SUPPORTED"]
+    #[doc = " \\notefnerr"]
+    #[doc = ""]
+    #[doc = " \\sa ::cuMemRelease, ::cuMemExportToShareableHandle, ::cuMemImportFromShareableHandle"]
+    pub fn cuMemCreate(
+        handle: *mut CUmemGenericAllocationHandle,
+        size: usize,
+        prop: *const CUmemAllocationProp,
+        flags: ::std::os::raw::c_ulonglong,
+    ) -> CUresult;
+}
+extern "C" {
+    #[doc = " \\brief Release a memory handle representing a memory allocation which was previously allocated through cuMemCreate."]
+    #[doc = ""]
+    #[doc = " Frees the memory that was allocated on a device through cuMemCreate."]
+    #[doc = ""]
+    #[doc = " The memory allocation will be freed when all outstanding mappings to the memory"]
+    #[doc = " are unmapped and when all outstanding references to the handle (including it's"]
+    #[doc = " shareable counterparts) are also released. The generic memory handle can be"]
+    #[doc = " freed when there are still outstanding mappings made with this handle. Each"]
+    #[doc = " time a recepient process imports a shareable handle, it needs to pair it with"]
+    #[doc = " ::cuMemRelease for the handle to be freed.  If \\p handle is not a valid handle"]
+    #[doc = " the behavior is undefined."]
+    #[doc = ""]
+    #[doc = " \\param[in] handle Value of handle which was returned previously by cuMemCreate."]
+    #[doc = " \\return"]
+    #[doc = " ::CUDA_SUCCESS,"]
+    #[doc = " ::CUDA_ERROR_INVALID_VALUE,"]
+    #[doc = " ::CUDA_ERROR_NOT_INITIALIZED,"]
+    #[doc = " ::CUDA_ERROR_DEINITIALIZED,"]
+    #[doc = " ::CUDA_ERROR_NOT_PERMITTED,"]
+    #[doc = " ::CUDA_ERROR_NOT_SUPPORTED"]
+    #[doc = " \\notefnerr"]
+    #[doc = ""]
+    #[doc = " \\sa ::cuMemCreate"]
+    pub fn cuMemRelease(handle: CUmemGenericAllocationHandle) -> CUresult;
+}
+extern "C" {
+    #[doc = " \\brief Maps an allocation handle to a reserved virtual address range."]
+    #[doc = ""]
+    #[doc = " Maps bytes of memory represented by \\p handle starting from byte \\p offset to"]
+    #[doc = " \\p size to address range [\\p addr, \\p addr + \\p size]. This range must be an"]
+    #[doc = " address reservation previously reserved with ::cuMemAddressReserve, and"]
+    #[doc = " \\p offset + \\p size must be less than the size of the memory allocation."]
+    #[doc = " Both \\p ptr, \\p size, and \\p offset must be a multiple of the value given via"]
+    #[doc = " ::cuMemGetAllocationGranularity with the ::CU_MEM_ALLOC_GRANULARITY_MINIMUM flag."]
+    #[doc = ""]
+    #[doc = " Please note calling ::cuMemMap does not make the address accessible,"]
+    #[doc = " the caller needs to update accessibility of a contiguous mapped VA"]
+    #[doc = " range by calling ::cuMemSetAccess."]
+    #[doc = ""]
+    #[doc = " Once a recipient process obtains a shareable memory handle"]
+    #[doc = " from ::cuMemImportFromShareableHandle, the process must"]
+    #[doc = " use ::cuMemMap to map the memory into its address ranges before"]
+    #[doc = " setting accessibility with ::cuMemSetAccess."]
+    #[doc = ""]
+    #[doc = " ::cuMemMap can only create mappings on VA range reservations"]
+    #[doc = " that are not currently mapped."]
+    #[doc = ""]
+    #[doc = " \\param[in] ptr    - Address where memory will be mapped."]
+    #[doc = " \\param[in] size   - Size of the memory mapping."]
+    #[doc = " \\param[in] offset - Offset into the memory represented by"]
+    #[doc = "                   - \\p handle from which to start mapping"]
+    #[doc = "                   - Note: currently must be zero."]
+    #[doc = " \\param[in] handle - Handle to a shareable memory"]
+    #[doc = " \\param[in] flags  - flags for future use, must be zero now."]
+    #[doc = " \\return"]
+    #[doc = " ::CUDA_SUCCESS,"]
+    #[doc = " ::CUDA_ERROR_INVALID_VALUE,"]
+    #[doc = " ::CUDA_ERROR_INVALID_DEVICE,"]
+    #[doc = " ::CUDA_ERROR_OUT_OF_MEMORY,"]
+    #[doc = " ::CUDA_ERROR_NOT_INITIALIZED,"]
+    #[doc = " ::CUDA_ERROR_DEINITIALIZED,"]
+    #[doc = " ::CUDA_ERROR_NOT_PERMITTED,"]
+    #[doc = " ::CUDA_ERROR_NOT_SUPPORTED"]
+    #[doc = " \\notefnerr"]
+    #[doc = ""]
+    #[doc = " \\sa ::cuMemUnmap, ::cuMemSetAccess, ::cuMemCreate, ::cuMemAddressReserve, ::cuMemImportFromShareableHandle"]
+    pub fn cuMemMap(
+        ptr: CUdeviceptr,
+        size: usize,
+        offset: usize,
+        handle: CUmemGenericAllocationHandle,
+        flags: ::std::os::raw::c_ulonglong,
+    ) -> CUresult;
+}
+extern "C" {
+    #[doc = " \\brief Unmap the backing memory of a given address range."]
+    #[doc = ""]
+    #[doc = " The range must be the entire contiguous address range that was mapped to.  In"]
+    #[doc = " other words, ::cuMemUnmap cannot unmap a sub-range of an address range mapped"]
+    #[doc = " by ::cuMemCreate / ::cuMemMap.  Any backing memory allocations will be freed"]
+    #[doc = " if there are no existing mappings and there are no unreleased memory handles."]
+    #[doc = ""]
+    #[doc = " When ::cuMemUnmap returns successfully the address range is converted to an"]
+    #[doc = " address reservation and can be used for a future calls to ::cuMemMap.  Any new"]
+    #[doc = " mapping to this virtual address will need to have access granted through"]
+    #[doc = " ::cuMemSetAccess, as all mappings start with no accessibility setup."]
+    #[doc = ""]
+    #[doc = " \\param[in] ptr  - Starting address for the virtual address range to unmap"]
+    #[doc = " \\param[in] size - Size of the virtual address range to unmap"]
+    #[doc = " \\returns"]
+    #[doc = " ::CUDA_SUCCESS,"]
+    #[doc = " ::CUDA_ERROR_INVALID_VALUE,"]
+    #[doc = " ::CUDA_ERROR_NOT_INITIALIZED,"]
+    #[doc = " ::CUDA_ERROR_DEINITIALIZED,"]
+    #[doc = " ::CUDA_ERROR_NOT_PERMITTED,"]
+    #[doc = " ::CUDA_ERROR_NOT_SUPPORTED"]
+    #[doc = " \\notefnerr"]
+    #[doc = " \\note_sync"]
+    #[doc = ""]
+    #[doc = " \\sa ::cuMemCreate, ::cuMemAddressReserve"]
+    pub fn cuMemUnmap(ptr: CUdeviceptr, size: usize) -> CUresult;
+}
+extern "C" {
+    #[doc = " \\brief Set the access flags for each location specified in \\p desc for the given virtual address range"]
+    #[doc = ""]
+    #[doc = " Given the virtual address range via \\p ptr and \\p size, and the locations"]
+    #[doc = " in the array given by \\p desc and \\p count, set the access flags for the"]
+    #[doc = " target locations.  The range must be a fully mapped address range"]
+    #[doc = " containing all allocations created by ::cuMemMap / ::cuMemCreate."]
+    #[doc = ""]
+    #[doc = " \\param[in] ptr   - Starting address for the virtual address range"]
+    #[doc = " \\param[in] size  - Length of the virtual address range"]
+    #[doc = " \\param[in] desc  - Array of ::CUmemAccessDesc that describe how to change the"]
+    #[doc = "                  - mapping for each location specified"]
+    #[doc = " \\param[in] count - Number of ::CUmemAccessDesc in \\p desc"]
+    #[doc = " \\returns"]
+    #[doc = " ::CUDA_SUCCESS,"]
+    #[doc = " ::CUDA_ERROR_INVALID_VALUE,"]
+    #[doc = " ::CUDA_ERROR_INVALID_DEVICE,"]
+    #[doc = " ::CUDA_ERROR_NOT_SUPPORTED"]
+    #[doc = " \\notefnerr"]
+    #[doc = " \\note_sync"]
+    #[doc = ""]
+    #[doc = " \\sa ::cuMemSetAccess, ::cuMemCreate, :cuMemMap"]
+    pub fn cuMemSetAccess(
+        ptr: CUdeviceptr,
+        size: usize,
+        desc: *const CUmemAccessDesc,
+        count: usize,
+    ) -> CUresult;
+}
+extern "C" {
+    #[doc = " \\brief Get the access \\p flags set for the given \\p location and \\p ptr"]
+    #[doc = ""]
+    #[doc = " \\param[out] flags   - Flags set for this location"]
+    #[doc = " \\param[in] location - Location in which to check the flags for"]
+    #[doc = " \\param[in] ptr      - Address in which to check the access flags for"]
+    #[doc = " \\returns"]
+    #[doc = " ::CUDA_SUCCESS,"]
+    #[doc = " ::CUDA_ERROR_INVALID_VALUE,"]
+    #[doc = " ::CUDA_ERROR_INVALID_DEVICE,"]
+    #[doc = " ::CUDA_ERROR_NOT_INITIALIZED,"]
+    #[doc = " ::CUDA_ERROR_DEINITIALIZED,"]
+    #[doc = " ::CUDA_ERROR_NOT_PERMITTED,"]
+    #[doc = " ::CUDA_ERROR_NOT_SUPPORTED"]
+    #[doc = ""]
+    #[doc = " \\sa ::cuMemSetAccess"]
+    pub fn cuMemGetAccess(
+        flags: *mut ::std::os::raw::c_ulonglong,
+        location: *const CUmemLocation,
+        ptr: CUdeviceptr,
+    ) -> CUresult;
+}
+extern "C" {
+    #[doc = " \\brief Exports an allocation to a requested shareable handle type"]
+    #[doc = ""]
+    #[doc = " Given a CUDA memory handle, create a shareable memory"]
+    #[doc = " allocation handle that can be used to share the memory with other"]
+    #[doc = " processes. The recipient process can convert the shareable handle back into a"]
+    #[doc = " CUDA memory handle using ::cuMemImportFromShareableHandle and map"]
+    #[doc = " it with ::cuMemMap. The implementation of what this handle is and how it"]
+    #[doc = " can be transferred is defined by the requested handle type in \\p handleType"]
+    #[doc = ""]
+    #[doc = " Once all shareable handles are closed and the allocation is released, the allocated"]
+    #[doc = " memory referenced will be released back to the OS and uses of the CUDA handle afterward"]
+    #[doc = " will lead to undefined behavior."]
+    #[doc = ""]
+    #[doc = " This API can also be used in conjunction with other APIs (e.g. Vulkan, OpenGL)"]
+    #[doc = " that support importing memory from the shareable type"]
+    #[doc = ""]
+    #[doc = " \\param[out] shareableHandle - Pointer to the location in which to store the requested handle type"]
+    #[doc = " \\param[in] handle           - CUDA handle for the memory allocation"]
+    #[doc = " \\param[in] handleType       - Type of shareable handle requested (defines type and size of the \\p shareableHandle output parameter)"]
+    #[doc = " \\param[in] flags            - Reserved, must be zero"]
+    #[doc = " \\returns"]
+    #[doc = " ::CUDA_SUCCESS,"]
+    #[doc = " ::CUDA_ERROR_INVALID_VALUE,"]
+    #[doc = " ::CUDA_ERROR_NOT_INITIALIZED,"]
+    #[doc = " ::CUDA_ERROR_DEINITIALIZED,"]
+    #[doc = " ::CUDA_ERROR_NOT_PERMITTED,"]
+    #[doc = " ::CUDA_ERROR_NOT_SUPPORTED"]
+    #[doc = ""]
+    #[doc = " \\sa ::cuMemImportFromShareableHandle"]
+    pub fn cuMemExportToShareableHandle(
+        shareableHandle: *mut ::std::os::raw::c_void,
+        handle: CUmemGenericAllocationHandle,
+        handleType: CUmemAllocationHandleType,
+        flags: ::std::os::raw::c_ulonglong,
+    ) -> CUresult;
+}
+extern "C" {
+    #[doc = " \\brief Imports an allocation from a requested shareable handle type."]
+    #[doc = ""]
+    #[doc = " If the current process cannot support the memory described by this shareable"]
+    #[doc = " handle, this API will error as CUDA_ERROR_NOT_SUPPORTED."]
+    #[doc = ""]
+    #[doc = " \\note Importing shareable handles exported from some graphics APIs(Vulkan, OpenGL, etc)"]
+    #[doc = " created on devices under an SLI group may not be supported, and thus this API will"]
+    #[doc = " return CUDA_ERROR_NOT_SUPPORTED."]
+    #[doc = " There is no guarantee that the contents of \\p handle will be the same CUDA memory handle"]
+    #[doc = " for the same given OS shareable handle, or the same underlying allocation."]
+    #[doc = ""]
+    #[doc = " \\param[out] handle       - CUDA Memory handle for the memory allocation."]
+    #[doc = " \\param[in]  osHandle     - Shareable Handle representing the memory allocation that is to be imported."]
+    #[doc = " \\param[in]  shHandleType - handle type of the exported handle ::CUmemAllocationHandleType."]
+    #[doc = " \\returns"]
+    #[doc = " ::CUDA_SUCCESS,"]
+    #[doc = " ::CUDA_ERROR_INVALID_VALUE,"]
+    #[doc = " ::CUDA_ERROR_NOT_INITIALIZED,"]
+    #[doc = " ::CUDA_ERROR_DEINITIALIZED,"]
+    #[doc = " ::CUDA_ERROR_NOT_PERMITTED,"]
+    #[doc = " ::CUDA_ERROR_NOT_SUPPORTED"]
+    #[doc = ""]
+    #[doc = " \\sa ::cuMemExportToShareableHandle, ::cuMemMap, ::cuMemRelease"]
+    pub fn cuMemImportFromShareableHandle(
+        handle: *mut CUmemGenericAllocationHandle,
+        osHandle: *mut ::std::os::raw::c_void,
+        shHandleType: CUmemAllocationHandleType,
+    ) -> CUresult;
+}
+extern "C" {
+    #[doc = " \\brief Calculates either the minimal or recommended granularity"]
+    #[doc = ""]
+    #[doc = " Calculates either the minimal or recommended granularity"]
+    #[doc = " for a given allocation specification and returns it in granularity.  This"]
+    #[doc = " granularity can be used as a multiple for alignment, size, or address mapping."]
+    #[doc = ""]
+    #[doc = " \\param[out] granularity Returned granularity."]
+    #[doc = " \\param[in]  prop Property for which to determine the granularity for"]
+    #[doc = " \\param[in]  option Determines which granularity to return"]
+    #[doc = " \\returns"]
+    #[doc = " ::CUDA_SUCCESS,"]
+    #[doc = " ::CUDA_ERROR_INVALID_VALUE,"]
+    #[doc = " ::CUDA_ERROR_NOT_INITIALIZED,"]
+    #[doc = " ::CUDA_ERROR_DEINITIALIZED,"]
+    #[doc = " ::CUDA_ERROR_NOT_PERMITTED,"]
+    #[doc = " ::CUDA_ERROR_NOT_SUPPORTED"]
+    #[doc = ""]
+    #[doc = " \\sa ::cuMemCreate, ::cuMemMap"]
+    pub fn cuMemGetAllocationGranularity(
+        granularity: *mut usize,
+        prop: *const CUmemAllocationProp,
+        option: CUmemAllocationGranularity_flags,
+    ) -> CUresult;
+}
+extern "C" {
+    #[doc = " \\brief Retrieve the contents of the property structure defining properties for this handle"]
+    #[doc = ""]
+    #[doc = " \\param[out] prop  - Pointer to a properties structure which will hold the information about this handle"]
+    #[doc = " \\param[in] handle - Handle which to perform the query on"]
+    #[doc = " \\returns"]
+    #[doc = " ::CUDA_SUCCESS,"]
+    #[doc = " ::CUDA_ERROR_INVALID_VALUE,"]
+    #[doc = " ::CUDA_ERROR_NOT_INITIALIZED,"]
+    #[doc = " ::CUDA_ERROR_DEINITIALIZED,"]
+    #[doc = " ::CUDA_ERROR_NOT_PERMITTED,"]
+    #[doc = " ::CUDA_ERROR_NOT_SUPPORTED"]
+    #[doc = ""]
+    #[doc = " \\sa ::cuMemCreate, ::cuMemImportFromShareableHandle"]
+    pub fn cuMemGetAllocationPropertiesFromHandle(
+        prop: *mut CUmemAllocationProp,
+        handle: CUmemGenericAllocationHandle,
+    ) -> CUresult;
+}
+extern "C" {
+    #[doc = " \\brief Given an address \\p addr, returns the allocation handle of the backing memory allocation."]
+    #[doc = ""]
+    #[doc = " The handle is guaranteed to be the same handle value used to map the memory. If the address"]
+    #[doc = " requested is not mapped, the function will fail. The returned handle must be released with"]
+    #[doc = " corresponding number of calls to ::cuMemRelease."]
+    #[doc = ""]
+    #[doc = " \\note The address \\p addr, can be any address in a range previously mapped"]
+    #[doc = " by ::cuMemMap, and not necessarily the start address."]
+    #[doc = ""]
+    #[doc = " \\param[out] handle CUDA Memory handle for the backing memory allocation."]
+    #[doc = " \\param[in] addr Memory address to query, that has been mapped previously."]
+    #[doc = " \\returns"]
+    #[doc = " ::CUDA_SUCCESS,"]
+    #[doc = " ::CUDA_ERROR_INVALID_VALUE,"]
+    #[doc = " ::CUDA_ERROR_NOT_INITIALIZED,"]
+    #[doc = " ::CUDA_ERROR_DEINITIALIZED,"]
+    #[doc = " ::CUDA_ERROR_NOT_PERMITTED,"]
+    #[doc = " ::CUDA_ERROR_NOT_SUPPORTED"]
+    #[doc = ""]
+    #[doc = " \\sa ::cuMemCreate, ::cuMemRelease, ::cuMemMap"]
+    pub fn cuMemRetainAllocationHandle(
+        handle: *mut CUmemGenericAllocationHandle,
+        addr: *mut ::std::os::raw::c_void,
+    ) -> CUresult;
+}
+extern "C" {
     #[doc = " \\brief Returns information about a pointer"]
     #[doc = ""]
     #[doc = " The supported attributes are:"]
@@ -5508,10 +6187,42 @@ extern "C" {
     #[doc = "      Returns in \\p *data a boolean that indicates whether the pointer points to"]
     #[doc = "      managed memory or not."]
     #[doc = ""]
+    #[doc = "      If \\p ptr is not a valid CUDA pointer then ::CUDA_ERROR_INVALID_VALUE is returned."]
+    #[doc = ""]
     #[doc = " - ::CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL:"]
     #[doc = ""]
     #[doc = "      Returns in \\p *data an integer representing a device ordinal of a device against"]
     #[doc = "      which the memory was allocated or registered."]
+    #[doc = ""]
+    #[doc = " - ::CU_POINTER_ATTRIBUTE_IS_LEGACY_CUDA_IPC_CAPABLE:"]
+    #[doc = ""]
+    #[doc = "      Returns in \\p *data a boolean that indicates if this pointer maps to"]
+    #[doc = "      an allocation that is suitable for ::cudaIpcGetMemHandle."]
+    #[doc = ""]
+    #[doc = " - ::CU_POINTER_ATTRIBUTE_RANGE_START_ADDR:"]
+    #[doc = ""]
+    #[doc = "      Returns in \\p *data the starting address for the allocation referenced"]
+    #[doc = "      by the device pointer \\p ptr.  Note that this is not necessarily the"]
+    #[doc = "      address of the mapped region, but the address of the mappable address"]
+    #[doc = "      range \\p ptr references (e.g. from ::cuMemAddressReserve)."]
+    #[doc = ""]
+    #[doc = " - ::CU_POINTER_ATTRIBUTE_RANGE_SIZE:"]
+    #[doc = ""]
+    #[doc = "      Returns in \\p *data the size for the allocation referenced by the device"]
+    #[doc = "      pointer \\p ptr.  Note that this is not necessarily the size of the mapped"]
+    #[doc = "      region, but the size of the mappable address range \\p ptr references"]
+    #[doc = "      (e.g. from ::cuMemAddressReserve).  To retrieve the size of the mapped"]
+    #[doc = "      region, see ::cuMemGetAllocationPropertyForAddress."]
+    #[doc = ""]
+    #[doc = " - ::CU_POINTER_ATTRIBUTE_MAPPED:"]
+    #[doc = ""]
+    #[doc = "      Returns in \\p *data a boolean that indicates if this pointer is in a"]
+    #[doc = "      valid address range that is mapped to a backing allocation."]
+    #[doc = ""]
+    #[doc = " - ::CU_POINTER_ATTRIBUTE_ALLOWED_HANDLE_TYPES:"]
+    #[doc = ""]
+    #[doc = "      Returns a bitmask of the allowed handle types for an allocation that may"]
+    #[doc = "      be passed to ::cuMemExportToShareableHandle."]
     #[doc = ""]
     #[doc = " \\par"]
     #[doc = ""]
@@ -5917,6 +6628,11 @@ extern "C" {
     #[doc = " - ::CU_POINTER_ATTRIBUTE_BUFFER_ID"]
     #[doc = " - ::CU_POINTER_ATTRIBUTE_IS_MANAGED"]
     #[doc = " - ::CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL"]
+    #[doc = " - ::CU_POINTER_ATTRIBUTE_RANGE_START_ADDR"]
+    #[doc = " - ::CU_POINTER_ATTRIBUTE_RANGE_SIZE"]
+    #[doc = " - ::CU_POINTER_ATTRIBUTE_MAPPED"]
+    #[doc = " - ::CU_POINTER_ATTRIBUTE_IS_LEGACY_CUDA_IPC_CAPABLE"]
+    #[doc = " - ::CU_POINTER_ATTRIBUTE_ALLOWED_HANDLE_TYPES"]
     #[doc = ""]
     #[doc = " \\param numAttributes - Number of attributes to query"]
     #[doc = " \\param attributes    - An array of attributes to query"]
@@ -5955,7 +6671,9 @@ extern "C" {
     #[doc = " \\brief Create a stream"]
     #[doc = ""]
     #[doc = " Creates a stream and returns a handle in \\p phStream.  The \\p Flags argument"]
-    #[doc = " determines behaviors of the stream.  Valid values for \\p Flags are:"]
+    #[doc = " determines behaviors of the stream."]
+    #[doc = ""]
+    #[doc = " Valid values for \\p Flags are:"]
     #[doc = " - ::CU_STREAM_DEFAULT: Default stream creation flag."]
     #[doc = " - ::CU_STREAM_NON_BLOCKING: Specifies that work running in the created"]
     #[doc = "   stream may run concurrently with work in stream 0 (the NULL stream), and that"]
@@ -6572,6 +7290,74 @@ extern "C" {
     pub fn cuStreamDestroy_v2(hStream: CUstream) -> CUresult;
 }
 extern "C" {
+    #[doc = " \\brief Copies attributes from source stream to destination stream"]
+    #[doc = ""]
+    #[doc = " Copies attributes from source stream \\p src to destination stream \\p dst."]
+    #[doc = " Both streams must have the same context."]
+    #[doc = ""]
+    #[doc = " \\param[out] dst Destination stream"]
+    #[doc = " \\param[in] src Source stream"]
+    #[doc = " For list of attributes see ::CUstreamAttrID"]
+    #[doc = ""]
+    #[doc = " \\return"]
+    #[doc = " ::CUDA_SUCCESS,"]
+    #[doc = " ::CUDA_ERROR_INVALID_VALUE"]
+    #[doc = " \\notefnerr"]
+    #[doc = ""]
+    #[doc = " \\sa"]
+    #[doc = " ::CUaccessPolicyWindow"]
+    pub fn cuStreamCopyAttributes(dst: CUstream, src: CUstream) -> CUresult;
+}
+extern "C" {
+    #[doc = " \\brief Queries stream attribute."]
+    #[doc = ""]
+    #[doc = " Queries attribute \\p attr from \\p hStream and stores it in corresponding"]
+    #[doc = " member of \\p value_out."]
+    #[doc = ""]
+    #[doc = " \\param[in] hStream"]
+    #[doc = " \\param[in] attr"]
+    #[doc = " \\param[out] value_out"]
+    #[doc = ""]
+    #[doc = " \\return"]
+    #[doc = " ::CUDA_SUCCESS,"]
+    #[doc = " ::CUDA_ERROR_INVALID_VALUE,"]
+    #[doc = " ::CUDA_ERROR_INVALID_HANDLE"]
+    #[doc = " \\notefnerr"]
+    #[doc = ""]
+    #[doc = " \\sa"]
+    #[doc = " ::CUaccessPolicyWindow"]
+    pub fn cuStreamGetAttribute(
+        hStream: CUstream,
+        attr: CUstreamAttrID,
+        value_out: *mut CUstreamAttrValue,
+    ) -> CUresult;
+}
+extern "C" {
+    #[doc = " \\brief Sets stream attribute."]
+    #[doc = ""]
+    #[doc = " Sets attribute \\p attr on \\p hStream from corresponding attribute of"]
+    #[doc = " \\p value. The updated attribute will be applied to subsequent work"]
+    #[doc = " submitted to the stream. It will not affect previously submitted work."]
+    #[doc = ""]
+    #[doc = " \\param[out] hStream"]
+    #[doc = " \\param[in] attr"]
+    #[doc = " \\param[in] value"]
+    #[doc = ""]
+    #[doc = " \\return"]
+    #[doc = " ::CUDA_SUCCESS,"]
+    #[doc = " ::CUDA_ERROR_INVALID_VALUE,"]
+    #[doc = " ::CUDA_ERROR_INVALID_HANDLE"]
+    #[doc = " \\notefnerr"]
+    #[doc = ""]
+    #[doc = " \\sa"]
+    #[doc = " ::CUaccessPolicyWindow"]
+    pub fn cuStreamSetAttribute(
+        hStream: CUstream,
+        attr: CUstreamAttrID,
+        value: *const CUstreamAttrValue,
+    ) -> CUresult;
+}
+extern "C" {
     #[doc = " \\brief Creates an event"]
     #[doc = ""]
     #[doc = " Creates an event *phEvent for the current context with the flags specified via"]
@@ -6784,6 +7570,7 @@ extern "C" {
     #[doc = "void *handle;"]
     #[doc = "const void *name;"]
     #[doc = "} win32;"]
+    #[doc = "const void *nvSciBufObject;"]
     #[doc = "} handle;"]
     #[doc = "unsigned long long size;"]
     #[doc = "unsigned int flags;"]
@@ -6796,11 +7583,14 @@ extern "C" {
     #[doc = ""]
     #[doc = " \\code"]
     #[doc = "typedef enum CUexternalMemoryHandleType_enum {"]
-    #[doc = "CU_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD        = 1,"]
-    #[doc = "CU_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32     = 2,"]
-    #[doc = "CU_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT = 3,"]
-    #[doc = "CU_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_HEAP       = 4,"]
-    #[doc = "CU_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE   = 5"]
+    #[doc = "CU_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD          = 1,"]
+    #[doc = "CU_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32       = 2,"]
+    #[doc = "CU_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT   = 3,"]
+    #[doc = "CU_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_HEAP         = 4,"]
+    #[doc = "CU_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE     = 5,"]
+    #[doc = "CU_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_RESOURCE     = 6,"]
+    #[doc = "CU_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_RESOURCE_KMT = 7,"]
+    #[doc = "CU_EXTERNAL_MEMORY_HANDLE_TYPE_NVSCIBUF           = 8"]
     #[doc = "} CUexternalMemoryHandleType;"]
     #[doc = " \\endcode"]
     #[doc = ""]
@@ -6841,7 +7631,7 @@ extern "C" {
     #[doc = " ::CUDA_EXTERNAL_MEMORY_HANDLE_DESC::handle::win32::name must not be"]
     #[doc = " NULL. If ::CUDA_EXTERNAL_MEMORY_HANDLE_DESC::handle::win32::handle"]
     #[doc = " is not NULL, then it must represent a valid shared NT handle that"]
-    #[doc = " is returned by ID3DDevice::CreateSharedHandle when referring to a"]
+    #[doc = " is returned by ID3D12Device::CreateSharedHandle when referring to a"]
     #[doc = " ID3D12Heap object. This handle holds a reference to the underlying"]
     #[doc = " object. If ::CUDA_EXTERNAL_MEMORY_HANDLE_DESC::handle::win32::name"]
     #[doc = " is not NULL, then it must point to a NULL-terminated array of"]
@@ -6853,12 +7643,39 @@ extern "C" {
     #[doc = " ::CUDA_EXTERNAL_MEMORY_HANDLE_DESC::handle::win32::name must not be"]
     #[doc = " NULL. If ::CUDA_EXTERNAL_MEMORY_HANDLE_DESC::handle::win32::handle"]
     #[doc = " is not NULL, then it must represent a valid shared NT handle that"]
-    #[doc = " is returned by ID3DDevice::CreateSharedHandle when referring to a"]
+    #[doc = " is returned by ID3D12Device::CreateSharedHandle when referring to a"]
     #[doc = " ID3D12Resource object. This handle holds a reference to the"]
     #[doc = " underlying object. If"]
     #[doc = " ::CUDA_EXTERNAL_MEMORY_HANDLE_DESC::handle::win32::name"]
     #[doc = " is not NULL, then it must point to a NULL-terminated array of"]
     #[doc = " UTF-16 characters that refers to a ID3D12Resource object."]
+    #[doc = ""]
+    #[doc = " If ::CUDA_EXTERNAL_MEMORY_HANDLE_DESC::type is"]
+    #[doc = " ::CU_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_RESOURCE, then"]
+    #[doc = " ::CUDA_EXTERNAL_MEMORY_HANDLE_DESC::handle::win32::handle must"]
+    #[doc = " represent a valid shared NT handle that is returned by"]
+    #[doc = " IDXGIResource1::CreateSharedHandle when referring to a"]
+    #[doc = " ID3D11Resource object. If"]
+    #[doc = " ::CUDA_EXTERNAL_MEMORY_HANDLE_DESC::handle::win32::name"]
+    #[doc = " is not NULL, then it must point to a NULL-terminated array of"]
+    #[doc = " UTF-16 characters that refers to a ID3D11Resource object."]
+    #[doc = ""]
+    #[doc = " If ::CUDA_EXTERNAL_MEMORY_HANDLE_DESC::type is"]
+    #[doc = " ::CU_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_RESOURCE_KMT, then"]
+    #[doc = " ::CUDA_EXTERNAL_MEMORY_HANDLE_DESC::handle::win32::handle must"]
+    #[doc = " represent a valid shared KMT handle that is returned by"]
+    #[doc = " IDXGIResource::GetSharedHandle when referring to a"]
+    #[doc = " ID3D11Resource object and"]
+    #[doc = " ::CUDA_EXTERNAL_MEMORY_HANDLE_DESC::handle::win32::name"]
+    #[doc = " must be NULL."]
+    #[doc = ""]
+    #[doc = " If ::CUDA_EXTERNAL_MEMORY_HANDLE_DESC::type is"]
+    #[doc = " ::CU_EXTERNAL_MEMORY_HANDLE_TYPE_NVSCIBUF, then"]
+    #[doc = " ::CUDA_EXTERNAL_MEMORY_HANDLE_DESC::handle::nvSciBufObject must be non-NULL"]
+    #[doc = " and reference a valid NvSciBuf object."]
+    #[doc = " If the NvSciBuf object imported into CUDA is also mapped by other drivers, then the"]
+    #[doc = " application must use ::cuWaitExternalSemaphoresAsync or ::cuSignalExternalSemaphoresAsync"]
+    #[doc = " as appropriate barriers to maintain coherence between CUDA and the other drivers."]
     #[doc = ""]
     #[doc = " The size of the memory object must be specified in"]
     #[doc = " ::CUDA_EXTERNAL_MEMORY_HANDLE_DESC::size."]
@@ -6867,6 +7684,11 @@ extern "C" {
     #[doc = " ::CUDA_EXTERNAL_MEMORY_HANDLE_DESC::flags indicates that the"]
     #[doc = " resource is a dedicated resource. The definition of what a"]
     #[doc = " dedicated resource is outside the scope of this extension."]
+    #[doc = " This flag must be set if ::CUDA_EXTERNAL_MEMORY_HANDLE_DESC::type"]
+    #[doc = " is one of the following:"]
+    #[doc = " ::CU_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE"]
+    #[doc = " ::CU_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_RESOURCE"]
+    #[doc = " ::CU_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_RESOURCE_KMT"]
     #[doc = ""]
     #[doc = " \\param extMem_out    - Returned handle to an external memory object"]
     #[doc = " \\param memHandleDesc - Memory import handle descriptor"]
@@ -6978,6 +7800,9 @@ extern "C" {
     #[doc = " ::CUDA_EXTERNAL_MEMORY_MIPMAPPED_ARRAY_DESC::numLevels specifies"]
     #[doc = " the total number of levels in the mipmap chain."]
     #[doc = ""]
+    #[doc = " If \\p extMem was imported from a handle of type ::CU_EXTERNAL_MEMORY_HANDLE_TYPE_NVSCIBUF, then"]
+    #[doc = " ::CUDA_EXTERNAL_MEMORY_MIPMAPPED_ARRAY_DESC::numLevels must be equal to 1."]
+    #[doc = ""]
     #[doc = " The returned CUDA mipmapped array must be freed using ::cuMipmappedArrayDestroy."]
     #[doc = ""]
     #[doc = " \\param mipmap     - Returned CUDA mipmapped array"]
@@ -7039,6 +7864,7 @@ extern "C" {
     #[doc = "void *handle;"]
     #[doc = "const void *name;"]
     #[doc = "} win32;"]
+    #[doc = "const void* NvSciSyncObj;"]
     #[doc = "} handle;"]
     #[doc = "unsigned int flags;"]
     #[doc = "} CUDA_EXTERNAL_SEMAPHORE_HANDLE_DESC;"]
@@ -7050,10 +7876,14 @@ extern "C" {
     #[doc = ""]
     #[doc = " \\code"]
     #[doc = "typedef enum CUexternalSemaphoreHandleType_enum {"]
-    #[doc = "CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD        = 1,"]
-    #[doc = "CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32     = 2,"]
-    #[doc = "CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT = 3,"]
-    #[doc = "CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE      = 4"]
+    #[doc = "CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD             = 1,"]
+    #[doc = "CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32          = 2,"]
+    #[doc = "CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT      = 3,"]
+    #[doc = "CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE           = 4,"]
+    #[doc = "CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D11_FENCE           = 5,"]
+    #[doc = "CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_NVSCISYNC             = 6,"]
+    #[doc = "CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D11_KEYED_MUTEX     = 7,"]
+    #[doc = "CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D11_KEYED_MUTEX_KMT = 8"]
     #[doc = "} CUexternalSemaphoreHandleType;"]
     #[doc = " \\endcode"]
     #[doc = ""]
@@ -7095,12 +7925,43 @@ extern "C" {
     #[doc = " NULL. If"]
     #[doc = " ::CUDA_EXTERNAL_SEMAPHORE_HANDLE_DESC::handle::win32::handle"]
     #[doc = " is not NULL, then it must represent a valid shared NT handle that"]
-    #[doc = " is returned by ID3DDevice::CreateSharedHandle when referring to a"]
+    #[doc = " is returned by ID3D12Device::CreateSharedHandle when referring to a"]
     #[doc = " ID3D12Fence object. This handle holds a reference to the underlying"]
     #[doc = " object. If"]
     #[doc = " ::CUDA_EXTERNAL_SEMAPHORE_HANDLE_DESC::handle::win32::name"]
     #[doc = " is not NULL, then it must name a valid synchronization object that"]
     #[doc = " refers to a valid ID3D12Fence object."]
+    #[doc = ""]
+    #[doc = " If ::CUDA_EXTERNAL_SEMAPHORE_HANDLE_DESC::type is"]
+    #[doc = " ::CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D11_FENCE, then"]
+    #[doc = " ::CUDA_EXTERNAL_SEMAPHORE_HANDLE_DESC::handle::win32::handle"]
+    #[doc = " represents a valid shared NT handle that is returned by"]
+    #[doc = " ID3D11Fence::CreateSharedHandle. If"]
+    #[doc = " ::CUDA_EXTERNAL_SEMAPHORE_HANDLE_DESC::handle::win32::name"]
+    #[doc = " is not NULL, then it must name a valid synchronization object that"]
+    #[doc = " refers to a valid ID3D11Fence object."]
+    #[doc = ""]
+    #[doc = " If ::CUDA_EXTERNAL_SEMAPHORE_HANDLE_DESC::type is"]
+    #[doc = " ::CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_NVSCISYNC, then"]
+    #[doc = " ::CUDA_EXTERNAL_SEMAPHORE_HANDLE_DESC::handle::nvSciSyncObj"]
+    #[doc = " represents a valid NvSciSyncObj."]
+    #[doc = ""]
+    #[doc = " ::CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D11_KEYED_MUTEX, then"]
+    #[doc = " ::CUDA_EXTERNAL_SEMAPHORE_HANDLE_DESC::handle::win32::handle"]
+    #[doc = " represents a valid shared NT handle that"]
+    #[doc = " is returned by IDXGIResource1::CreateSharedHandle when referring to"]
+    #[doc = " a IDXGIKeyedMutex object. If"]
+    #[doc = " ::CUDA_EXTERNAL_SEMAPHORE_HANDLE_DESC::handle::win32::name"]
+    #[doc = " is not NULL, then it must name a valid synchronization object that"]
+    #[doc = " refers to a valid IDXGIKeyedMutex object."]
+    #[doc = ""]
+    #[doc = " If ::CUDA_EXTERNAL_SEMAPHORE_HANDLE_DESC::type is"]
+    #[doc = " ::CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D11_KEYED_MUTEX_KMT, then"]
+    #[doc = " ::CUDA_EXTERNAL_SEMAPHORE_HANDLE_DESC::handle::win32::handle"]
+    #[doc = " represents a valid shared KMT handle that"]
+    #[doc = " is returned by IDXGIResource::GetSharedHandle when referring to"]
+    #[doc = " a IDXGIKeyedMutex object and"]
+    #[doc = " ::CUDA_EXTERNAL_SEMAPHORE_HANDLE_DESC::handle::win32::name must be NULL."]
     #[doc = ""]
     #[doc = " \\param extSem_out    - Returned handle to an external semaphore"]
     #[doc = " \\param semHandleDesc - Semaphore import handle descriptor"]
@@ -7108,6 +7969,7 @@ extern "C" {
     #[doc = " \\return"]
     #[doc = " ::CUDA_SUCCESS,"]
     #[doc = " ::CUDA_ERROR_NOT_INITIALIZED,"]
+    #[doc = " ::CUDA_ERROR_NOT_SUPPORTED,"]
     #[doc = " ::CUDA_ERROR_INVALID_HANDLE"]
     #[doc = " \\notefnerr"]
     #[doc = ""]
@@ -7135,20 +7997,47 @@ extern "C" {
     #[doc = " ::CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT"]
     #[doc = " then signaling the semaphore will set it to the signaled state."]
     #[doc = ""]
-    #[doc = " If the semaphore object is of the type"]
-    #[doc = " ::CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE, then the"]
-    #[doc = " semaphore will be set to the value specified in"]
+    #[doc = " If the semaphore object is any one of the following types:"]
+    #[doc = " ::CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE,"]
+    #[doc = " ::CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D11_FENCE"]
+    #[doc = " then the semaphore will be set to the value specified in"]
     #[doc = " ::CUDA_EXTERNAL_SEMAPHORE_SIGNAL_PARAMS::params::fence::value."]
+    #[doc = ""]
+    #[doc = " If the semaphore object is of the type ::CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_NVSCISYNC"]
+    #[doc = " this API sets ::CUDA_EXTERNAL_SEMAPHORE_SIGNAL_PARAMS::params::nvSciSync::fence"]
+    #[doc = " to a value that can be used by subsequent waiters of the same NvSciSync object"]
+    #[doc = " to order operations with those currently submitted in \\p stream. Such an update"]
+    #[doc = " will overwrite previous contents of"]
+    #[doc = " ::CUDA_EXTERNAL_SEMAPHORE_SIGNAL_PARAMS::params::nvSciSync::fence. By default,"]
+    #[doc = " signaling such an external semaphore object causes appropriate memory synchronization"]
+    #[doc = " operations to be performed over all external memory objects that are imported as"]
+    #[doc = " ::CU_EXTERNAL_MEMORY_HANDLE_TYPE_NVSCIBUF. This ensures that any subsequent accesses"]
+    #[doc = " made by other importers of the same set of NvSciBuf memory object(s) are coherent."]
+    #[doc = " These operations can be skipped by specifying the flag"]
+    #[doc = " ::CUDA_EXTERNAL_SEMAPHORE_SIGNAL_SKIP_NVSCIBUF_MEMSYNC, which can be used as a"]
+    #[doc = " performance optimization when data coherency is not required. But specifying this"]
+    #[doc = " flag in scenarios where data coherency is required results in undefined behavior."]
+    #[doc = " Also, for semaphore object of the type ::CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_NVSCISYNC,"]
+    #[doc = " if the NvSciSyncAttrList used to create the NvSciSyncObj had not set the flags in"]
+    #[doc = " ::cuDeviceGetNvSciSyncAttributes to CUDA_NVSCISYNC_ATTR_SIGNAL, this API will return"]
+    #[doc = " CUDA_ERROR_NOT_SUPPORTED."]
+    #[doc = ""]
+    #[doc = " If the semaphore object is any one of the following types:"]
+    #[doc = " ::CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D11_KEYED_MUTEX,"]
+    #[doc = " ::CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D11_KEYED_MUTEX_KMT"]
+    #[doc = " then the keyed mutex will be released with the key specified in"]
+    #[doc = " ::CUDA_EXTERNAL_SEMAPHORE_PARAMS::params::keyedmutex::key."]
     #[doc = ""]
     #[doc = " \\param extSemArray - Set of external semaphores to be signaled"]
     #[doc = " \\param paramsArray - Array of semaphore parameters"]
     #[doc = " \\param numExtSems  - Number of semaphores to signal"]
-    #[doc = " \\param stream     - Stream to enqueue the signal operations in"]
+    #[doc = " \\param stream      - Stream to enqueue the signal operations in"]
     #[doc = ""]
     #[doc = " \\return"]
     #[doc = " ::CUDA_SUCCESS,"]
     #[doc = " ::CUDA_ERROR_NOT_INITIALIZED,"]
-    #[doc = " ::CUDA_ERROR_INVALID_HANDLE"]
+    #[doc = " ::CUDA_ERROR_INVALID_HANDLE,"]
+    #[doc = " ::CUDA_ERROR_NOT_SUPPORTED"]
     #[doc = " \\notefnerr"]
     #[doc = ""]
     #[doc = " \\sa ::cuImportExternalSemaphore,"]
@@ -7180,11 +8069,41 @@ extern "C" {
     #[doc = " unsignaled state. Therefore for every signal operation, there can"]
     #[doc = " only be one wait operation."]
     #[doc = ""]
-    #[doc = " If the semaphore object is of the type"]
-    #[doc = " ::CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE, then waiting on"]
-    #[doc = " the semaphore will wait until the value of the semaphore is"]
-    #[doc = " greater than or equal to"]
+    #[doc = " If the semaphore object is any one of the following types:"]
+    #[doc = " ::CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE,"]
+    #[doc = " ::CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D11_FENCE"]
+    #[doc = " then waiting on the semaphore will wait until the value of the"]
+    #[doc = " semaphore is greater than or equal to"]
     #[doc = " ::CUDA_EXTERNAL_SEMAPHORE_WAIT_PARAMS::params::fence::value."]
+    #[doc = ""]
+    #[doc = " If the semaphore object is of the type ::CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_NVSCISYNC"]
+    #[doc = " then, waiting on the semaphore will wait until the"]
+    #[doc = " ::CUDA_EXTERNAL_SEMAPHORE_SIGNAL_PARAMS::params::nvSciSync::fence is signaled by the"]
+    #[doc = " signaler of the NvSciSyncObj that was associated with this semaphore object."]
+    #[doc = " By default, waiting on such an external semaphore object causes appropriate"]
+    #[doc = " memory synchronization operations to be performed over all external memory objects"]
+    #[doc = " that are imported as ::CU_EXTERNAL_MEMORY_HANDLE_TYPE_NVSCIBUF. This ensures that"]
+    #[doc = " any subsequent accesses made by other importers of the same set of NvSciBuf memory"]
+    #[doc = " object(s) are coherent. These operations can be skipped by specifying the flag"]
+    #[doc = " ::CUDA_EXTERNAL_SEMAPHORE_WAIT_SKIP_NVSCIBUF_MEMSYNC, which can be used as a"]
+    #[doc = " performance optimization when data coherency is not required. But specifying this"]
+    #[doc = " flag in scenarios where data coherency is required results in undefined behavior."]
+    #[doc = " Also, for semaphore object of the type ::CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_NVSCISYNC,"]
+    #[doc = " if the NvSciSyncAttrList used to create the NvSciSyncObj had not set the flags in"]
+    #[doc = " ::cuDeviceGetNvSciSyncAttributes to CUDA_NVSCISYNC_ATTR_WAIT, this API will return"]
+    #[doc = " CUDA_ERROR_NOT_SUPPORTED."]
+    #[doc = ""]
+    #[doc = " If the semaphore object is any one of the following types:"]
+    #[doc = " ::CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D11_KEYED_MUTEX,"]
+    #[doc = " ::CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D11_KEYED_MUTEX_KMT"]
+    #[doc = " then the keyed mutex will be acquired when it is released with the key"]
+    #[doc = " specified in ::CUDA_EXTERNAL_SEMAPHORE_WAIT_PARAMS::params::keyedmutex::key"]
+    #[doc = " or until the timeout specified by"]
+    #[doc = " ::CUDA_EXTERNAL_SEMAPHORE_WAIT_PARAMS::params::keyedmutex::timeoutMs"]
+    #[doc = " has lapsed. The timeout interval can either be a finite value"]
+    #[doc = " specified in milliseconds or an infinite value. In case an infinite"]
+    #[doc = " value is specified the timeout never elapses. The windows INFINITE"]
+    #[doc = " macro must be used to specify infinite timeout."]
     #[doc = ""]
     #[doc = " \\param extSemArray - External semaphores to be waited on"]
     #[doc = " \\param paramsArray - Array of semaphore parameters"]
@@ -7194,7 +8113,9 @@ extern "C" {
     #[doc = " \\return"]
     #[doc = " ::CUDA_SUCCESS,"]
     #[doc = " ::CUDA_ERROR_NOT_INITIALIZED,"]
-    #[doc = " ::CUDA_ERROR_INVALID_HANDLE"]
+    #[doc = " ::CUDA_ERROR_INVALID_HANDLE,"]
+    #[doc = " ::CUDA_ERROR_NOT_SUPPORTED,"]
+    #[doc = " ::CUDA_ERROR_TIMEOUT"]
     #[doc = " \\notefnerr"]
     #[doc = ""]
     #[doc = " \\sa ::cuImportExternalSemaphore,"]
@@ -8160,6 +9081,21 @@ extern "C" {
     #[doc = " contains the number of threads specified by a previous call to"]
     #[doc = " ::cuFuncSetBlockShape()."]
     #[doc = ""]
+    #[doc = " The block shape, dynamic shared memory size, and parameter information"]
+    #[doc = " must be set using"]
+    #[doc = "  ::cuFuncSetBlockShape(),"]
+    #[doc = "  ::cuFuncSetSharedSize(),"]
+    #[doc = "  ::cuParamSetSize(),"]
+    #[doc = "  ::cuParamSeti(),"]
+    #[doc = "  ::cuParamSetf(), and"]
+    #[doc = "  ::cuParamSetv()"]
+    #[doc = " prior to calling this function."]
+    #[doc = ""]
+    #[doc = " Launching a function via ::cuLaunchKernel() invalidates the function's"]
+    #[doc = " block shape, dynamic shared memory size, and parameter information. After"]
+    #[doc = " launching via cuLaunchKernel, this state must be re-initialized prior to"]
+    #[doc = " calling this function. Failure to do so results in undefined behavior."]
+    #[doc = ""]
     #[doc = " \\param f - Kernel to launch"]
     #[doc = ""]
     #[doc = " \\return"]
@@ -8195,6 +9131,21 @@ extern "C" {
     #[doc = " Invokes the kernel \\p f on a \\p grid_width x \\p grid_height grid of"]
     #[doc = " blocks. Each block contains the number of threads specified by a previous"]
     #[doc = " call to ::cuFuncSetBlockShape()."]
+    #[doc = ""]
+    #[doc = " The block shape, dynamic shared memory size, and parameter information"]
+    #[doc = " must be set using"]
+    #[doc = "  ::cuFuncSetBlockShape(),"]
+    #[doc = "  ::cuFuncSetSharedSize(),"]
+    #[doc = "  ::cuParamSetSize(),"]
+    #[doc = "  ::cuParamSeti(),"]
+    #[doc = "  ::cuParamSetf(), and"]
+    #[doc = "  ::cuParamSetv()"]
+    #[doc = " prior to calling this function."]
+    #[doc = ""]
+    #[doc = " Launching a function via ::cuLaunchKernel() invalidates the function's"]
+    #[doc = " block shape, dynamic shared memory size, and parameter information. After"]
+    #[doc = " launching via cuLaunchKernel, this state must be re-initialized prior to"]
+    #[doc = " calling this function. Failure to do so results in undefined behavior."]
     #[doc = ""]
     #[doc = " \\param f           - Kernel to launch"]
     #[doc = " \\param grid_width  - Width of grid in blocks"]
@@ -8238,6 +9189,21 @@ extern "C" {
     #[doc = " blocks. Each block contains the number of threads specified by a previous"]
     #[doc = " call to ::cuFuncSetBlockShape()."]
     #[doc = ""]
+    #[doc = " The block shape, dynamic shared memory size, and parameter information"]
+    #[doc = " must be set using"]
+    #[doc = "  ::cuFuncSetBlockShape(),"]
+    #[doc = "  ::cuFuncSetSharedSize(),"]
+    #[doc = "  ::cuParamSetSize(),"]
+    #[doc = "  ::cuParamSeti(),"]
+    #[doc = "  ::cuParamSetf(), and"]
+    #[doc = "  ::cuParamSetv()"]
+    #[doc = " prior to calling this function."]
+    #[doc = ""]
+    #[doc = " Launching a function via ::cuLaunchKernel() invalidates the function's"]
+    #[doc = " block shape, dynamic shared memory size, and parameter information. After"]
+    #[doc = " launching via cuLaunchKernel, this state must be re-initialized prior to"]
+    #[doc = " calling this function. Failure to do so results in undefined behavior."]
+    #[doc = ""]
     #[doc = " \\param f           - Kernel to launch"]
     #[doc = " \\param grid_width  - Width of grid in blocks"]
     #[doc = " \\param grid_height - Height of grid in blocks"]
@@ -8257,8 +9223,8 @@ extern "C" {
     #[doc = " ::CUDA_ERROR_SHARED_OBJECT_INIT_FAILED"]
     #[doc = ""]
     #[doc = " \\note In certain cases where cubins are created with no ABI (i.e., using \\p ptxas \\p --abi-compile \\p no),"]
-    #[doc = "       this function may serialize kernel launches. In order to force the CUDA driver to retain"]
-    #[doc = "       asynchronous behavior, set the ::CU_CTX_LMEM_RESIZE_TO_MAX flag during context creation (see ::cuCtxCreate)."]
+    #[doc = "       this function may serialize kernel launches. The CUDA driver retains asynchronous behavior by"]
+    #[doc = "       growing the per-thread stack as needed per launch and not shrinking it afterwards."]
     #[doc = ""]
     #[doc = " \\note_null_stream"]
     #[doc = " \\notefnerr"]
@@ -8383,9 +9349,9 @@ extern "C" {
     #[doc = " parameter will be copied. The number of kernel parameters and their offsets and sizes do not need"]
     #[doc = " to be specified as that information is retrieved directly from the kernel's image."]
     #[doc = ""]
-    #[doc = " 2) Kernel parameters can also be packaged by the application into a single buffer that is passed in"]
-    #[doc = " via \\p extra. This places the burden on the application of knowing each kernel"]
-    #[doc = " parameter's size and alignment/padding within the buffer. The \\p extra parameter exists"]
+    #[doc = " 2) Kernel parameters for non-cooperative kernels can also be packaged by the application into a single"]
+    #[doc = " buffer that is passed in via \\p extra. This places the burden on the application of knowing each"]
+    #[doc = " kernel parameter's size and alignment/padding within the buffer. The \\p extra parameter exists"]
     #[doc = " to allow this function to take additional less commonly used arguments. \\p extra specifies"]
     #[doc = " a list of names of extra settings and their corresponding values. Each extra setting name is"]
     #[doc = " immediately followed by the corresponding value. The list must be terminated with either NULL or"]
@@ -8403,8 +9369,8 @@ extern "C" {
     #[doc = "   ::CU_LAUNCH_PARAM_BUFFER_POINTER;"]
     #[doc = ""]
     #[doc = " The error ::CUDA_ERROR_INVALID_VALUE will be returned if kernel parameters are specified with both"]
-    #[doc = " \\p kernelParams and \\p extra (i.e. both \\p kernelParams and"]
-    #[doc = " \\p extra are non-NULL)."]
+    #[doc = " \\p kernelParams and \\p extra (i.e. both \\p kernelParams and \\p extra are non-NULL)."]
+    #[doc = " ::CUDA_ERROR_INVALID_VALUE will be returned if \\p extra is used for a cooperative kernel."]
     #[doc = ""]
     #[doc = " The \\p kernelParams or \\p extra array, as well as the argument values it points to,"]
     #[doc = " are copied during this call."]
@@ -8429,6 +9395,7 @@ extern "C" {
     #[doc = ""]
     #[doc = " \\sa"]
     #[doc = " ::cuLaunchKernel,"]
+    #[doc = " ::cuLaunchCooperativeKernel,"]
     #[doc = " ::cuGraphKernelNodeGetParams,"]
     #[doc = " ::cuGraphKernelNodeSetParams,"]
     #[doc = " ::cuGraphCreate,"]
@@ -9268,39 +10235,7 @@ extern "C" {
     pub fn cuGraphDestroyNode(hNode: CUgraphNode) -> CUresult;
 }
 extern "C" {
-    #[doc = " \\brief Creates an executable graph from a graph"]
-    #[doc = ""]
-    #[doc = " Instantiates \\p hGraph as an executable graph. The graph is validated for any"]
-    #[doc = " structural constraints or intra-node constraints which were not previously"]
-    #[doc = " validated. If instantiation is successful, a handle to the instantiated graph"]
-    #[doc = " is returned in \\p graphExec."]
-    #[doc = ""]
-    #[doc = " If there are any errors, diagnostic information may be returned in \\p errorNode and"]
-    #[doc = " \\p logBuffer. This is the primary way to inspect instantiation errors. The output"]
-    #[doc = " will be null terminated unless the diagnostics overflow"]
-    #[doc = " the buffer. In this case, they will be truncated, and the last byte can be"]
-    #[doc = " inspected to determine if truncation occurred."]
-    #[doc = ""]
-    #[doc = " \\param phGraphExec - Returns instantiated graph"]
-    #[doc = " \\param hGraph      - Graph to instantiate"]
-    #[doc = " \\param phErrorNode - In case of an instantiation error, this may be modified to"]
-    #[doc = "                      indicate a node contributing to the error"]
-    #[doc = " \\param logBuffer   - A character buffer to store diagnostic messages"]
-    #[doc = " \\param bufferSize  - Size of the log buffer in bytes"]
-    #[doc = ""]
-    #[doc = " \\return"]
-    #[doc = " ::CUDA_SUCCESS,"]
-    #[doc = " ::CUDA_ERROR_DEINITIALIZED,"]
-    #[doc = " ::CUDA_ERROR_NOT_INITIALIZED,"]
-    #[doc = " ::CUDA_ERROR_INVALID_VALUE"]
-    #[doc = " \\note_graph_thread_safety"]
-    #[doc = " \\notefnerr"]
-    #[doc = ""]
-    #[doc = " \\sa"]
-    #[doc = " ::cuGraphCreate,"]
-    #[doc = " ::cuGraphLaunch,"]
-    #[doc = " ::cuGraphExecDestroy"]
-    pub fn cuGraphInstantiate(
+    pub fn cuGraphInstantiate_v2(
         phGraphExec: *mut CUgraphExec,
         hGraph: CUgraph,
         phErrorNode: *mut CUgraphNode,
@@ -9319,7 +10254,7 @@ extern "C" {
     #[doc = " of \\p nodeParams cannot be modified and must match the original value."]
     #[doc = " All other values can be modified."]
     #[doc = ""]
-    #[doc = " The modifications take effect at the next launch of \\p hGraphExec. Already"]
+    #[doc = " The modifications only affect future launches of \\p hGraphExec. Already"]
     #[doc = " enqueued or running launches of \\p hGraphExec are not affected by this call."]
     #[doc = " \\p hNode is also not modified by this call."]
     #[doc = ""]
@@ -9341,6 +10276,122 @@ extern "C" {
         hGraphExec: CUgraphExec,
         hNode: CUgraphNode,
         nodeParams: *const CUDA_KERNEL_NODE_PARAMS,
+    ) -> CUresult;
+}
+extern "C" {
+    #[doc = " \\brief Sets the parameters for a memcpy node in the given graphExec."]
+    #[doc = ""]
+    #[doc = " Updates the work represented by \\p hNode in \\p hGraphExec as though \\p hNode had"]
+    #[doc = " contained \\p copyParams at instantiation.  hNode must remain in the graph which was"]
+    #[doc = " used to instantiate \\p hGraphExec.  Changed edges to and from hNode are ignored."]
+    #[doc = ""]
+    #[doc = " The source and destination memory in \\p copyParams must be allocated from the same"]
+    #[doc = " contexts as the original source and destination memory.  Both the instantiation-time"]
+    #[doc = " memory operands and the memory operands in \\p copyParams must be 1-dimensional."]
+    #[doc = " Zero-length operations are not supported."]
+    #[doc = ""]
+    #[doc = " The modifications only affect future launches of \\p hGraphExec.  Already enqueued"]
+    #[doc = " or running launches of \\p hGraphExec are not affected by this call.  hNode is also"]
+    #[doc = " not modified by this call."]
+    #[doc = ""]
+    #[doc = " Returns CUDA_ERROR_INVALID_VALUE if the memory operands' mappings changed or"]
+    #[doc = " either the original or new memory operands are multidimensional."]
+    #[doc = ""]
+    #[doc = " \\param hGraphExec - The executable graph in which to set the specified node"]
+    #[doc = " \\param hNode      - Memcpy node from the graph which was used to instantiate graphExec"]
+    #[doc = " \\param copyParams - The updated parameters to set"]
+    #[doc = " \\param ctx        - Context on which to run the node"]
+    #[doc = ""]
+    #[doc = " \\return"]
+    #[doc = " ::CUDA_SUCCESS,"]
+    #[doc = " ::CUDA_ERROR_INVALID_VALUE,"]
+    #[doc = " \\note_graph_thread_safety"]
+    #[doc = " \\notefnerr"]
+    #[doc = ""]
+    #[doc = " \\sa"]
+    #[doc = " ::cuGraphInstantiate,"]
+    #[doc = " ::cuGraphExecKernelNodeSetParams"]
+    #[doc = " ::cuGraphExecMemsetNodeSetParams"]
+    #[doc = " ::cuGraphExecHostNodeSetParams"]
+    pub fn cuGraphExecMemcpyNodeSetParams(
+        hGraphExec: CUgraphExec,
+        hNode: CUgraphNode,
+        copyParams: *const CUDA_MEMCPY3D,
+        ctx: CUcontext,
+    ) -> CUresult;
+}
+extern "C" {
+    #[doc = " \\brief Sets the parameters for a memset node in the given graphExec."]
+    #[doc = ""]
+    #[doc = " Updates the work represented by \\p hNode in \\p hGraphExec as though \\p hNode had"]
+    #[doc = " contained \\p memsetParams at instantiation.  hNode must remain in the graph which was"]
+    #[doc = " used to instantiate \\p hGraphExec.  Changed edges to and from hNode are ignored."]
+    #[doc = ""]
+    #[doc = " The destination memory in \\p memsetParams must be allocated from the same"]
+    #[doc = " contexts as the original destination memory.  Both the instantiation-time"]
+    #[doc = " memory operand and the memory operand in \\p memsetParams must be 1-dimensional."]
+    #[doc = " Zero-length operations are not supported."]
+    #[doc = ""]
+    #[doc = " The modifications only affect future launches of \\p hGraphExec.  Already enqueued"]
+    #[doc = " or running launches of \\p hGraphExec are not affected by this call.  hNode is also"]
+    #[doc = " not modified by this call."]
+    #[doc = ""]
+    #[doc = " Returns CUDA_ERROR_INVALID_VALUE if the memory operand's mappings changed or"]
+    #[doc = " either the original or new memory operand are multidimensional."]
+    #[doc = ""]
+    #[doc = " \\param hGraphExec   - The executable graph in which to set the specified node"]
+    #[doc = " \\param hNode        - Memset node from the graph which was used to instantiate graphExec"]
+    #[doc = " \\param memsetParams - The updated parameters to set"]
+    #[doc = " \\param ctx          - Context on which to run the node"]
+    #[doc = ""]
+    #[doc = " \\return"]
+    #[doc = " ::CUDA_SUCCESS,"]
+    #[doc = " ::CUDA_ERROR_INVALID_VALUE,"]
+    #[doc = " \\note_graph_thread_safety"]
+    #[doc = " \\notefnerr"]
+    #[doc = ""]
+    #[doc = " \\sa"]
+    #[doc = " ::cuGraphInstantiate,"]
+    #[doc = " ::cuGraphExecKernelNodeSetParams"]
+    #[doc = " ::cuGraphExecMemcpyNodeSetParams"]
+    #[doc = " ::cuGraphExecHostNodeSetParams"]
+    pub fn cuGraphExecMemsetNodeSetParams(
+        hGraphExec: CUgraphExec,
+        hNode: CUgraphNode,
+        memsetParams: *const CUDA_MEMSET_NODE_PARAMS,
+        ctx: CUcontext,
+    ) -> CUresult;
+}
+extern "C" {
+    #[doc = " \\brief Sets the parameters for a host node in the given graphExec."]
+    #[doc = ""]
+    #[doc = " Updates the work represented by \\p hNode in \\p hGraphExec as though \\p hNode had"]
+    #[doc = " contained \\p nodeParams at instantiation.  hNode must remain in the graph which was"]
+    #[doc = " used to instantiate \\p hGraphExec.  Changed edges to and from hNode are ignored."]
+    #[doc = ""]
+    #[doc = " The modifications only affect future launches of \\p hGraphExec.  Already enqueued"]
+    #[doc = " or running launches of \\p hGraphExec are not affected by this call.  hNode is also"]
+    #[doc = " not modified by this call."]
+    #[doc = ""]
+    #[doc = " \\param hGraphExec - The executable graph in which to set the specified node"]
+    #[doc = " \\param hNode      - Host node from the graph which was used to instantiate graphExec"]
+    #[doc = " \\param nodeParams - The updated parameters to set"]
+    #[doc = ""]
+    #[doc = " \\return"]
+    #[doc = " ::CUDA_SUCCESS,"]
+    #[doc = " ::CUDA_ERROR_INVALID_VALUE,"]
+    #[doc = " \\note_graph_thread_safety"]
+    #[doc = " \\notefnerr"]
+    #[doc = ""]
+    #[doc = " \\sa"]
+    #[doc = " ::cuGraphInstantiate,"]
+    #[doc = " ::cuGraphExecKernelNodeSetParams"]
+    #[doc = " ::cuGraphExecMemcpyNodeSetParams"]
+    #[doc = " ::cuGraphExecMemsetNodeSetParams"]
+    pub fn cuGraphExecHostNodeSetParams(
+        hGraphExec: CUgraphExec,
+        hNode: CUgraphNode,
+        nodeParams: *const CUDA_HOST_NODE_PARAMS,
     ) -> CUresult;
 }
 extern "C" {
@@ -9411,6 +10462,153 @@ extern "C" {
     #[doc = " \\sa"]
     #[doc = " ::cuGraphCreate"]
     pub fn cuGraphDestroy(hGraph: CUgraph) -> CUresult;
+}
+extern "C" {
+    #[doc = " \\brief Check whether an executable graph can be updated with a graph and perform the update if possible"]
+    #[doc = ""]
+    #[doc = " Updates the node parameters in the instantiated graph specified by \\p hGraphExec with the"]
+    #[doc = " node parameters in a topologically identical graph specified by \\p hGraph."]
+    #[doc = ""]
+    #[doc = " Limitations:"]
+    #[doc = ""]
+    #[doc = " - Kernel nodes:"]
+    #[doc = "   - The function must not change (same restriction as cuGraphExecKernelNodeSetParams())"]
+    #[doc = " - Memset and memcpy nodes:"]
+    #[doc = "   - The CUDA device(s) to which the operand(s) was allocated/mapped cannot change."]
+    #[doc = "   - The source/destination memory must be allocated from the same contexts as the original"]
+    #[doc = "     source/destination memory."]
+    #[doc = "   - Only 1D memsets can be changed."]
+    #[doc = " - Additional memcpy node restrictions:"]
+    #[doc = "   - Changing either the source or destination memory type(i.e. CU_MEMORYTYPE_DEVICE,"]
+    #[doc = "     CU_MEMORYTYPE_ARRAY, etc.) is not supported."]
+    #[doc = ""]
+    #[doc = " Note:  The API may add further restrictions in future releases.  The return code should always be checked."]
+    #[doc = ""]
+    #[doc = " Some node types are not currently supported:"]
+    #[doc = " - Empty graph nodes(CU_GRAPH_NODE_TYPE_EMPTY)"]
+    #[doc = " - Child graphs(CU_GRAPH_NODE_TYPE_GRAPH)."]
+    #[doc = ""]
+    #[doc = " cuGraphExecUpdate sets \\p updateResult_out to CU_GRAPH_EXEC_UPDATE_ERROR_TOPOLOGY_CHANGED under"]
+    #[doc = " the following conditions:"]
+    #[doc = ""]
+    #[doc = " - The count of nodes directly in \\p hGraphExec and \\p hGraph differ, in which case \\p hErrorNode_out"]
+    #[doc = "   is NULL."]
+    #[doc = " - A node is deleted in \\p hGraph but not not its pair from \\p hGraphExec, in which case \\p hErrorNode_out"]
+    #[doc = "   is NULL."]
+    #[doc = " - A node is deleted in \\p hGraphExec but not its pair from \\p hGraph, in which case \\p hErrorNode_out is"]
+    #[doc = "   the pairless node from \\p hGraph."]
+    #[doc = " - The dependent nodes of a pair differ, in which case \\p hErrorNode_out is the node from \\p hGraph."]
+    #[doc = ""]
+    #[doc = " cuGraphExecUpdate sets \\p updateResult_out to:"]
+    #[doc = " - CU_GRAPH_EXEC_UPDATE_ERROR if passed an invalid value."]
+    #[doc = " - CU_GRAPH_EXEC_UPDATE_ERROR_TOPOLOGY_CHANGED if the graph topology changed"]
+    #[doc = " - CU_GRAPH_EXEC_UPDATE_ERROR_NODE_TYPE_CHANGED if the type of a node changed, in which case"]
+    #[doc = "   \\p hErrorNode_out is set to the node from \\p hGraph."]
+    #[doc = " - CU_GRAPH_EXEC_UPDATE_ERROR_FUNCTION_CHANGED if the func field of a kernel changed, in which"]
+    #[doc = "   case \\p hErrorNode_out is set to the node from \\p hGraph"]
+    #[doc = " - CU_GRAPH_EXEC_UPDATE_ERROR_PARAMETERS_CHANGED if any parameters to a node changed in a way"]
+    #[doc = "   that is not supported, in which case \\p hErrorNode_out is set to the node from \\p hGraph."]
+    #[doc = " - CU_GRAPH_EXEC_UPDATE_ERROR_NOT_SUPPORTED if something about a node is unsupported, like"]
+    #[doc = "   the node's type or configuration, in which case \\p hErrorNode_out is set to the node from \\p hGraph"]
+    #[doc = ""]
+    #[doc = " If \\p updateResult_out isn't set in one of the situations described above, the update check passes"]
+    #[doc = " and cuGraphExecUpdate updates \\p hGraphExec to match the contents of \\p hGraph.  If an error happens"]
+    #[doc = " during the update, \\p updateResult_out will be set to CU_GRAPH_EXEC_UPDATE_ERROR; otherwise,"]
+    #[doc = " \\p updateResult_out is set to CU_GRAPH_EXEC_UPDATE_SUCCESS."]
+    #[doc = ""]
+    #[doc = " cuGraphExecUpdate returns CUDA_SUCCESS when the updated was performed successfully.  It returns"]
+    #[doc = " CUDA_ERROR_GRAPH_EXEC_UPDATE_FAILURE if the graph update was not performed because it included"]
+    #[doc = " changes which violated constraints specific to instantiated graph update."]
+    #[doc = ""]
+    #[doc = " \\param hGraphExec The instantiated graph to be updated"]
+    #[doc = " \\param hGraph The graph containing the updated parameters"]
+    #[doc = " \\param hErrorNode_out The node which caused the permissibility check to forbid the update, if any"]
+    #[doc = " \\param updateResult_out Whether the graph update was permitted.  If was forbidden, the reason why"]
+    #[doc = ""]
+    #[doc = " \\return"]
+    #[doc = " ::CUDA_SUCCESS,"]
+    #[doc = " ::CUDA_ERROR_GRAPH_EXEC_UPDATE_FAILURE,"]
+    #[doc = " \\note_graph_thread_safety"]
+    #[doc = " \\notefnerr"]
+    #[doc = ""]
+    #[doc = " \\sa"]
+    #[doc = " ::cuGraphInstantiate,"]
+    pub fn cuGraphExecUpdate(
+        hGraphExec: CUgraphExec,
+        hGraph: CUgraph,
+        hErrorNode_out: *mut CUgraphNode,
+        updateResult_out: *mut CUgraphExecUpdateResult,
+    ) -> CUresult;
+}
+extern "C" {
+    #[doc = " \\brief Copies attributes from source node to destination node."]
+    #[doc = ""]
+    #[doc = " Copies attributes from source node \\p src to destination node \\p dst."]
+    #[doc = " Both node must have the same context."]
+    #[doc = ""]
+    #[doc = " \\param[out] dst Destination node"]
+    #[doc = " \\param[in] src Source node"]
+    #[doc = " For list of attributes see ::CUkernelNodeAttrID"]
+    #[doc = ""]
+    #[doc = " \\return"]
+    #[doc = " ::CUDA_SUCCESS,"]
+    #[doc = " ::CUDA_ERROR_INVALID_VALUE"]
+    #[doc = " \\notefnerr"]
+    #[doc = ""]
+    #[doc = " \\sa"]
+    #[doc = " ::CUaccessPolicyWindow"]
+    pub fn cuGraphKernelNodeCopyAttributes(
+        dst: CUgraphNode,
+        src: CUgraphNode,
+    ) -> CUresult;
+}
+extern "C" {
+    #[doc = " \\brief Queries node attribute."]
+    #[doc = ""]
+    #[doc = " Queries attribute \\p attr from node \\p hNode and stores it in corresponding"]
+    #[doc = " member of \\p value_out."]
+    #[doc = ""]
+    #[doc = " \\param[in] hNode"]
+    #[doc = " \\param[in] attr"]
+    #[doc = " \\param[out] value_out"]
+    #[doc = ""]
+    #[doc = " \\return"]
+    #[doc = " ::CUDA_SUCCESS,"]
+    #[doc = " ::CUDA_ERROR_INVALID_VALUE,"]
+    #[doc = " ::CUDA_ERROR_INVALID_HANDLE"]
+    #[doc = " \\notefnerr"]
+    #[doc = ""]
+    #[doc = " \\sa"]
+    #[doc = " ::CUaccessPolicyWindow"]
+    pub fn cuGraphKernelNodeGetAttribute(
+        hNode: CUgraphNode,
+        attr: CUkernelNodeAttrID,
+        value_out: *mut CUkernelNodeAttrValue,
+    ) -> CUresult;
+}
+extern "C" {
+    #[doc = " \\brief Sets node attribute."]
+    #[doc = ""]
+    #[doc = " Sets attribute \\p attr on node \\p hNode from corresponding attribute of"]
+    #[doc = " \\p value."]
+    #[doc = ""]
+    #[doc = " \\param[out] hNode"]
+    #[doc = " \\param[in] attr"]
+    #[doc = " \\param[out] value"]
+    #[doc = ""]
+    #[doc = " \\return"]
+    #[doc = " ::CUDA_SUCCESS,"]
+    #[doc = " ::CUDA_ERROR_INVALID_VALUE,"]
+    #[doc = " ::CUDA_ERROR_INVALID_HANDLE"]
+    #[doc = " \\notefnerr"]
+    #[doc = ""]
+    #[doc = " \\sa"]
+    #[doc = " ::CUaccessPolicyWindow"]
+    pub fn cuGraphKernelNodeSetAttribute(
+        hNode: CUgraphNode,
+        attr: CUkernelNodeAttrID,
+        value: *const CUkernelNodeAttrValue,
+    ) -> CUresult;
 }
 extern "C" {
     #[doc = " \\brief Returns occupancy of a function"]
@@ -9597,6 +10795,33 @@ extern "C" {
         dynamicSMemSize: usize,
         blockSizeLimit: ::std::os::raw::c_int,
         flags: ::std::os::raw::c_uint,
+    ) -> CUresult;
+}
+extern "C" {
+    #[doc = " \\brief Returns dynamic shared memory available per block when launching \\p numBlocks blocks on SM"]
+    #[doc = ""]
+    #[doc = " Returns in \\p *dynamicSmemSize the maximum size of dynamic shared memory to allow \\p numBlocks blocks per SM."]
+    #[doc = ""]
+    #[doc = " \\param dynamicSmemSize - Returned maximum dynamic shared memory"]
+    #[doc = " \\param func            - Kernel function for which occupancy is calculated"]
+    #[doc = " \\param numBlocks       - Number of blocks to fit on SM"]
+    #[doc = " \\param blockSize       - Size of the blocks"]
+    #[doc = ""]
+    #[doc = " \\return"]
+    #[doc = " ::CUDA_SUCCESS,"]
+    #[doc = " ::CUDA_ERROR_DEINITIALIZED,"]
+    #[doc = " ::CUDA_ERROR_NOT_INITIALIZED,"]
+    #[doc = " ::CUDA_ERROR_INVALID_CONTEXT,"]
+    #[doc = " ::CUDA_ERROR_INVALID_VALUE,"]
+    #[doc = " ::CUDA_ERROR_UNKNOWN"]
+    #[doc = " \\notefnerr"]
+    #[doc = ""]
+    #[doc = " \\sa"]
+    pub fn cuOccupancyAvailableDynamicSMemPerBlock(
+        dynamicSmemSize: *mut usize,
+        func: CUfunction,
+        numBlocks: ::std::os::raw::c_int,
+        blockSize: ::std::os::raw::c_int,
     ) -> CUresult;
 }
 extern "C" {
@@ -9996,6 +11221,10 @@ extern "C" {
     #[doc = "   from [0, Dim) where Dim is the width or height of the CUDA"]
     #[doc = "   array. Instead, the texture coordinates [0, 1.0) reference"]
     #[doc = "   the entire breadth of the array dimension;"]
+    #[doc = " - ::CU_TRSF_DISABLE_TRILINEAR_OPTIMIZATION, which disables any trilinear"]
+    #[doc = "   filtering optimizations. Trilinear optimizations improve texture filtering"]
+    #[doc = "   performance by allowing bilinear filtering on textures in scenarios where"]
+    #[doc = "   it can closely approximate the expected results."]
     #[doc = ""]
     #[doc = " \\param hTexRef - Texture reference"]
     #[doc = " \\param Flags   - Optional flags to set"]
@@ -10571,11 +11800,19 @@ extern "C" {
     #[doc = "   This is ignored if ::CUDA_RESOURCE_DESC::resType is ::CU_RESOURCE_TYPE_LINEAR."]
     #[doc = ""]
     #[doc = " - ::CUDA_TEXTURE_DESC::flags can be any combination of the following:"]
-    #[doc = "   - ::CU_TRSF_READ_AS_INTEGER, which suppresses the default behavior of having the texture promote integer data to floating point data in the"]
-    #[doc = "     range [0, 1]. Note that texture with 32-bit integer format would not be promoted, regardless of whether or not this flag is specified."]
-    #[doc = "   - ::CU_TRSF_NORMALIZED_COORDINATES, which suppresses the default behavior of having the texture coordinates range from [0, Dim) where Dim is"]
-    #[doc = "     the width or height of the CUDA array. Instead, the texture coordinates [0, 1.0) reference the entire breadth of the array dimension; Note"]
-    #[doc = "     that for CUDA mipmapped arrays, this flag has to be set."]
+    #[doc = "   - ::CU_TRSF_READ_AS_INTEGER, which suppresses the default behavior of"]
+    #[doc = "   having the texture promote integer data to floating point data in the"]
+    #[doc = "   range [0, 1]. Note that texture with 32-bit integer format would not be"]
+    #[doc = "   promoted, regardless of whether or not this flag is specified."]
+    #[doc = "   - ::CU_TRSF_NORMALIZED_COORDINATES, which suppresses the default behavior"]
+    #[doc = "   of having the texture coordinates range from [0, Dim) where Dim is the"]
+    #[doc = "   width or height of the CUDA array. Instead, the texture coordinates"]
+    #[doc = "   [0, 1.0) reference the entire breadth of the array dimension; Note that"]
+    #[doc = "   for CUDA mipmapped arrays, this flag has to be set."]
+    #[doc = "   - ::CU_TRSF_DISABLE_TRILINEAR_OPTIMIZATION, which disables any trilinear"]
+    #[doc = "   filtering optimizations. Trilinear optimizations improve texture filtering"]
+    #[doc = "   performance by allowing bilinear filtering on textures in scenarios where"]
+    #[doc = "   it can closely approximate the expected results."]
     #[doc = ""]
     #[doc = " - ::CUDA_TEXTURE_DESC::maxAnisotropy specifies the maximum anisotropy ratio to be used when doing anisotropic filtering. This value will be"]
     #[doc = "   clamped to the range [1,16]."]
@@ -10864,7 +12101,9 @@ extern "C" {
     #[doc = " memory from the current context in \\p peerContext, a separate symmetric call"]
     #[doc = " to ::cuCtxEnablePeerAccess() is required."]
     #[doc = ""]
-    #[doc = " There is a system-wide maximum of eight peer connections per device."]
+    #[doc = " Note that there are both device-wide and system-wide limitations per system"]
+    #[doc = " configuration, as noted in the CUDA Programming Guide under the section"]
+    #[doc = " \"Peer-to-Peer Memory Access\"."]
     #[doc = ""]
     #[doc = " Returns ::CUDA_ERROR_PEER_ACCESS_UNSUPPORTED if ::cuDeviceCanAccessPeer() indicates"]
     #[doc = " that the ::CUdevice of the current context cannot directly access memory"]
@@ -11185,6 +12424,31 @@ extern "C" {
         pExportTableId: *const CUuuid,
     ) -> CUresult;
 }
+extern "C" {
+    #[doc = " \\brief Returns a module handle"]
+    #[doc = ""]
+    #[doc = " Returns in \\p *hmod the handle of the module that function \\p hfunc"]
+    #[doc = " is located in. The lifetime of the module corresponds to the lifetime of"]
+    #[doc = " the context it was loaded in or until the module is explicitly unloaded."]
+    #[doc = ""]
+    #[doc = " The CUDA runtime manages its own modules loaded into the primary context."]
+    #[doc = " If the handle returned by this API refers to a module loaded by the CUDA runtime,"]
+    #[doc = " calling ::cuModuleUnload() on that module will result in undefined behavior."]
+    #[doc = ""]
+    #[doc = " \\param hmod - Returned module handle"]
+    #[doc = " \\param hfunc   - Function to retrieve module for"]
+    #[doc = ""]
+    #[doc = " \\return"]
+    #[doc = " ::CUDA_SUCCESS,"]
+    #[doc = " ::CUDA_ERROR_DEINITIALIZED,"]
+    #[doc = " ::CUDA_ERROR_NOT_INITIALIZED,"]
+    #[doc = " ::CUDA_ERROR_INVALID_CONTEXT,"]
+    #[doc = " ::CUDA_ERROR_INVALID_VALUE,"]
+    #[doc = " ::CUDA_ERROR_NOT_FOUND"]
+    #[doc = " \\notefnerr"]
+    #[doc = ""]
+    pub fn cuFuncGetModule(hmod: *mut CUmodule, hfunc: CUfunction) -> CUresult;
+}
 pub const cudaRoundMode_cudaRoundNearest: cudaRoundMode = 0;
 pub const cudaRoundMode_cudaRoundZero: cudaRoundMode = 1;
 pub const cudaRoundMode_cudaRoundPosInf: cudaRoundMode = 2;
@@ -11418,7 +12682,7 @@ pub mod cudaError {
     #[doc = " ::cuCtxDestroy() invoked on it). This can also be returned if a user"]
     #[doc = " mixes different API versions (i.e. 3010 context with 3020 API calls)."]
     #[doc = " See ::cuCtxGetApiVersion() for more details."]
-    pub const cudaErrorDeviceUninitilialized: Type = 201;
+    pub const cudaErrorDeviceUninitialized: Type = 201;
     #[doc = " This indicates that the buffer object could not be mapped."]
     pub const cudaErrorMapBufferObjectFailed: Type = 205;
     #[doc = " This indicates that the buffer object could not be unmapped."]
@@ -11642,6 +12906,11 @@ pub mod cudaError {
     #[doc = " argument to ::cudaStreamBeginCapture was passed to ::cudaStreamEndCapture in a"]
     #[doc = " different thread."]
     pub const cudaErrorStreamCaptureWrongThread: Type = 908;
+    #[doc = " This indicates that the wait operation has timed out."]
+    pub const cudaErrorTimeout: Type = 909;
+    #[doc = " This error indicates that the graph update was not performed because it included"]
+    #[doc = " changes which violated constraints specific to instantiated graph update."]
+    pub const cudaErrorGraphExecUpdateFailure: Type = 910;
     #[doc = " This indicates that an unknown internal error has occurred."]
     pub const cudaErrorUnknown: Type = 999;
     #[doc = " Any unhandled CUDA driver error is added to this value and returned via"]
@@ -11791,6 +13060,38 @@ pub struct cudaMemsetParams {
     #[doc = "< Number of rows"]
     pub height: usize,
 }
+#[doc = "< Normal cache persistence."]
+pub const cudaAccessProperty_cudaAccessPropertyNormal: cudaAccessProperty = 0;
+#[doc = "< Streaming access is less likely to persit from cache."]
+pub const cudaAccessProperty_cudaAccessPropertyStreaming: cudaAccessProperty =
+    1;
+#[doc = "< Persisting access is more likely to persist in cache."]
+pub const cudaAccessProperty_cudaAccessPropertyPersisting: cudaAccessProperty =
+    2;
+#[doc = " Specifies performance hint with ::cudaAccessPolicyWindow for hitProp and missProp members."]
+pub type cudaAccessProperty = u32;
+#[doc = " Specifies an access policy for a window, a contiguous extent of memory"]
+#[doc = " beginning at base_ptr and ending at base_ptr + num_bytes."]
+#[doc = " Partition into many segments and assign segments such that."]
+#[doc = " sum of \"hit segments\" / window == approx. ratio."]
+#[doc = " sum of \"miss segments\" / window == approx 1-ratio."]
+#[doc = " Segments and ratio specifications are fitted to the capabilities of"]
+#[doc = " the architecture."]
+#[doc = " Accesses in a hit segment apply the hitProp access policy."]
+#[doc = " Accesses in a miss segment apply the missProp access policy."]
+#[repr(C)]
+pub struct cudaAccessPolicyWindow {
+    #[doc = "< Starting address of the access policy window. CUDA driver may align it."]
+    pub base_ptr: *mut ::std::os::raw::c_void,
+    #[doc = "< Size in bytes of the window policy. CUDA driver may restrict the maximum size and alignment."]
+    pub num_bytes: usize,
+    #[doc = "< hitRatio specifies percentage of lines assigned hitProp, rest are assigned missProp."]
+    pub hitRatio: f32,
+    #[doc = "< ::CUaccessProperty set for hit."]
+    pub hitProp: cudaAccessProperty,
+    #[doc = "< ::CUaccessProperty set for miss. Must be either NORMAL or STREAMING."]
+    pub missProp: cudaAccessProperty,
+}
 #[doc = " CUDA host function"]
 #[doc = " \\param userData Argument value passed to the function"]
 pub type cudaHostFn_t = ::std::option::Option<
@@ -11826,6 +13127,30 @@ pub const cudaStreamCaptureMode_cudaStreamCaptureModeRelaxed:
 #[doc = " Possible modes for stream capture thread interactions. For more details see"]
 #[doc = " ::cudaStreamBeginCapture and ::cudaThreadExchangeStreamCaptureMode"]
 pub type cudaStreamCaptureMode = u32;
+pub const cudaSynchronizationPolicy_cudaSyncPolicyAuto:
+    cudaSynchronizationPolicy = 1;
+pub const cudaSynchronizationPolicy_cudaSyncPolicySpin:
+    cudaSynchronizationPolicy = 2;
+pub const cudaSynchronizationPolicy_cudaSyncPolicyYield:
+    cudaSynchronizationPolicy = 3;
+pub const cudaSynchronizationPolicy_cudaSyncPolicyBlockingSync:
+    cudaSynchronizationPolicy = 4;
+pub type cudaSynchronizationPolicy = u32;
+#[doc = "< Identifier for ::cudaStreamAttrValue::accessPolicyWindow."]
+pub const cudaStreamAttrID_cudaStreamAttributeAccessPolicyWindow:
+    cudaStreamAttrID = 1;
+#[doc = "< ::cudaSynchronizationPolicy for work queued up in this stream"]
+pub const cudaStreamAttrID_cudaStreamAttributeSynchronizationPolicy:
+    cudaStreamAttrID = 3;
+#[doc = " Stream Attributes"]
+pub type cudaStreamAttrID = u32;
+#[doc = " Stream attributes union used with ::cudaStreamSetAttribute/::cudaStreamGetAttribute"]
+#[repr(C)]
+pub struct cudaStreamAttrValue {
+    pub accessPolicyWindow: __BindgenUnionField<cudaAccessPolicyWindow>,
+    pub syncPolicy: __BindgenUnionField<cudaSynchronizationPolicy>,
+    pub bindgen_union_field: [u64; 4usize],
+}
 #[doc = " CUDA graphics interop resource"]
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -11879,6 +13204,22 @@ pub const cudaGraphicsCubeFace_cudaGraphicsCubeFaceNegativeZ:
     cudaGraphicsCubeFace = 5;
 #[doc = " CUDA graphics interop array indices for cube maps"]
 pub type cudaGraphicsCubeFace = u32;
+#[doc = "< Identifier for ::cudaKernelNodeAttrValue::accessPolicyWindow."]
+pub const cudaKernelNodeAttrID_cudaKernelNodeAttributeAccessPolicyWindow:
+    cudaKernelNodeAttrID = 1;
+#[doc = "< Allows a kernel node to be cooperative (see ::cudaLaunchCooperativeKernel)."]
+pub const cudaKernelNodeAttrID_cudaKernelNodeAttributeCooperative:
+    cudaKernelNodeAttrID = 2;
+#[doc = " Graph kernel node Attributes"]
+pub type cudaKernelNodeAttrID = u32;
+#[doc = " Graph kernel node attributes union, used with ::cudaKernelNodeSetAttribute/::cudaKernelNodeGetAttribute"]
+#[repr(C)]
+pub struct cudaKernelNodeAttrValue {
+    #[doc = "< Attribute ::CUaccessPolicyWindow."]
+    pub accessPolicyWindow: __BindgenUnionField<cudaAccessPolicyWindow>,
+    pub cooperative: __BindgenUnionField<::std::os::raw::c_int>,
+    pub bindgen_union_field: [u64; 4usize],
+}
 #[doc = "< Array resource"]
 pub const cudaResourceType_cudaResourceTypeArray: cudaResourceType = 0;
 #[doc = "< Mipmapped array resource"]
@@ -12066,13 +13407,6 @@ pub struct cudaResourceViewDesc {
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct cudaPointerAttributes {
-    #[doc = " \\deprecated"]
-    #[doc = ""]
-    #[doc = " The physical location of the memory, ::cudaMemoryTypeHost or"]
-    #[doc = " ::cudaMemoryTypeDevice. Note that managed memory can return either"]
-    #[doc = " ::cudaMemoryTypeDevice or ::cudaMemoryTypeHost regardless of it's"]
-    #[doc = " physical location."]
-    pub memoryType: cudaMemoryType,
     #[doc = " The type of memory - ::cudaMemoryTypeUnregistered, ::cudaMemoryTypeHost,"]
     #[doc = " ::cudaMemoryTypeDevice or ::cudaMemoryTypeManaged."]
     pub type_: cudaMemoryType,
@@ -12093,10 +13427,6 @@ pub struct cudaPointerAttributes {
     #[doc = " \\note CUDA doesn't check if unregistered memory is allocated so this field"]
     #[doc = " may contain invalid pointer if an invalid pointer has been passed to CUDA."]
     pub hostPointer: *mut ::std::os::raw::c_void,
-    #[doc = " \\deprecated"]
-    #[doc = ""]
-    #[doc = " Indicates if this pointer points to managed memory"]
-    pub isManaged: ::std::os::raw::c_int,
 }
 #[doc = " CUDA function attributes"]
 #[repr(C)]
@@ -12197,6 +13527,8 @@ pub const cudaLimit_cudaLimitDevRuntimeSyncDepth: cudaLimit = 3;
 pub const cudaLimit_cudaLimitDevRuntimePendingLaunchCount: cudaLimit = 4;
 #[doc = "< A value between 0 and 128 that indicates the maximum fetch granularity of L2 (in Bytes). This is a hint"]
 pub const cudaLimit_cudaLimitMaxL2FetchGranularity: cudaLimit = 5;
+#[doc = "< A size in bytes for L2 persisting lines cache size"]
+pub const cudaLimit_cudaLimitPersistingL2CacheSize: cudaLimit = 6;
 #[doc = " CUDA Limits"]
 pub type cudaLimit = u32;
 #[doc = "< Data will mostly be read and only occassionally be written to"]
@@ -12468,6 +13800,12 @@ pub const cudaDeviceAttr_cudaDevAttrPageableMemoryAccessUsesHostPageTables:
 #[doc = "< Host can directly access managed memory on the device without migration."]
 pub const cudaDeviceAttr_cudaDevAttrDirectManagedMemAccessFromHost:
     cudaDeviceAttr = 101;
+#[doc = "< Maximum number of blocks per multiprocessor"]
+pub const cudaDeviceAttr_cudaDevAttrMaxBlocksPerMultiprocessor: cudaDeviceAttr =
+    106;
+#[doc = "< Shared memory reserved by CUDA driver per block in bytes"]
+pub const cudaDeviceAttr_cudaDevAttrReservedSharedMemoryPerBlock:
+    cudaDeviceAttr = 111;
 #[doc = " CUDA device attributes"]
 pub type cudaDeviceAttr = u32;
 #[doc = "< A relative value indicating the performance of the link between two devices"]
@@ -12600,6 +13938,8 @@ pub struct cudaDeviceProp {
     pub memoryBusWidth: ::std::os::raw::c_int,
     #[doc = "< Size of L2 cache in bytes"]
     pub l2CacheSize: ::std::os::raw::c_int,
+    #[doc = "< Device's maximum l2 persisting lines capacity setting in bytes"]
+    pub persistingL2CacheMaxSize: ::std::os::raw::c_int,
     #[doc = "< Maximum resident threads per multiprocessor"]
     pub maxThreadsPerMultiProcessor: ::std::os::raw::c_int,
     #[doc = "< Device supports stream priorities"]
@@ -12640,6 +13980,12 @@ pub struct cudaDeviceProp {
     pub pageableMemoryAccessUsesHostPageTables: ::std::os::raw::c_int,
     #[doc = "< Host can directly access managed memory on the device without migration."]
     pub directManagedMemAccessFromHost: ::std::os::raw::c_int,
+    #[doc = "< Maximum number of resident blocks per multiprocessor"]
+    pub maxBlocksPerMultiProcessor: ::std::os::raw::c_int,
+    #[doc = "< The maximum value of ::cudaAccessPolicyWindow::num_bytes."]
+    pub accessPolicyMaxWindowSize: ::std::os::raw::c_int,
+    #[doc = "< Shared memory reserved by CUDA driver per block in bytes"]
+    pub reservedSharedMemPerBlock: usize,
 }
 #[doc = " CUDA IPC event handle"]
 #[repr(C)]
@@ -12667,6 +14013,13 @@ pub const cudaExternalMemoryHandleType_cudaExternalMemoryHandleTypeD3D12Heap:
     cudaExternalMemoryHandleType = 4;
 #[doc = " Handle is a D3D12 committed resource"]
 pub const cudaExternalMemoryHandleType_cudaExternalMemoryHandleTypeD3D12Resource : cudaExternalMemoryHandleType = 5 ;
+#[doc = "  Handle is a shared NT handle to a D3D11 resource"]
+pub const cudaExternalMemoryHandleType_cudaExternalMemoryHandleTypeD3D11Resource : cudaExternalMemoryHandleType = 6 ;
+#[doc = "  Handle is a globally shared handle to a D3D11 resource"]
+pub const cudaExternalMemoryHandleType_cudaExternalMemoryHandleTypeD3D11ResourceKmt : cudaExternalMemoryHandleType = 7 ;
+#[doc = "  Handle is an NvSciBuf object"]
+pub const cudaExternalMemoryHandleType_cudaExternalMemoryHandleTypeNvSciBuf:
+    cudaExternalMemoryHandleType = 8;
 #[doc = " External memory handle types"]
 pub type cudaExternalMemoryHandleType = u32;
 #[doc = " External memory handle descriptor"]
@@ -12689,6 +14042,9 @@ pub union cudaExternalMemoryHandleDesc__bindgen_ty_1 {
     #[doc = " ::cudaExternalMemoryHandleTypeOpaqueFd"]
     pub fd: ::std::os::raw::c_int,
     pub win32: cudaExternalMemoryHandleDesc__bindgen_ty_1__bindgen_ty_1,
+    #[doc = " A handle representing NvSciBuf Object. Valid when type"]
+    #[doc = " is ::cudaExternalMemoryHandleTypeNvSciBuf"]
+    pub nvSciBufObject: *const ::std::os::raw::c_void,
     _bindgen_union_align: [u64; 2usize],
 }
 #[doc = " Win32 handle referencing the semaphore object. Valid when"]
@@ -12697,8 +14053,12 @@ pub union cudaExternalMemoryHandleDesc__bindgen_ty_1 {
 #[doc = " - ::cudaExternalMemoryHandleTypeOpaqueWin32Kmt"]
 #[doc = " - ::cudaExternalMemoryHandleTypeD3D12Heap"]
 #[doc = " - ::cudaExternalMemoryHandleTypeD3D12Resource"]
+#[doc = " - ::cudaExternalMemoryHandleTypeD3D11Resource"]
+#[doc = " - ::cudaExternalMemoryHandleTypeD3D11ResourceKmt"]
 #[doc = " Exactly one of 'handle' and 'name' must be non-NULL. If"]
-#[doc = " type is ::cudaExternalMemoryHandleTypeOpaqueWin32Kmt"]
+#[doc = " type is one of the following:"]
+#[doc = " ::cudaExternalMemoryHandleTypeOpaqueWin32Kmt"]
+#[doc = " ::cudaExternalMemoryHandleTypeD3D11ResourceKmt"]
 #[doc = " then 'name' must be NULL."]
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -12744,6 +14104,14 @@ pub const cudaExternalSemaphoreHandleType_cudaExternalSemaphoreHandleTypeOpaqueW
 pub const cudaExternalSemaphoreHandleType_cudaExternalSemaphoreHandleTypeOpaqueWin32Kmt : cudaExternalSemaphoreHandleType = 3 ;
 #[doc = " Handle is a shared NT handle referencing a D3D12 fence object"]
 pub const cudaExternalSemaphoreHandleType_cudaExternalSemaphoreHandleTypeD3D12Fence : cudaExternalSemaphoreHandleType = 4 ;
+#[doc = " Handle is a shared NT handle referencing a D3D11 fence object"]
+pub const cudaExternalSemaphoreHandleType_cudaExternalSemaphoreHandleTypeD3D11Fence : cudaExternalSemaphoreHandleType = 5 ;
+#[doc = " Opaque handle to NvSciSync Object"]
+pub const cudaExternalSemaphoreHandleType_cudaExternalSemaphoreHandleTypeNvSciSync : cudaExternalSemaphoreHandleType = 6 ;
+#[doc = " Handle is a shared NT handle referencing a D3D11 keyed mutex object"]
+pub const cudaExternalSemaphoreHandleType_cudaExternalSemaphoreHandleTypeKeyedMutex : cudaExternalSemaphoreHandleType = 7 ;
+#[doc = " Handle is a shared KMT handle referencing a D3D11 keyed mutex object"]
+pub const cudaExternalSemaphoreHandleType_cudaExternalSemaphoreHandleTypeKeyedMutexKmt : cudaExternalSemaphoreHandleType = 8 ;
 #[doc = " External semaphore handle types"]
 pub type cudaExternalSemaphoreHandleType = u32;
 #[doc = " External semaphore handle descriptor"]
@@ -12763,6 +14131,8 @@ pub union cudaExternalSemaphoreHandleDesc__bindgen_ty_1 {
     #[doc = " when type is ::cudaExternalSemaphoreHandleTypeOpaqueFd"]
     pub fd: ::std::os::raw::c_int,
     pub win32: cudaExternalSemaphoreHandleDesc__bindgen_ty_1__bindgen_ty_1,
+    #[doc = " Valid NvSciSyncObj. Must be non NULL"]
+    pub nvSciSyncObj: *const ::std::os::raw::c_void,
     _bindgen_union_align: [u64; 2usize],
 }
 #[doc = " Win32 handle referencing the semaphore object. Valid when"]
@@ -12770,8 +14140,12 @@ pub union cudaExternalSemaphoreHandleDesc__bindgen_ty_1 {
 #[doc = " - ::cudaExternalSemaphoreHandleTypeOpaqueWin32"]
 #[doc = " - ::cudaExternalSemaphoreHandleTypeOpaqueWin32Kmt"]
 #[doc = " - ::cudaExternalSemaphoreHandleTypeD3D12Fence"]
+#[doc = " - ::cudaExternalSemaphoreHandleTypeD3D11Fence"]
+#[doc = " - ::cudaExternalSemaphoreHandleTypeKeyedMutex"]
 #[doc = " Exactly one of 'handle' and 'name' must be non-NULL. If"]
-#[doc = " type is ::cudaExternalSemaphoreHandleTypeOpaqueWin32Kmt"]
+#[doc = " type is one of the following:"]
+#[doc = " ::cudaExternalSemaphoreHandleTypeOpaqueWin32Kmt"]
+#[doc = " ::cudaExternalSemaphoreHandleTypeKeyedMutexKmt"]
 #[doc = " then 'name' must be NULL."]
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -12787,14 +14161,24 @@ pub struct cudaExternalSemaphoreHandleDesc__bindgen_ty_1__bindgen_ty_1 {
 #[derive(Copy, Clone)]
 pub struct cudaExternalSemaphoreSignalParams {
     pub params: cudaExternalSemaphoreSignalParams__bindgen_ty_1,
-    #[doc = " Flags reserved for the future. Must be zero."]
+    #[doc = " Only when ::cudaExternalSemaphoreSignalParams is used to"]
+    #[doc = " signal a ::cudaExternalSemaphore_t of type"]
+    #[doc = " ::cudaExternalSemaphoreHandleTypeNvSciSync, the valid flag is"]
+    #[doc = " ::cudaExternalSemaphoreSignalSkipNvSciBufMemSync: which indicates"]
+    #[doc = " that while signaling the ::cudaExternalSemaphore_t, no memory"]
+    #[doc = " synchronization operations should be performed for any external memory"]
+    #[doc = " object imported as ::cudaExternalMemoryHandleTypeNvSciBuf."]
+    #[doc = " For all other types of ::cudaExternalSemaphore_t, flags must be zero."]
     pub flags: ::std::os::raw::c_uint,
 }
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub union cudaExternalSemaphoreSignalParams__bindgen_ty_1 {
+pub struct cudaExternalSemaphoreSignalParams__bindgen_ty_1 {
     pub fence: cudaExternalSemaphoreSignalParams__bindgen_ty_1__bindgen_ty_1,
-    _bindgen_union_align: u64,
+    pub nvSciSync:
+        cudaExternalSemaphoreSignalParams__bindgen_ty_1__bindgen_ty_2,
+    pub keyedMutex:
+        cudaExternalSemaphoreSignalParams__bindgen_ty_1__bindgen_ty_3,
 }
 #[doc = " Parameters for fence objects"]
 #[repr(C)]
@@ -12803,19 +14187,42 @@ pub struct cudaExternalSemaphoreSignalParams__bindgen_ty_1__bindgen_ty_1 {
     #[doc = " Value of fence to be signaled"]
     pub value: ::std::os::raw::c_ulonglong,
 }
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub union cudaExternalSemaphoreSignalParams__bindgen_ty_1__bindgen_ty_2 {
+    #[doc = " Pointer to NvSciSyncFence. Valid if ::cudaExternalSemaphoreHandleType"]
+    #[doc = " is of type ::cudaExternalSemaphoreHandleTypeNvSciSync."]
+    pub fence: *mut ::std::os::raw::c_void,
+    pub reserved: ::std::os::raw::c_ulonglong,
+    _bindgen_union_align: u64,
+}
+#[doc = " Parameters for keyed mutex objects"]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct cudaExternalSemaphoreSignalParams__bindgen_ty_1__bindgen_ty_3 {
+    pub key: ::std::os::raw::c_ulonglong,
+}
 #[doc = " External semaphore wait parameters"]
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct cudaExternalSemaphoreWaitParams {
     pub params: cudaExternalSemaphoreWaitParams__bindgen_ty_1,
-    #[doc = " Flags reserved for the future. Must be zero."]
+    #[doc = " Only when ::cudaExternalSemaphoreSignalParams is used to"]
+    #[doc = " signal a ::cudaExternalSemaphore_t of type"]
+    #[doc = " ::cudaExternalSemaphoreHandleTypeNvSciSync, the valid flag is"]
+    #[doc = " ::cudaExternalSemaphoreSignalSkipNvSciBufMemSync: which indicates"]
+    #[doc = " that while waiting for the ::cudaExternalSemaphore_t, no memory"]
+    #[doc = " synchronization operations should be performed for any external memory"]
+    #[doc = " object imported as ::cudaExternalMemoryHandleTypeNvSciBuf."]
+    #[doc = " For all other types of ::cudaExternalSemaphore_t, flags must be zero."]
     pub flags: ::std::os::raw::c_uint,
 }
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub union cudaExternalSemaphoreWaitParams__bindgen_ty_1 {
+pub struct cudaExternalSemaphoreWaitParams__bindgen_ty_1 {
     pub fence: cudaExternalSemaphoreWaitParams__bindgen_ty_1__bindgen_ty_1,
-    _bindgen_union_align: u64,
+    pub nvSciSync: cudaExternalSemaphoreWaitParams__bindgen_ty_1__bindgen_ty_2,
+    pub keyedMutex: cudaExternalSemaphoreWaitParams__bindgen_ty_1__bindgen_ty_3,
 }
 #[doc = " Parameters for fence objects"]
 #[repr(C)]
@@ -12823,6 +14230,24 @@ pub union cudaExternalSemaphoreWaitParams__bindgen_ty_1 {
 pub struct cudaExternalSemaphoreWaitParams__bindgen_ty_1__bindgen_ty_1 {
     #[doc = " Value of fence to be waited on"]
     pub value: ::std::os::raw::c_ulonglong,
+}
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub union cudaExternalSemaphoreWaitParams__bindgen_ty_1__bindgen_ty_2 {
+    #[doc = " Pointer to NvSciSyncFence. Valid if ::cudaExternalSemaphoreHandleType"]
+    #[doc = " is of type ::cudaExternalSemaphoreHandleTypeNvSciSync."]
+    pub fence: *mut ::std::os::raw::c_void,
+    pub reserved: ::std::os::raw::c_ulonglong,
+    _bindgen_union_align: u64,
+}
+#[doc = " Parameters for keyed mutex objects"]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct cudaExternalSemaphoreWaitParams__bindgen_ty_1__bindgen_ty_3 {
+    #[doc = " Value of key to acquire the mutex with"]
+    pub key: ::std::os::raw::c_ulonglong,
+    #[doc = " Timeout in milliseconds to wait to acquire the mutex"]
+    pub timeoutMs: ::std::os::raw::c_uint,
 }
 #[doc = " CUDA Error types"]
 pub use self::cudaError::Type as cudaError_t;
@@ -12852,6 +14277,8 @@ pub type cudaExternalSemaphore_t = *mut CUexternalSemaphore_st;
 pub type cudaGraph_t = *mut CUgraph_st;
 #[doc = " CUDA graph node."]
 pub type cudaGraphNode_t = *mut CUgraphNode_st;
+#[doc = " CUDA function"]
+pub type cudaFunction_t = *mut CUfunc_st;
 #[doc = "< Invalid cooperative group scope"]
 pub const cudaCGScope_cudaCGScopeInvalid: cudaCGScope = 0;
 #[doc = "< Scope represented by a grid_group"]
@@ -12910,6 +14337,28 @@ pub const cudaGraphNodeType_cudaGraphNodeTypeCount: cudaGraphNodeType = 6;
 pub type cudaGraphNodeType = u32;
 #[doc = " CUDA executable (launchable) graph"]
 pub type cudaGraphExec_t = *mut CUgraphExec_st;
+#[doc = "< The update succeeded"]
+pub const cudaGraphExecUpdateResult_cudaGraphExecUpdateSuccess:
+    cudaGraphExecUpdateResult = 0;
+#[doc = "< The update failed for an unexpected reason which is described in the return value of the function"]
+pub const cudaGraphExecUpdateResult_cudaGraphExecUpdateError:
+    cudaGraphExecUpdateResult = 1;
+#[doc = "< The update failed because the topology changed"]
+pub const cudaGraphExecUpdateResult_cudaGraphExecUpdateErrorTopologyChanged:
+    cudaGraphExecUpdateResult = 2;
+#[doc = "< The update failed because a node type changed"]
+pub const cudaGraphExecUpdateResult_cudaGraphExecUpdateErrorNodeTypeChanged:
+    cudaGraphExecUpdateResult = 3;
+#[doc = "< The update failed because the function of a kernel node changed"]
+pub const cudaGraphExecUpdateResult_cudaGraphExecUpdateErrorFunctionChanged:
+    cudaGraphExecUpdateResult = 4;
+#[doc = "< The update failed because the parameters changed in a way that is not supported"]
+pub const cudaGraphExecUpdateResult_cudaGraphExecUpdateErrorParametersChanged : cudaGraphExecUpdateResult = 5 ;
+#[doc = "< The update failed because something about the node is not supported"]
+pub const cudaGraphExecUpdateResult_cudaGraphExecUpdateErrorNotSupported:
+    cudaGraphExecUpdateResult = 6;
+#[doc = " CUDA Graph Update error types"]
+pub type cudaGraphExecUpdateResult = u32;
 #[doc = "< Zero boundary mode"]
 pub const cudaSurfaceBoundaryMode_cudaBoundaryModeZero:
     cudaSurfaceBoundaryMode = 0;
@@ -12987,7 +14436,9 @@ pub struct textureReference {
     pub minMipmapLevelClamp: f32,
     #[doc = " Upper end of the mipmap level range to clamp access to"]
     pub maxMipmapLevelClamp: f32,
-    pub __cudaReserved: [::std::os::raw::c_int; 15usize],
+    #[doc = " Disable any trilinear filtering optimizations."]
+    pub disableTrilinearOptimization: ::std::os::raw::c_int,
+    pub __cudaReserved: [::std::os::raw::c_int; 14usize],
 }
 #[doc = " CUDA texture descriptor"]
 #[repr(C)]
@@ -13015,6 +14466,8 @@ pub struct cudaTextureDesc {
     pub minMipmapLevelClamp: f32,
     #[doc = " Upper end of the mipmap level range to clamp access to"]
     pub maxMipmapLevelClamp: f32,
+    #[doc = " Disable any trilinear filtering optimizations."]
+    pub disableTrilinearOptimization: ::std::os::raw::c_int,
 }
 #[doc = " An opaque value that represents a CUDA texture object"]
 pub type cudaTextureObject_t = ::std::os::raw::c_ulonglong;
@@ -13066,15 +14519,13 @@ extern "C" {
     #[doc = " the current limit maintained by the device.  The driver is free to"]
     #[doc = " modify the requested value to meet h/w requirements (this could be"]
     #[doc = " clamping to minimum or maximum values, rounding up to nearest element"]
-    #[doc = " size, etc). The application can use ::cudaDeviceGetLimit() to find out"]
+    #[doc = " size, etc).  The application can use ::cudaDeviceGetLimit() to find out"]
     #[doc = " exactly what the limit has been set to."]
     #[doc = ""]
     #[doc = " Setting each ::cudaLimit has its own specific restrictions, so each is"]
     #[doc = " discussed here."]
     #[doc = ""]
     #[doc = " - ::cudaLimitStackSize controls the stack size in bytes of each GPU thread."]
-    #[doc = " Note that the CUDA driver will set the \\p limit to the maximum of \\p value"]
-    #[doc = " and what the kernel function requires."]
     #[doc = ""]
     #[doc = " - ::cudaLimitPrintfFifoSize controls the size in bytes of the shared FIFO"]
     #[doc = "   used by the ::printf() device system call. Setting"]
@@ -13126,6 +14577,10 @@ extern "C" {
     #[doc = "   Values can range from 0B to 128B. This is purely a performance hint and"]
     #[doc = "   it can be ignored or clamped depending on the platform."]
     #[doc = ""]
+    #[doc = " - cudaLimitPersistingL2CacheSize controls size of window in bytes available"]
+    #[doc = "   for ::cudaAccessPolicyWindow. This is purely a performance hint and it"]
+    #[doc = "   can be ignored or clamped depending on the platform."]
+    #[doc = ""]
     #[doc = " \\param limit - Limit to set"]
     #[doc = " \\param value - Size of limit"]
     #[doc = ""]
@@ -13159,6 +14614,7 @@ extern "C" {
     #[doc = " - ::cudaLimitDevRuntimePendingLaunchCount: maximum number of outstanding"]
     #[doc = "   device runtime launches."]
     #[doc = " - ::cudaLimitMaxL2FetchGranularity: L2 cache fetch granularity."]
+    #[doc = " - ::cudaLimitPersistingL2CacheSize: L2 cache persistings size in bytes"]
     #[doc = ""]
     #[doc = " \\param limit  - Limit to query"]
     #[doc = " \\param pValue - Returned size of the limit"]
@@ -13463,7 +14919,8 @@ extern "C" {
     #[doc = " ::cudaErrorInvalidResourceHandle,"]
     #[doc = " ::cudaErrorMemoryAllocation,"]
     #[doc = " ::cudaErrorMapBufferObjectFailed,"]
-    #[doc = " ::cudaErrorNotSupported"]
+    #[doc = " ::cudaErrorNotSupported,"]
+    #[doc = " ::cudaErrorInvalidValue"]
     #[doc = " \\note_init_rt"]
     #[doc = " \\note_callback"]
     #[doc = ""]
@@ -13504,8 +14961,9 @@ extern "C" {
     #[doc = " \\returns"]
     #[doc = " ::cudaSuccess,"]
     #[doc = " ::cudaErrorMapBufferObjectFailed,"]
-    #[doc = " ::cudaErrorInvalidResourceHandle,"]
-    #[doc = " ::cudaErrorNotSupported"]
+    #[doc = " ::cudaErrorNotSupported,"]
+    #[doc = " ::cudaErrorInvalidValue,"]
+    #[doc = " ::cudaErrorDeviceUninitialized"]
     #[doc = " \\note_init_rt"]
     #[doc = " \\note_callback"]
     #[doc = ""]
@@ -13549,10 +15007,10 @@ extern "C" {
     #[doc = ""]
     #[doc = " \\returns"]
     #[doc = " ::cudaSuccess,"]
-    #[doc = " ::cudaErrorInvalidResourceHandle,"]
     #[doc = " ::cudaErrorMemoryAllocation,"]
     #[doc = " ::cudaErrorMapBufferObjectFailed,"]
-    #[doc = " ::cudaErrorNotSupported"]
+    #[doc = " ::cudaErrorNotSupported,"]
+    #[doc = " ::cudaErrorInvalidValue"]
     #[doc = " \\note_init_rt"]
     #[doc = " \\note_callback"]
     #[doc = ""]
@@ -13606,8 +15064,10 @@ extern "C" {
     #[doc = " ::cudaSuccess,"]
     #[doc = " ::cudaErrorMapBufferObjectFailed,"]
     #[doc = " ::cudaErrorInvalidResourceHandle,"]
+    #[doc = " ::cudaErrorDeviceUninitialized,"]
     #[doc = " ::cudaErrorTooManyPeers,"]
-    #[doc = " ::cudaErrorNotSupported"]
+    #[doc = " ::cudaErrorNotSupported,"]
+    #[doc = " ::cudaErrorInvalidValue"]
     #[doc = " \\note_init_rt"]
     #[doc = " \\note_callback"]
     #[doc = ""]
@@ -13649,8 +15109,8 @@ extern "C" {
     #[doc = " \\returns"]
     #[doc = " ::cudaSuccess,"]
     #[doc = " ::cudaErrorMapBufferObjectFailed,"]
-    #[doc = " ::cudaErrorInvalidResourceHandle,"]
-    #[doc = " ::cudaErrorNotSupported"]
+    #[doc = " ::cudaErrorNotSupported,"]
+    #[doc = " ::cudaErrorInvalidValue"]
     #[doc = " \\note_init_rt"]
     #[doc = " \\note_callback"]
     #[doc = ""]
@@ -14017,8 +15477,7 @@ extern "C" {
     #[doc = " greater or equal to 2.0"]
     #[doc = ""]
     #[doc = " \\return"]
-    #[doc = " ::cudaErrorInvalidValue (if a NULL device pointer is assigned), ::cudaSuccess"]
-    #[doc = ""]
+    #[doc = " ::cudaSuccess"]
     #[doc = " \\notefnerr"]
     #[doc = " \\note_init_rt"]
     #[doc = " \\note_callback"]
@@ -14090,6 +15549,7 @@ extern "C" {
     #[doc = "int memoryClockRate;"]
     #[doc = "int memoryBusWidth;"]
     #[doc = "int l2CacheSize;"]
+    #[doc = "int persistingL2CacheMaxSize;"]
     #[doc = "int maxThreadsPerMultiProcessor;"]
     #[doc = "int streamPrioritiesSupported;"]
     #[doc = "int globalL1CacheSupported;"]
@@ -14108,6 +15568,7 @@ extern "C" {
     #[doc = "int cooperativeMultiDeviceLaunch;"]
     #[doc = "int pageableMemoryAccessUsesHostPageTables;"]
     #[doc = "int directManagedMemAccessFromHost;"]
+    #[doc = "int accessPolicyMaxWindowSize;"]
     #[doc = "}"]
     #[doc = "\\endcode"]
     #[doc = " where:"]
@@ -14242,6 +15703,7 @@ extern "C" {
     #[doc = " - \\ref ::cudaDeviceProp::memoryBusWidth \"memoryBusWidth\" is the memory bus width"]
     #[doc = "   in bits."]
     #[doc = " - \\ref ::cudaDeviceProp::l2CacheSize \"l2CacheSize\" is L2 cache size in bytes."]
+    #[doc = " - \\ref ::cudaDeviceProp::persistingL2CacheMaxSize \"persistingL2CacheMaxSize\" is L2 cache's maximum persisting lines size in bytes."]
     #[doc = " - \\ref ::cudaDeviceProp::maxThreadsPerMultiProcessor \"maxThreadsPerMultiProcessor\""]
     #[doc = "   is the number of maximum resident threads per multiprocessor."]
     #[doc = " - \\ref ::cudaDeviceProp::streamPrioritiesSupported \"streamPrioritiesSupported\""]
@@ -14282,6 +15744,10 @@ extern "C" {
     #[doc = "   pageable memory via the host's page tables, and 0 otherwise."]
     #[doc = " - \\ref ::cudaDeviceProp::directManagedMemAccessFromHost \"directManagedMemAccessFromHost\" is 1 if the host can directly access managed"]
     #[doc = "   memory on the device without migration, and 0 otherwise."]
+    #[doc = " - \\ref ::cudaDeviceProp::maxBlocksPerMultiProcessor \"maxBlocksPerMultiProcessor\" is the maximum number of thread blocks"]
+    #[doc = "   that can reside on a multiprocessor."]
+    #[doc = " - \\ref ::cudaDeviceProp::accessPolicyMaxWindowSize \"accessPolicyMaxWindowSize\" is"]
+    #[doc = "   the maximum value of ::cudaAccessPolicyWindow::num_bytes."]
     #[doc = ""]
     #[doc = " \\param prop   - Properties for the specified device"]
     #[doc = " \\param device - Device number to get properties for"]
@@ -14472,6 +15938,7 @@ extern "C" {
     #[doc = "   without migration, and 0 otherwise."]
     #[doc = " - ::cudaDevAttrMaxSharedMemoryPerBlockOptin: Maximum per block shared memory size on the device. This value can"]
     #[doc = "   be opted into when using ::cudaFuncSetAttribute"]
+    #[doc = " - ::cudaDevAttrMaxBlocksPerMultiprocessor: Maximum number of thread blocks that can reside on a multiprocessor."]
     #[doc = ""]
     #[doc = " \\param value  - Returned device attribute value"]
     #[doc = " \\param attr   - Device attribute to query"]
@@ -14492,6 +15959,57 @@ extern "C" {
         value: *mut ::std::os::raw::c_int,
         attr: cudaDeviceAttr,
         device: ::std::os::raw::c_int,
+    ) -> cudaError_t;
+}
+extern "C" {
+    #[doc = " \\brief Return NvSciSync attributes that this device can support."]
+    #[doc = ""]
+    #[doc = " Returns in \\p nvSciSyncAttrList, the properties of NvSciSync that"]
+    #[doc = " this CUDA device, \\p dev can support. The returned \\p nvSciSyncAttrList"]
+    #[doc = " can be used to create an NvSciSync that matches this device's capabilities."]
+    #[doc = ""]
+    #[doc = " If NvSciSyncAttrKey_RequiredPerm field in \\p nvSciSyncAttrList is"]
+    #[doc = " already set this API will return ::cudaErrorNotSupported."]
+    #[doc = ""]
+    #[doc = " The applications should set \\p nvSciSyncAttrList to a valid"]
+    #[doc = " NvSciSyncAttrList failing which this API will return"]
+    #[doc = " ::cudaErrorInvalidHandle."]
+    #[doc = ""]
+    #[doc = " The \\p flags controls how applications intends to use"]
+    #[doc = " the NvSciSync created from the \\p nvSciSyncAttrList. The valid flags are:"]
+    #[doc = " - ::cudaNvSciSyncAttrSignal, specifies that the applications intends to"]
+    #[doc = " signal an NvSciSync on this CUDA device."]
+    #[doc = " - ::cudaNvSciSyncAttrWait, specifies that the applications intends to"]
+    #[doc = " wait on an NvSciSync on this CUDA device."]
+    #[doc = ""]
+    #[doc = " At least one of these flags must be set, failing which the API"]
+    #[doc = " returns ::cudaErrorInvalidValue. Both the flags are orthogonal"]
+    #[doc = " to one another: a developer may set both these flags that allows to"]
+    #[doc = " set both wait and signal specific attributes in the same \\p nvSciSyncAttrList."]
+    #[doc = ""]
+    #[doc = " \\param nvSciSyncAttrList     - Return NvSciSync attributes supported."]
+    #[doc = " \\param device                - Valid Cuda Device to get NvSciSync attributes for."]
+    #[doc = " \\param flags                 - flags describing NvSciSync usage."]
+    #[doc = ""]
+    #[doc = " \\return"]
+    #[doc = ""]
+    #[doc = " ::cudaSuccess,"]
+    #[doc = " ::cudaErrorDeviceUninitialized,"]
+    #[doc = " ::cudaErrorInvalidValue,"]
+    #[doc = " ::cudaErrorInvalidHandle,"]
+    #[doc = " ::cudaErrorInvalidDevice,"]
+    #[doc = " ::cudaErrorNotSupported,"]
+    #[doc = " ::cudaErrorMemoryAllocation"]
+    #[doc = ""]
+    #[doc = " \\sa"]
+    #[doc = " ::cudaImportExternalSemaphore,"]
+    #[doc = " ::cudaDestroyExternalSemaphore,"]
+    #[doc = " ::cudaSignalExternalSemaphoresAsync,"]
+    #[doc = " ::cudaWaitExternalSemaphoresAsync"]
+    pub fn cudaDeviceGetNvSciSyncAttributes(
+        nvSciSyncAttrList: *mut ::std::os::raw::c_void,
+        device: ::std::os::raw::c_int,
+        flags: ::std::os::raw::c_int,
     ) -> cudaError_t;
 }
 extern "C" {
@@ -14751,8 +16269,8 @@ extern "C" {
     #[doc = " \\param flags - Pointer to store the device flags"]
     #[doc = ""]
     #[doc = " \\return"]
-    #[doc = " ::cudaSuccess, ::cudaErrorInvalidDevice, ::cudaErrorInvalidValue"]
-    #[doc = ""]
+    #[doc = " ::cudaSuccess,"]
+    #[doc = " ::cudaErrorInvalidDevice"]
     #[doc = " \\notefnerr"]
     #[doc = " \\note_init_rt"]
     #[doc = " \\note_callback"]
@@ -14928,6 +16446,91 @@ extern "C" {
     pub fn cudaStreamGetFlags(
         hStream: cudaStream_t,
         flags: *mut ::std::os::raw::c_uint,
+    ) -> cudaError_t;
+}
+extern "C" {
+    #[doc = " \\brief Resets all persisting lines in cache to normal status."]
+    #[doc = ""]
+    #[doc = " Resets all persisting lines in cache to normal status."]
+    #[doc = " Takes effect on function return."]
+    #[doc = ""]
+    #[doc = " \\return"]
+    #[doc = " ::cudaSuccess,"]
+    #[doc = " \\notefnerr"]
+    #[doc = ""]
+    #[doc = " \\sa"]
+    #[doc = " ::cudaAccessPolicyWindow"]
+    pub fn cudaCtxResetPersistingL2Cache() -> cudaError_t;
+}
+extern "C" {
+    #[doc = " \\brief Copies attributes from source stream to destination stream."]
+    #[doc = ""]
+    #[doc = " Copies attributes from source stream \\p src to destination stream \\p dst."]
+    #[doc = " Both streams must have the same context."]
+    #[doc = ""]
+    #[doc = " \\param[out] dst Destination stream"]
+    #[doc = " \\param[in] src Source stream"]
+    #[doc = " For attributes see ::cudaStreamAttrID"]
+    #[doc = ""]
+    #[doc = " \\return"]
+    #[doc = " ::cudaSuccess,"]
+    #[doc = " ::cudaErrorNotSupported"]
+    #[doc = " \\notefnerr"]
+    #[doc = ""]
+    #[doc = " \\sa"]
+    #[doc = " ::cudaAccessPolicyWindow"]
+    pub fn cudaStreamCopyAttributes(
+        dst: cudaStream_t,
+        src: cudaStream_t,
+    ) -> cudaError_t;
+}
+extern "C" {
+    #[doc = " \\brief Queries stream attribute."]
+    #[doc = ""]
+    #[doc = " Queries attribute \\p attr from \\p hStream and stores it in corresponding"]
+    #[doc = " member of \\p value_out."]
+    #[doc = ""]
+    #[doc = " \\param[in] hStream"]
+    #[doc = " \\param[in] attr"]
+    #[doc = " \\param[out] value_out"]
+    #[doc = ""]
+    #[doc = " \\return"]
+    #[doc = " ::cudaSuccess,"]
+    #[doc = " ::cudaErrorInvalidValue,"]
+    #[doc = " ::cudaErrorInvalidResourceHandle"]
+    #[doc = " \\notefnerr"]
+    #[doc = ""]
+    #[doc = " \\sa"]
+    #[doc = " ::cudaAccessPolicyWindow"]
+    pub fn cudaStreamGetAttribute(
+        hStream: cudaStream_t,
+        attr: cudaStreamAttrID,
+        value_out: *mut cudaStreamAttrValue,
+    ) -> cudaError_t;
+}
+extern "C" {
+    #[doc = " \\brief Sets stream attribute."]
+    #[doc = ""]
+    #[doc = " Sets attribute \\p attr on \\p hStream from corresponding attribute of"]
+    #[doc = " \\p value. The updated attribute will be applied to subsequent work"]
+    #[doc = " submitted to the stream. It will not affect previously submitted work."]
+    #[doc = ""]
+    #[doc = " \\param[out] hStream"]
+    #[doc = " \\param[in] attr"]
+    #[doc = " \\param[in] value"]
+    #[doc = ""]
+    #[doc = " \\return"]
+    #[doc = " ::cudaSuccess,"]
+    #[doc = " ::cudaErrorInvalidValue,"]
+    #[doc = " ::cudaErrorInvalidResourceHandle"]
+    #[doc = " \\notefnerr"]
+    #[doc = ""]
+    #[doc = " \\sa"]
+    #[doc = " ::cudaAccessPolicyWindow"]
+    pub fn cudaStreamSetAttribute(
+        hStream: cudaStream_t,
+        attr: cudaStreamAttrID,
+        value: *const cudaStreamAttrValue,
     ) -> cudaError_t;
 }
 extern "C" {
@@ -15572,6 +17175,7 @@ extern "C" {
     #[doc = " \\return"]
     #[doc = " ::cudaSuccess,"]
     #[doc = " ::cudaErrorInvalidValue,"]
+    #[doc = " ::cudaErrorInvalidResourceHandle,"]
     #[doc = " ::cudaErrorLaunchFailure"]
     #[doc = " \\notefnerr"]
     #[doc = " \\note_init_rt"]
@@ -15648,6 +17252,7 @@ extern "C" {
     #[doc = "void *handle;"]
     #[doc = "const void *name;"]
     #[doc = "} win32;"]
+    #[doc = "const void *nvSciBufObject;"]
     #[doc = "} handle;"]
     #[doc = "unsigned long long size;"]
     #[doc = "unsigned int flags;"]
@@ -15660,11 +17265,14 @@ extern "C" {
     #[doc = ""]
     #[doc = " \\code"]
     #[doc = "typedef enum cudaExternalMemoryHandleType_enum {"]
-    #[doc = "cudaExternalMemoryHandleTypeOpaqueFd        = 1,"]
-    #[doc = "cudaExternalMemoryHandleTypeOpaqueWin32     = 2,"]
-    #[doc = "cudaExternalMemoryHandleTypeOpaqueWin32Kmt  = 3,"]
-    #[doc = "cudaExternalMemoryHandleTypeD3D12Heap       = 4,"]
-    #[doc = "cudaExternalMemoryHandleTypeD3D12Resource   = 5"]
+    #[doc = "cudaExternalMemoryHandleTypeOpaqueFd         = 1,"]
+    #[doc = "cudaExternalMemoryHandleTypeOpaqueWin32      = 2,"]
+    #[doc = "cudaExternalMemoryHandleTypeOpaqueWin32Kmt   = 3,"]
+    #[doc = "cudaExternalMemoryHandleTypeD3D12Heap        = 4,"]
+    #[doc = "cudaExternalMemoryHandleTypeD3D12Resource    = 5,"]
+    #[doc = "cudaExternalMemoryHandleTypeD3D11Resource    = 6,"]
+    #[doc = "cudaExternalMemoryHandleTypeD3D11ResourceKmt = 7,"]
+    #[doc = "cudaExternalMemoryHandleTypeNvSciBuf         = 8"]
     #[doc = "} cudaExternalMemoryHandleType;"]
     #[doc = " \\endcode"]
     #[doc = ""]
@@ -15705,7 +17313,7 @@ extern "C" {
     #[doc = " ::cudaExternalMemoryHandleDesc::handle::win32::name must not be"]
     #[doc = " NULL. If ::cudaExternalMemoryHandleDesc::handle::win32::handle"]
     #[doc = " is not NULL, then it must represent a valid shared NT handle that"]
-    #[doc = " is returned by ID3DDevice::CreateSharedHandle when referring to a"]
+    #[doc = " is returned by ID3D12Device::CreateSharedHandle when referring to a"]
     #[doc = " ID3D12Heap object. This handle holds a reference to the underlying"]
     #[doc = " object. If ::cudaExternalMemoryHandleDesc::handle::win32::name"]
     #[doc = " is not NULL, then it must point to a NULL-terminated array of"]
@@ -15717,12 +17325,40 @@ extern "C" {
     #[doc = " ::cudaExternalMemoryHandleDesc::handle::win32::name must not be"]
     #[doc = " NULL. If ::cudaExternalMemoryHandleDesc::handle::win32::handle"]
     #[doc = " is not NULL, then it must represent a valid shared NT handle that"]
-    #[doc = " is returned by ID3DDevice::CreateSharedHandle when referring to a"]
+    #[doc = " is returned by ID3D12Device::CreateSharedHandle when referring to a"]
     #[doc = " ID3D12Resource object. This handle holds a reference to the"]
     #[doc = " underlying object. If"]
     #[doc = " ::cudaExternalMemoryHandleDesc::handle::win32::name"]
     #[doc = " is not NULL, then it must point to a NULL-terminated array of"]
     #[doc = " UTF-16 characters that refers to a ID3D12Resource object."]
+    #[doc = ""]
+    #[doc = " If ::cudaExternalMemoryHandleDesc::type is"]
+    #[doc = " ::cudaExternalMemoryHandleTypeD3D11Resource,then exactly one"]
+    #[doc = " of ::cudaExternalMemoryHandleDesc::handle::win32::handle and"]
+    #[doc = " ::cudaExternalMemoryHandleDesc::handle::win32::name must not be"]
+    #[doc = " NULL. If ::cudaExternalMemoryHandleDesc::handle::win32::handle is"]
+    #[doc = " not NULL, then it must represent a valid shared NT handle that is"]
+    #[doc = " returned by  IDXGIResource1::CreateSharedHandle when referring to a"]
+    #[doc = " ID3D11Resource object. If"]
+    #[doc = " ::cudaExternalMemoryHandleDesc::handle::win32::name"]
+    #[doc = " is not NULL, then it must point to a NULL-terminated array of"]
+    #[doc = " UTF-16 characters that refers to a ID3D11Resource object."]
+    #[doc = ""]
+    #[doc = " If ::cudaExternalMemoryHandleDesc::type is"]
+    #[doc = " ::cudaExternalMemoryHandleTypeD3D11ResourceKmt, then"]
+    #[doc = " ::cudaExternalMemoryHandleDesc::handle::win32::handle must"]
+    #[doc = " be non-NULL and ::cudaExternalMemoryHandleDesc::handle::win32::name"]
+    #[doc = " must be NULL. The handle specified must be a valid shared KMT"]
+    #[doc = " handle that is returned by IDXGIResource::GetSharedHandle when"]
+    #[doc = " referring to a ID3D11Resource object."]
+    #[doc = ""]
+    #[doc = " If ::cudaExternalMemoryHandleDesc::type is"]
+    #[doc = " ::cudaExternalMemoryHandleTypeNvSciBuf, then"]
+    #[doc = " ::cudaExternalMemoryHandleDesc::handle::nvSciBufObject must be NON-NULL"]
+    #[doc = " and reference a valid NvSciBuf object."]
+    #[doc = " If the NvSciBuf object imported into CUDA is also mapped by other drivers, then the"]
+    #[doc = " application must use ::cudaWaitExternalSemaphoresAsync or ::cudaSignalExternalSemaphoresAsync"]
+    #[doc = " as approprriate barriers to maintain coherence between CUDA and the other drivers."]
     #[doc = ""]
     #[doc = " The size of the memory object must be specified in"]
     #[doc = " ::cudaExternalMemoryHandleDesc::size."]
@@ -15731,6 +17367,11 @@ extern "C" {
     #[doc = " ::cudaExternalMemoryHandleDesc::flags indicates that the"]
     #[doc = " resource is a dedicated resource. The definition of what a"]
     #[doc = " dedicated resource is outside the scope of this extension."]
+    #[doc = " This flag must be set if ::cudaExternalMemoryHandleDesc::type"]
+    #[doc = " is one of the following:"]
+    #[doc = " ::cudaExternalMemoryHandleTypeD3D12Resource"]
+    #[doc = " ::cudaExternalMemoryHandleTypeD3D11Resource"]
+    #[doc = " ::cudaExternalMemoryHandleTypeD3D11ResourceKmt"]
     #[doc = ""]
     #[doc = " \\param extMem_out    - Returned handle to an external memory object"]
     #[doc = " \\param memHandleDesc - Memory import handle descriptor"]
@@ -15747,6 +17388,7 @@ extern "C" {
     #[doc = " as well as appropriate Vulkan pipeline barriers to maintain coherence between"]
     #[doc = " CPU and GPU. For more information on these APIs, please refer to \"Synchronization"]
     #[doc = " and Cache Control\" chapter from Vulkan specification."]
+    #[doc = ""]
     #[doc = ""]
     #[doc = " \\sa ::cudaDestroyExternalMemory,"]
     #[doc = " ::cudaExternalMemoryGetMappedBuffer,"]
@@ -15865,6 +17507,10 @@ extern "C" {
     #[doc = " \\sa ::cudaImportExternalMemory"]
     #[doc = " ::cudaDestroyExternalMemory,"]
     #[doc = " ::cudaExternalMemoryGetMappedBuffer"]
+    #[doc = ""]
+    #[doc = " \\note If ::cudaExternalMemoryHandleDesc::type is"]
+    #[doc = " ::cudaExternalMemoryHandleTypeNvSciBuf, then"]
+    #[doc = " ::cudaExternalMemoryMipmappedArrayDesc::numLevels must not be greater than 1."]
     pub fn cudaExternalMemoryGetMappedMipmappedArray(
         mipmap: *mut cudaMipmappedArray_t,
         extMem: cudaExternalMemory_t,
@@ -15914,6 +17560,7 @@ extern "C" {
     #[doc = "void *handle;"]
     #[doc = "const void *name;"]
     #[doc = "} win32;"]
+    #[doc = "const void* NvSciSyncObj;"]
     #[doc = "} handle;"]
     #[doc = "unsigned int flags;"]
     #[doc = "} cudaExternalSemaphoreHandleDesc;"]
@@ -15928,7 +17575,11 @@ extern "C" {
     #[doc = "cudaExternalSemaphoreHandleTypeOpaqueFd       = 1,"]
     #[doc = "cudaExternalSemaphoreHandleTypeOpaqueWin32    = 2,"]
     #[doc = "cudaExternalSemaphoreHandleTypeOpaqueWin32Kmt = 3,"]
-    #[doc = "cudaExternalSemaphoreHandleTypeD3D12Fence     = 4"]
+    #[doc = "cudaExternalSemaphoreHandleTypeD3D12Fence     = 4,"]
+    #[doc = "cudaExternalSemaphoreHandleTypeD3D11Fence     = 5,"]
+    #[doc = "cudaExternalSemaphoreHandleTypeNvSciSync      = 6,"]
+    #[doc = "cudaExternalSemaphoreHandleTypeKeyedMutex     = 7,"]
+    #[doc = "cudaExternalSemaphoreHandleTypeKeyedMutexKmt  = 8"]
     #[doc = "} cudaExternalSemaphoreHandleType;"]
     #[doc = " \\endcode"]
     #[doc = ""]
@@ -15967,11 +17618,43 @@ extern "C" {
     #[doc = " ::cudaExternalSemaphoreHandleDesc::handle::win32::name must not be"]
     #[doc = " NULL. If ::cudaExternalSemaphoreHandleDesc::handle::win32::handle"]
     #[doc = " is not NULL, then it must represent a valid shared NT handle that"]
-    #[doc = " is returned by ID3DDevice::CreateSharedHandle when referring to a"]
+    #[doc = " is returned by ID3D12Device::CreateSharedHandle when referring to a"]
     #[doc = " ID3D12Fence object. This handle holds a reference to the underlying"]
     #[doc = " object. If ::cudaExternalSemaphoreHandleDesc::handle::win32::name"]
     #[doc = " is not NULL, then it must name a valid synchronization object that"]
     #[doc = " refers to a valid ID3D12Fence object."]
+    #[doc = ""]
+    #[doc = " If ::cudaExternalSemaphoreHandleDesc::type is"]
+    #[doc = " ::cudaExternalSemaphoreHandleTypeD3D11Fence, then exactly one of"]
+    #[doc = " ::cudaExternalSemaphoreHandleDesc::handle::win32::handle and"]
+    #[doc = " ::cudaExternalSemaphoreHandleDesc::handle::win32::name must not be"]
+    #[doc = " NULL. If ::cudaExternalSemaphoreHandleDesc::handle::win32::handle"]
+    #[doc = " is not NULL, then it must represent a valid shared NT handle that"]
+    #[doc = " is returned by ID3D11Fence::CreateSharedHandle. If"]
+    #[doc = " ::cudaExternalSemaphoreHandleDesc::handle::win32::name"]
+    #[doc = " is not NULL, then it must name a valid synchronization object that"]
+    #[doc = " refers to a valid ID3D11Fence object."]
+    #[doc = ""]
+    #[doc = " If ::cudaExternalSemaphoreHandleDesc::type is"]
+    #[doc = " ::cudaExternalSemaphoreHandleTypeNvSciSync, then"]
+    #[doc = " ::cudaExternalSemaphoreHandleDesc::handle::nvSciSyncObj"]
+    #[doc = " represents a valid NvSciSyncObj."]
+    #[doc = ""]
+    #[doc = " ::cudaExternalSemaphoreHandleTypeKeyedMutex, then exactly one of"]
+    #[doc = " ::cudaExternalSemaphoreHandleDesc::handle::win32::handle and"]
+    #[doc = " ::cudaExternalSemaphoreHandleDesc::handle::win32::name must not be"]
+    #[doc = " NULL. If ::cudaExternalSemaphoreHandleDesc::handle::win32::handle"]
+    #[doc = " is not NULL, then it represent a valid shared NT handle that"]
+    #[doc = " is returned by IDXGIResource1::CreateSharedHandle when referring to"]
+    #[doc = " a IDXGIKeyedMutex object."]
+    #[doc = ""]
+    #[doc = " If ::cudaExternalSemaphoreHandleDesc::type is"]
+    #[doc = " ::cudaExternalSemaphoreHandleTypeKeyedMutexKmt, then"]
+    #[doc = " ::cudaExternalSemaphoreHandleDesc::handle::win32::handle must be"]
+    #[doc = " non-NULL and ::cudaExternalSemaphoreHandleDesc::handle::win32::name"]
+    #[doc = " must be NULL. The handle specified must represent a valid KMT"]
+    #[doc = " handle that is returned by IDXGIResource::GetSharedHandle when"]
+    #[doc = " referring to a IDXGIKeyedMutex object."]
     #[doc = ""]
     #[doc = " \\param extSem_out    - Returned handle to an external semaphore"]
     #[doc = " \\param semHandleDesc - Semaphore import handle descriptor"]
@@ -16007,10 +17690,36 @@ extern "C" {
     #[doc = " ::cudaExternalSemaphoreHandleTypeOpaqueWin32Kmt"]
     #[doc = " then signaling the semaphore will set it to the signaled state."]
     #[doc = ""]
-    #[doc = " If the semaphore object is of the type"]
-    #[doc = " ::cudaExternalSemaphoreHandleTypeD3D12Fence, then the"]
-    #[doc = " semaphore will be set to the value specified in"]
+    #[doc = " If the semaphore object is any one of the following types:"]
+    #[doc = " ::cudaExternalSemaphoreHandleTypeD3D12Fence,"]
+    #[doc = " ::cudaExternalSemaphoreHandleTypeD3D11Fence"]
+    #[doc = " then the semaphore will be set to the value specified in"]
     #[doc = " ::cudaExternalSemaphoreSignalParams::params::fence::value."]
+    #[doc = ""]
+    #[doc = " If the semaphore object is of the type ::cudaExternalSemaphoreHandleTypeNvSciSync"]
+    #[doc = " this API sets ::cudaExternalSemaphoreSignalParams::params::nvSciSync::fence to a"]
+    #[doc = " value that can be used by subsequent waiters of the same NvSciSync object to"]
+    #[doc = " order operations with those currently submitted in \\p stream. Such an update"]
+    #[doc = " will overwrite previous contents of"]
+    #[doc = " ::cudaExternalSemaphoreSignalParams::params::nvSciSync::fence. By deefault,"]
+    #[doc = " signaling such an external semaphore object causes appropriate memory synchronization"]
+    #[doc = " operations to be performed over all the external memory objects that are imported as"]
+    #[doc = " ::cudaExternalMemoryHandleTypeNvSciBuf. This ensures that any subsequent accesses"]
+    #[doc = " made by other importers of the same set of NvSciBuf memory object(s) are coherent."]
+    #[doc = " These operations can be skipped by specifying the flag"]
+    #[doc = " ::cudaExternalSemaphoreSignalSkipNvSciBufMemSync, which can be used as a"]
+    #[doc = " performance optimization when data coherency is not required. But specifying this"]
+    #[doc = " flag in scenarios where data coherency is required results in undefined behavior."]
+    #[doc = " Also, for semaphore object of the type ::cudaExternalSemaphoreHandleTypeNvSciSync,"]
+    #[doc = " if the NvSciSyncAttrList used to create the NvSciSyncObj had not set the flags in"]
+    #[doc = " ::cudaDeviceGetNvSciSyncAttributes to cudaNvSciSyncAttrSignal, this API will return"]
+    #[doc = " cudaErrorNotSupported."]
+    #[doc = ""]
+    #[doc = " If the semaphore object is any one of the following types:"]
+    #[doc = " ::cudaExternalSemaphoreHandleTypeKeyedMutex,"]
+    #[doc = " ::cudaExternalSemaphoreHandleTypeKeyedMutexKmt,"]
+    #[doc = " then the keyed mutex will be released with the key specified in"]
+    #[doc = " ::cudaExternalSemaphoreSignalParams::params::keyedmutex::key."]
     #[doc = ""]
     #[doc = " \\param extSemArray - Set of external semaphores to be signaled"]
     #[doc = " \\param paramsArray - Array of semaphore parameters"]
@@ -16053,11 +17762,41 @@ extern "C" {
     #[doc = " unsignaled state. Therefore for every signal operation, there can"]
     #[doc = " only be one wait operation."]
     #[doc = ""]
-    #[doc = " If the semaphore object is of the type"]
-    #[doc = " ::cudaExternalSemaphoreHandleTypeD3D12Fence, then waiting on"]
-    #[doc = " the semaphore will wait until the value of the semaphore is"]
-    #[doc = " greater than or equal to"]
+    #[doc = " If the semaphore object is any one of the following types:"]
+    #[doc = " ::cudaExternalSemaphoreHandleTypeD3D12Fence,"]
+    #[doc = " ::cudaExternalSemaphoreHandleTypeD3D11Fence"]
+    #[doc = " then waiting on the semaphore will wait until the value of the"]
+    #[doc = " semaphore is greater than or equal to"]
     #[doc = " ::cudaExternalSemaphoreWaitParams::params::fence::value."]
+    #[doc = ""]
+    #[doc = " If the semaphore object is of the type ::cudaExternalSemaphoreHandleTypeNvSciSync"]
+    #[doc = " then, waiting on the semaphore will wait until the"]
+    #[doc = " ::cudaExternalSemaphoreSignalParams::params::nvSciSync::fence is signaled by the"]
+    #[doc = " signaler of the NvSciSyncObj that was associated with this semaphore object."]
+    #[doc = " By default, waiting on such an external semaphore object causes appropriate"]
+    #[doc = " memory synchronization operations to be performed over all external memory objects"]
+    #[doc = " that are imported as ::cudaExternalMemoryHandleTypeNvSciBuf. This ensures that"]
+    #[doc = " any subsequent accesses made by other importers of the same set of NvSciBuf memory"]
+    #[doc = " object(s) are coherent. These operations can be skipped by specifying the flag"]
+    #[doc = " ::cudaExternalSemaphoreWaitSkipNvSciBufMemSync, which can be used as a"]
+    #[doc = " performance optimization when data coherency is not required. But specifying this"]
+    #[doc = " flag in scenarios where data coherency is required results in undefined behavior."]
+    #[doc = " Also, for semaphore object of the type ::cudaExternalSemaphoreHandleTypeNvSciSync,"]
+    #[doc = " if the NvSciSyncAttrList used to create the NvSciSyncObj had not set the flags in"]
+    #[doc = " ::cudaDeviceGetNvSciSyncAttributes to cudaNvSciSyncAttrWait, this API will return"]
+    #[doc = " cudaErrorNotSupported."]
+    #[doc = ""]
+    #[doc = " If the semaphore object is any one of the following types:"]
+    #[doc = " ::cudaExternalSemaphoreHandleTypeKeyedMutex,"]
+    #[doc = " ::cudaExternalSemaphoreHandleTypeKeyedMutexKmt,"]
+    #[doc = " then the keyed mutex will be acquired when it is released with the key specified"]
+    #[doc = " in ::cudaExternalSemaphoreSignalParams::params::keyedmutex::key or"]
+    #[doc = " until the timeout specified by"]
+    #[doc = " ::cudaExternalSemaphoreSignalParams::params::keyedmutex::timeoutMs"]
+    #[doc = " has lapsed. The timeout interval can either be a finite value"]
+    #[doc = " specified in milliseconds or an infinite value. In case an infinite"]
+    #[doc = " value is specified the timeout never elapses. The windows INFINITE"]
+    #[doc = " macro must be used to specify infinite timeout"]
     #[doc = ""]
     #[doc = " \\param extSemArray - External semaphores to be waited on"]
     #[doc = " \\param paramsArray - Array of semaphore parameters"]
@@ -16067,6 +17806,7 @@ extern "C" {
     #[doc = " \\return"]
     #[doc = " ::cudaSuccess,"]
     #[doc = " ::cudaErrorInvalidResourceHandle"]
+    #[doc = " ::cudaErrorTimeout"]
     #[doc = " \\notefnerr"]
     #[doc = " \\note_init_rt"]
     #[doc = " \\note_callback"]
@@ -16107,9 +17847,9 @@ extern "C" {
 extern "C" {
     #[doc = " \\brief Launches a device function"]
     #[doc = ""]
-    #[doc = " The function invokes kernel \\p func on \\p gridDim (\\p gridDim.x \u{d7} \\p gridDim.y"]
-    #[doc = " \u{d7} \\p gridDim.z) grid of blocks. Each block contains \\p blockDim (\\p blockDim.x \u{d7}"]
-    #[doc = " \\p blockDim.y \u{d7} \\p blockDim.z) threads."]
+    #[doc = " The function invokes kernel \\p func on \\p gridDim (\\p gridDim.x &times; \\p gridDim.y"]
+    #[doc = " &times; \\p gridDim.z) grid of blocks. Each block contains \\p blockDim (\\p blockDim.x &times;"]
+    #[doc = " \\p blockDim.y &times; \\p blockDim.z) threads."]
     #[doc = ""]
     #[doc = " If the kernel has N parameters the \\p args should point to array of N pointers."]
     #[doc = " Each pointer, from <tt>args[0]</tt> to <tt>args[N - 1]</tt>, point to the region"]
@@ -16161,9 +17901,9 @@ extern "C" {
 extern "C" {
     #[doc = " \\brief Launches a device function where thread blocks can cooperate and synchronize as they execute"]
     #[doc = ""]
-    #[doc = " The function invokes kernel \\p func on \\p gridDim (\\p gridDim.x \u{d7} \\p gridDim.y"]
-    #[doc = " \u{d7} \\p gridDim.z) grid of blocks. Each block contains \\p blockDim (\\p blockDim.x \u{d7}"]
-    #[doc = " \\p blockDim.y \u{d7} \\p blockDim.z) threads."]
+    #[doc = " The function invokes kernel \\p func on \\p gridDim (\\p gridDim.x &times; \\p gridDim.y"]
+    #[doc = " &times; \\p gridDim.z) grid of blocks. Each block contains \\p blockDim (\\p blockDim.x &times;"]
+    #[doc = " \\p blockDim.y &times; \\p blockDim.z) threads."]
     #[doc = ""]
     #[doc = " The device on which this kernel is invoked must have a non-zero value for"]
     #[doc = " the device attribute ::cudaDevAttrCooperativeLaunch."]
@@ -16650,12 +18390,46 @@ extern "C" {
     #[doc = " \\ref ::cudaOccupancyMaxPotentialBlockSizeWithFlags(int*, int*, T, size_t, int, unsigned int) \"cudaOccupancyMaxPotentialBlockSizeWithFlags (C++ API)\","]
     #[doc = " \\ref ::cudaOccupancyMaxPotentialBlockSizeVariableSMem(int*, int*, T, UnaryFunction, int) \"cudaOccupancyMaxPotentialBlockSizeVariableSMem (C++ API)\","]
     #[doc = " \\ref ::cudaOccupancyMaxPotentialBlockSizeVariableSMemWithFlags(int*, int*, T, UnaryFunction, int, unsigned int) \"cudaOccupancyMaxPotentialBlockSizeVariableSMemWithFlags (C++ API)\","]
+    #[doc = " \\ref ::cudaOccupancyAvailableDynamicSMemPerBlock(size_t*, T, int, int) \"cudaOccupancyAvailableDynamicSMemPerBlock (C++ API)\","]
     #[doc = " ::cuOccupancyMaxActiveBlocksPerMultiprocessor"]
     pub fn cudaOccupancyMaxActiveBlocksPerMultiprocessor(
         numBlocks: *mut ::std::os::raw::c_int,
         func: *const ::std::os::raw::c_void,
         blockSize: ::std::os::raw::c_int,
         dynamicSMemSize: usize,
+    ) -> cudaError_t;
+}
+extern "C" {
+    #[doc = " \\brief Returns dynamic shared memory available per block when launching \\p numBlocks blocks on SM."]
+    #[doc = ""]
+    #[doc = " Returns in \\p *dynamicSmemSize the maximum size of dynamic shared memory to allow \\p numBlocks blocks per SM."]
+    #[doc = ""]
+    #[doc = " \\param dynamicSmemSize - Returned maximum dynamic shared memory"]
+    #[doc = " \\param func            - Kernel function for which occupancy is calculated"]
+    #[doc = " \\param numBlocks       - Number of blocks to fit on SM"]
+    #[doc = " \\param blockSize       - Size of the block"]
+    #[doc = ""]
+    #[doc = " \\return"]
+    #[doc = " ::cudaSuccess,"]
+    #[doc = " ::cudaErrorInvalidDevice,"]
+    #[doc = " ::cudaErrorInvalidDeviceFunction,"]
+    #[doc = " ::cudaErrorInvalidValue,"]
+    #[doc = " ::cudaErrorUnknown,"]
+    #[doc = " \\notefnerr"]
+    #[doc = " \\note_init_rt"]
+    #[doc = " \\note_callback"]
+    #[doc = ""]
+    #[doc = " \\sa ::cudaOccupancyMaxActiveBlocksPerMultiprocessorWithFlags,"]
+    #[doc = " \\ref ::cudaOccupancyMaxPotentialBlockSize(int*, int*, T, size_t, int) \"cudaOccupancyMaxPotentialBlockSize (C++ API)\","]
+    #[doc = " \\ref ::cudaOccupancyMaxPotentialBlockSizeWithFlags(int*, int*, T, size_t, int, unsigned int) \"cudaOccupancyMaxPotentialBlockSizeWithFlags (C++ API)\","]
+    #[doc = " \\ref ::cudaOccupancyMaxPotentialBlockSizeVariableSMem(int*, int*, T, UnaryFunction, int) \"cudaOccupancyMaxPotentialBlockSizeVariableSMem (C++ API)\","]
+    #[doc = " \\ref ::cudaOccupancyMaxPotentialBlockSizeVariableSMemWithFlags(int*, int*, T, UnaryFunction, int, unsigned int) \"cudaOccupancyMaxPotentialBlockSizeVariableSMemWithFlags (C++ API)\","]
+    #[doc = " ::cudaOccupancyAvailableDynamicSMemPerBlock"]
+    pub fn cudaOccupancyAvailableDynamicSMemPerBlock(
+        dynamicSmemSize: *mut usize,
+        func: *const ::std::os::raw::c_void,
+        numBlocks: ::std::os::raw::c_int,
+        blockSize: ::std::os::raw::c_int,
     ) -> cudaError_t;
 }
 extern "C" {
@@ -16698,6 +18472,7 @@ extern "C" {
     #[doc = " \\ref ::cudaOccupancyMaxPotentialBlockSizeWithFlags(int*, int*, T, size_t, int, unsigned int) \"cudaOccupancyMaxPotentialBlockSizeWithFlags (C++ API)\","]
     #[doc = " \\ref ::cudaOccupancyMaxPotentialBlockSizeVariableSMem(int*, int*, T, UnaryFunction, int) \"cudaOccupancyMaxPotentialBlockSizeVariableSMem (C++ API)\","]
     #[doc = " \\ref ::cudaOccupancyMaxPotentialBlockSizeVariableSMemWithFlags(int*, int*, T, UnaryFunction, int, unsigned int) \"cudaOccupancyMaxPotentialBlockSizeVariableSMemWithFlags (C++ API)\","]
+    #[doc = " \\ref ::cudaOccupancyAvailableDynamicSMemPerBlock(size_t*, T, int, int) \"cudaOccupancyAvailableDynamicSMemPerBlock (C++ API)\","]
     #[doc = " ::cuOccupancyMaxActiveBlocksPerMultiprocessorWithFlags"]
     pub fn cudaOccupancyMaxActiveBlocksPerMultiprocessorWithFlags(
         numBlocks: *mut ::std::os::raw::c_int,
@@ -17660,6 +19435,9 @@ extern "C" {
     #[doc = " If \\p level is greater than the maximum number of levels in this mipmapped array,"]
     #[doc = " ::cudaErrorInvalidValue is returned."]
     #[doc = ""]
+    #[doc = " If \\p mipmappedArray is NULL,"]
+    #[doc = " ::cudaErrorInvalidResourceHandle is returned."]
+    #[doc = ""]
     #[doc = " \\param levelArray     - Returned mipmap level CUDA array"]
     #[doc = " \\param mipmappedArray - CUDA mipmapped array"]
     #[doc = " \\param level          - Mipmap level"]
@@ -17667,6 +19445,7 @@ extern "C" {
     #[doc = " \\return"]
     #[doc = " ::cudaSuccess,"]
     #[doc = " ::cudaErrorInvalidValue"]
+    #[doc = " ::cudaErrorInvalidResourceHandle"]
     #[doc = " \\notefnerr"]
     #[doc = " \\note_init_rt"]
     #[doc = " \\note_callback"]
@@ -17755,8 +19534,8 @@ extern "C" {
     #[doc = " The source and destination object may not overlap. If overlapping source"]
     #[doc = " and destination objects are specified, undefined behavior will result."]
     #[doc = ""]
-    #[doc = " The source object must lie entirely within the region defined by \\p srcPos"]
-    #[doc = " and \\p extent. The destination object must lie entirely within the region"]
+    #[doc = " The source object must entirely contain the region defined by \\p srcPos"]
+    #[doc = " and \\p extent. The destination object must entirely contain the region"]
     #[doc = " defined by \\p dstPos and \\p extent."]
     #[doc = ""]
     #[doc = " ::cudaMemcpy3D() returns an error if the pitch of \\p srcPtr or \\p dstPtr"]
@@ -18044,6 +19823,7 @@ extern "C" {
     #[doc = " \\note_callback"]
     #[doc = ""]
     #[doc = " \\note_sync"]
+    #[doc = " \\note_memcpy"]
     #[doc = ""]
     #[doc = " \\sa ::cudaMemcpy2D,"]
     #[doc = " ::cudaMemcpy2DToArray, ::cudaMemcpy2DFromArray,"]
@@ -18138,6 +19918,7 @@ extern "C" {
     #[doc = " \\notefnerr"]
     #[doc = " \\note_init_rt"]
     #[doc = " \\note_callback"]
+    #[doc = " \\note_memcpy"]
     #[doc = ""]
     #[doc = " \\sa ::cudaMemcpy,"]
     #[doc = " ::cudaMemcpy2DToArray, ::cudaMemcpy2DFromArray,"]
@@ -18194,6 +19975,7 @@ extern "C" {
     #[doc = " \\note_sync"]
     #[doc = " \\note_init_rt"]
     #[doc = " \\note_callback"]
+    #[doc = " \\note_memcpy"]
     #[doc = ""]
     #[doc = " \\sa ::cudaMemcpy, ::cudaMemcpy2D,"]
     #[doc = " ::cudaMemcpy2DFromArray,"]
@@ -18251,6 +20033,7 @@ extern "C" {
     #[doc = " \\note_sync"]
     #[doc = " \\note_init_rt"]
     #[doc = " \\note_callback"]
+    #[doc = " \\note_memcpy"]
     #[doc = ""]
     #[doc = " \\sa ::cudaMemcpy, ::cudaMemcpy2D,"]
     #[doc = " ::cudaMemcpy2DToArray,"]
@@ -18464,6 +20247,7 @@ extern "C" {
     #[doc = " \\note_null_stream"]
     #[doc = " \\note_init_rt"]
     #[doc = " \\note_callback"]
+    #[doc = " \\note_memcpy"]
     #[doc = ""]
     #[doc = " \\sa ::cudaMemcpy, ::cudaMemcpy2D,"]
     #[doc = " ::cudaMemcpy2DToArray, ::cudaMemcpy2DFromArray,"]
@@ -18575,6 +20359,7 @@ extern "C" {
     #[doc = " \\note_null_stream"]
     #[doc = " \\note_init_rt"]
     #[doc = " \\note_callback"]
+    #[doc = " \\note_memcpy"]
     #[doc = ""]
     #[doc = " \\sa ::cudaMemcpy, ::cudaMemcpy2D,"]
     #[doc = " ::cudaMemcpy2DToArray, ::cudaMemcpy2DFromArray,"]
@@ -18640,6 +20425,7 @@ extern "C" {
     #[doc = " \\note_null_stream"]
     #[doc = " \\note_init_rt"]
     #[doc = " \\note_callback"]
+    #[doc = " \\note_memcpy"]
     #[doc = ""]
     #[doc = " \\sa ::cudaMemcpy, ::cudaMemcpy2D,"]
     #[doc = " ::cudaMemcpy2DToArray, ::cudaMemcpy2DFromArray,"]
@@ -18705,6 +20491,7 @@ extern "C" {
     #[doc = " \\note_null_stream"]
     #[doc = " \\note_init_rt"]
     #[doc = " \\note_callback"]
+    #[doc = " \\note_memcpy"]
     #[doc = ""]
     #[doc = " \\sa ::cudaMemcpy, ::cudaMemcpy2D,"]
     #[doc = " ::cudaMemcpy2DToArray, ::cudaMemcpy2DFromArray,"]
@@ -19737,20 +21524,13 @@ extern "C" {
     #[doc = " The ::cudaPointerAttributes structure is defined as:"]
     #[doc = " \\code"]
     #[doc = "struct cudaPointerAttributes {"]
-    #[doc = "enum cudaMemoryType memoryType;"]
     #[doc = "enum cudaMemoryType type;"]
     #[doc = "int device;"]
     #[doc = "void *devicePointer;"]
     #[doc = "void *hostPointer;"]
-    #[doc = "int isManaged;"]
     #[doc = "}"]
     #[doc = "\\endcode"]
     #[doc = " In this structure, the individual fields mean"]
-    #[doc = ""]
-    #[doc = " - \\ref ::cudaPointerAttributes::memoryType identifies the"]
-    #[doc = "   location of the memory associated with pointer \\p ptr.  It can be"]
-    #[doc = "   ::cudaMemoryTypeHost for host memory or ::cudaMemoryTypeDevice for device"]
-    #[doc = "   and managed memory. It has been deprecated in favour of ::cudaPointerAttributes::type."]
     #[doc = ""]
     #[doc = " - \\ref ::cudaPointerAttributes::type identifies type of memory. It can be"]
     #[doc = "    ::cudaMemoryTypeUnregistered for unregistered host memory,"]
@@ -19776,10 +21556,6 @@ extern "C" {
     #[doc = "   may be accessed on the host."]
     #[doc = "   If the memory referred to by \\p ptr cannot be accessed directly by the"]
     #[doc = "   host then this is NULL."]
-    #[doc = ""]
-    #[doc = " - \\ref ::cudaPointerAttributes::isManaged \"isManaged\" indicates if"]
-    #[doc = "   the pointer \\p ptr points to managed memory or not. It has been deprecated"]
-    #[doc = "   in favour of ::cudaPointerAttributes::type."]
     #[doc = ""]
     #[doc = " \\param attributes - Attributes for the specified pointer"]
     #[doc = " \\param ptr        - Pointer to get attributes for"]
@@ -20655,6 +22431,7 @@ extern "C" {
     #[doc = "float                       mipmapLevelBias;"]
     #[doc = "float                       minMipmapLevelClamp;"]
     #[doc = "float                       maxMipmapLevelClamp;"]
+    #[doc = "int                         disableTrilinearOptimization;"]
     #[doc = "};"]
     #[doc = " \\endcode"]
     #[doc = " where"]
@@ -20711,6 +22488,8 @@ extern "C" {
     #[doc = " - ::cudaTextureDesc::minMipmapLevelClamp specifies the lower end of the mipmap level range to clamp access to."]
     #[doc = ""]
     #[doc = " - ::cudaTextureDesc::maxMipmapLevelClamp specifies the upper end of the mipmap level range to clamp access to."]
+    #[doc = ""]
+    #[doc = " - ::cudaTextureDesc::disableTrilinearOptimization specifies whether the trilinear filtering optimizations will be disabled."]
     #[doc = ""]
     #[doc = ""]
     #[doc = " The ::cudaResourceViewDesc struct is defined as"]
@@ -21190,6 +22969,76 @@ extern "C" {
     pub fn cudaGraphKernelNodeSetParams(
         node: cudaGraphNode_t,
         pNodeParams: *const cudaKernelNodeParams,
+    ) -> cudaError_t;
+}
+extern "C" {
+    #[doc = " \\brief Copies attributes from source node to destination node."]
+    #[doc = ""]
+    #[doc = " Copies attributes from source node \\p src to destination node \\p dst."]
+    #[doc = " Both node must have the same context."]
+    #[doc = ""]
+    #[doc = " \\param[out] dst Destination node"]
+    #[doc = " \\param[in] src Source node"]
+    #[doc = " For list of attributes see ::cudaKernelNodeAttrID"]
+    #[doc = ""]
+    #[doc = " \\return"]
+    #[doc = " ::cudaSuccess,"]
+    #[doc = " ::cudaErrorInvalidContext"]
+    #[doc = " \\notefnerr"]
+    #[doc = ""]
+    #[doc = " \\sa"]
+    #[doc = " ::cudaAccessPolicyWindow"]
+    pub fn cudaGraphKernelNodeCopyAttributes(
+        hSrc: cudaGraphNode_t,
+        hDst: cudaGraphNode_t,
+    ) -> cudaError_t;
+}
+extern "C" {
+    #[doc = " \\brief Queries node attribute."]
+    #[doc = ""]
+    #[doc = " Queries attribute \\p attr from node \\p hNode and stores it in corresponding"]
+    #[doc = " member of \\p value_out."]
+    #[doc = ""]
+    #[doc = " \\param[in] hNode"]
+    #[doc = " \\param[in] attr"]
+    #[doc = " \\param[out] value_out"]
+    #[doc = ""]
+    #[doc = " \\return"]
+    #[doc = " ::cudaSuccess,"]
+    #[doc = " ::cudaErrorInvalidValue,"]
+    #[doc = " ::cudaErrorInvalidResourceHandle"]
+    #[doc = " \\notefnerr"]
+    #[doc = ""]
+    #[doc = " \\sa"]
+    #[doc = " ::cudaAccessPolicyWindow"]
+    pub fn cudaGraphKernelNodeGetAttribute(
+        hNode: cudaGraphNode_t,
+        attr: cudaKernelNodeAttrID,
+        value_out: *mut cudaKernelNodeAttrValue,
+    ) -> cudaError_t;
+}
+extern "C" {
+    #[doc = " \\brief Sets node attribute."]
+    #[doc = ""]
+    #[doc = " Sets attribute \\p attr on node \\p hNode from corresponding attribute of"]
+    #[doc = " \\p value."]
+    #[doc = ""]
+    #[doc = " \\param[out] hNode"]
+    #[doc = " \\param[in] attr"]
+    #[doc = " \\param[out] value"]
+    #[doc = ""]
+    #[doc = " \\return"]
+    #[doc = " ::cudaSuccess,"]
+    #[doc = " ::cudaErrorInvalidValue,"]
+    #[doc = " ::cudaErrorInvalidResourceHandle"]
+    #[doc = " \\notefnerr"]
+    #[doc = ""]
+    #[doc = " \\sa"]
+    #[doc = " ::cudaAccessPolicyWindow"]
+    pub fn cudaGraphKernelNodeSetAttribute(
+        hNode: cudaGraphNode_t,
+        attr: cudaKernelNodeAttrID,
+        value: *const cudaKernelNodeAttrValue,
     ) -> cudaError_t;
 }
 extern "C" {
@@ -22008,7 +23857,7 @@ extern "C" {
     #[doc = " of \\p nodeParams cannot be modified and must match the original value."]
     #[doc = " All other values can be modified."]
     #[doc = ""]
-    #[doc = " The modifications take effect at the next launch of \\p hGraphExec. Already"]
+    #[doc = " The modifications only affect future launches of \\p hGraphExec. Already"]
     #[doc = " enqueued or running launches of \\p hGraphExec are not affected by this call."]
     #[doc = " \\p node is also not modified by this call."]
     #[doc = ""]
@@ -22032,6 +23881,209 @@ extern "C" {
         hGraphExec: cudaGraphExec_t,
         node: cudaGraphNode_t,
         pNodeParams: *const cudaKernelNodeParams,
+    ) -> cudaError_t;
+}
+extern "C" {
+    #[doc = " \\brief Sets the parameters for a memcpy node in the given graphExec."]
+    #[doc = ""]
+    #[doc = " Updates the work represented by \\p node in \\p hGraphExec as though \\p node had"]
+    #[doc = " contained \\p pNodeParams at instantiation.  \\p node must remain in the graph which was"]
+    #[doc = " used to instantiate \\p hGraphExec.  Changed edges to and from \\p node are ignored."]
+    #[doc = ""]
+    #[doc = " The source and destination memory in \\p pNodeParams must be allocated from the same"]
+    #[doc = " contexts as the original source and destination memory.  Both the instantiation-time"]
+    #[doc = " memory operands and the memory operands in \\p pNodeParams must be 1-dimensional."]
+    #[doc = " Zero-length operations are not supported."]
+    #[doc = ""]
+    #[doc = " The modifications only affect future launches of \\p hGraphExec.  Already enqueued"]
+    #[doc = " or running launches of \\p hGraphExec are not affected by this call.  \\p node is also"]
+    #[doc = " not modified by this call."]
+    #[doc = ""]
+    #[doc = " Returns cudaErrorInvalidValue if the memory operands' mappings changed or"]
+    #[doc = " either the original or new memory operands are multidimensional."]
+    #[doc = ""]
+    #[doc = " \\param hGraphExec  - The executable graph in which to set the specified node"]
+    #[doc = " \\param nodei       - Memcpy node from the graph which was used to instantiate graphExec"]
+    #[doc = " \\param pNodeParams - Updated Parameters to set"]
+    #[doc = ""]
+    #[doc = " \\return"]
+    #[doc = " ::cudaSuccess,"]
+    #[doc = " ::cudaErrorInvalidValue,"]
+    #[doc = " \\note_graph_thread_safety"]
+    #[doc = " \\notefnerr"]
+    #[doc = " \\note_init_rt"]
+    #[doc = " \\note_callback"]
+    #[doc = ""]
+    #[doc = " \\sa"]
+    #[doc = " ::cudaGraphAddMemcpyNode,"]
+    #[doc = " ::cudaGraphMemcpyNodeSetParams"]
+    #[doc = " ::cudaGraphInstantiate"]
+    #[doc = " ::cudaGraphExecKernelNodeSetParams"]
+    #[doc = " ::cudaGraphExecMemsetNodeSetParams"]
+    #[doc = " ::cudaGraphExecHostNodeSetParams"]
+    pub fn cudaGraphExecMemcpyNodeSetParams(
+        hGraphExec: cudaGraphExec_t,
+        node: cudaGraphNode_t,
+        pNodeParams: *const cudaMemcpy3DParms,
+    ) -> cudaError_t;
+}
+extern "C" {
+    #[doc = " \\brief Sets the parameters for a memset node in the given graphExec."]
+    #[doc = ""]
+    #[doc = " Updates the work represented by \\p node in \\p hGraphExec as though \\p node had"]
+    #[doc = " contained \\p pNodeParams at instantiation.  \\p node must remain in the graph which was"]
+    #[doc = " used to instantiate \\p hGraphExec.  Changed edges to and from \\p node are ignored."]
+    #[doc = ""]
+    #[doc = " The destination memory in \\p pNodeParams must be allocated from the same"]
+    #[doc = " context as the original destination memory.  Both the instantiation-time"]
+    #[doc = " memory operand and the memory operand in \\p pNodeParams must be 1-dimensional."]
+    #[doc = " Zero-length operations are not supported."]
+    #[doc = ""]
+    #[doc = " The modifications only affect future launches of \\p hGraphExec.  Already enqueued"]
+    #[doc = " or running launches of \\p hGraphExec are not affected by this call.  \\p node is also"]
+    #[doc = " not modified by this call."]
+    #[doc = ""]
+    #[doc = " Returns cudaErrorInvalidValue if the memory operand's mappings changed or"]
+    #[doc = " either the original or new memory operand are multidimensional."]
+    #[doc = ""]
+    #[doc = " \\param hGraphExec  - The executable graph in which to set the specified node"]
+    #[doc = " \\param node        - Memset node from the graph which was used to instantiate graphExec"]
+    #[doc = " \\param pNodeParams - Updated Parameters to set"]
+    #[doc = ""]
+    #[doc = " \\return"]
+    #[doc = " ::cudaSuccess,"]
+    #[doc = " ::cudaErrorInvalidValue,"]
+    #[doc = " \\note_graph_thread_safety"]
+    #[doc = " \\notefnerr"]
+    #[doc = " \\note_init_rt"]
+    #[doc = " \\note_callback"]
+    #[doc = ""]
+    #[doc = " \\sa"]
+    #[doc = " ::cudaGraphAddMemsetNode,"]
+    #[doc = " ::cudaGraphMemsetNodeSetParams"]
+    #[doc = " ::cudaGraphInstantiate"]
+    #[doc = " ::cudaGraphExecKernelNodeSetParams"]
+    #[doc = " ::cudaGraphExecMemcpyNodeSetParams"]
+    #[doc = " ::cudaGraphExecHostNodeSetParams"]
+    pub fn cudaGraphExecMemsetNodeSetParams(
+        hGraphExec: cudaGraphExec_t,
+        node: cudaGraphNode_t,
+        pNodeParams: *const cudaMemsetParams,
+    ) -> cudaError_t;
+}
+extern "C" {
+    #[doc = " \\brief Sets the parameters for a host node in the given graphExec."]
+    #[doc = ""]
+    #[doc = " Updates the work represented by \\p node in \\p hGraphExec as though \\p node had"]
+    #[doc = " contained \\p pNodeParams at instantiation.  \\p node must remain in the graph which was"]
+    #[doc = " used to instantiate \\p hGraphExec.  Changed edges to and from \\p node are ignored."]
+    #[doc = ""]
+    #[doc = " The modifications only affect future launches of \\p hGraphExec.  Already enqueued"]
+    #[doc = " or running launches of \\p hGraphExec are not affected by this call.  \\p node is also"]
+    #[doc = " not modified by this call."]
+    #[doc = ""]
+    #[doc = " \\param hGraphExec  - The executable graph in which to set the specified node"]
+    #[doc = " \\param node        - Host node from the graph which was used to instantiate graphExec"]
+    #[doc = " \\param pNodeParams - Updated Parameters to set"]
+    #[doc = ""]
+    #[doc = " \\return"]
+    #[doc = " ::cudaSuccess,"]
+    #[doc = " ::cudaErrorInvalidValue,"]
+    #[doc = " \\note_graph_thread_safety"]
+    #[doc = " \\notefnerr"]
+    #[doc = " \\note_init_rt"]
+    #[doc = " \\note_callback"]
+    #[doc = ""]
+    #[doc = " \\sa"]
+    #[doc = " ::cudaGraphAddHostNode,"]
+    #[doc = " ::cudaGraphHostNodeSetParams"]
+    #[doc = " ::cudaGraphInstantiate"]
+    #[doc = " ::cudaGraphExecKernelNodeSetParams"]
+    #[doc = " ::cudaGraphExecMemcpyNodeSetParams"]
+    #[doc = " ::cudaGraphExecMemsetNodeSetParams"]
+    pub fn cudaGraphExecHostNodeSetParams(
+        hGraphExec: cudaGraphExec_t,
+        node: cudaGraphNode_t,
+        pNodeParams: *const cudaHostNodeParams,
+    ) -> cudaError_t;
+}
+extern "C" {
+    #[doc = " \\brief Check whether an executable graph can be updated with a graph and perform the update if possible"]
+    #[doc = ""]
+    #[doc = " Updates the node parameters in the instantiated graph specified by \\p hGraphExec with the"]
+    #[doc = " node parameters in a topologically identical graph specified by \\p hGraph."]
+    #[doc = ""]
+    #[doc = " Limitations:"]
+    #[doc = ""]
+    #[doc = " - Kernel nodes:"]
+    #[doc = "   - The function must not change (same restriction as cudaGraphExecKernelNodeSetParams())"]
+    #[doc = " - Memset and memcpy nodes:"]
+    #[doc = "   - The CUDA device(s) to which the operand(s) was allocated/mapped cannot change."]
+    #[doc = "   - The source/destination memory must be allocated from the same contexts as the original"]
+    #[doc = "     source/destination memory."]
+    #[doc = "   - Only 1D memsets can be changed."]
+    #[doc = " - Additional memcpy node restrictions:"]
+    #[doc = "   - Changing either the source or destination memory type(i.e. CU_MEMORYTYPE_DEVICE,"]
+    #[doc = "     CU_MEMORYTYPE_ARRAY, etc.) is not supported."]
+    #[doc = ""]
+    #[doc = " Note:  The API may add further restrictions in future releases.  The return code should always be checked."]
+    #[doc = ""]
+    #[doc = " Some node types are not currently supported:"]
+    #[doc = " - Empty graph nodes(cudaGraphNodeTypeEmpty)"]
+    #[doc = " - Child graphs(cudaGraphNodeTypeGraph)."]
+    #[doc = ""]
+    #[doc = " cudaGraphExecUpdate sets \\p updateResult_out to cudaGraphExecUpdateErrorTopologyChanged under"]
+    #[doc = " the following conditions:"]
+    #[doc = ""]
+    #[doc = " - The count of nodes directly in \\p hGraphExec and \\p hGraph differ, in which case \\p hErrorNode_out"]
+    #[doc = "   is NULL."]
+    #[doc = " - A node is deleted in \\p hGraph but not not its pair from \\p hGraphExec, in which case \\p hErrorNode_out"]
+    #[doc = "   is NULL."]
+    #[doc = " - A node is deleted in \\p hGraphExec but not its pair from \\p hGraph, in which case \\p hErrorNode_out is"]
+    #[doc = "   the pairless node from \\p hGraph."]
+    #[doc = " - The dependent nodes of a pair differ, in which case \\p hErrorNode_out is the node from \\p hGraph."]
+    #[doc = ""]
+    #[doc = " cudaGraphExecUpdate sets \\p updateResult_out to:"]
+    #[doc = " - cudaGraphExecUpdateError if passed an invalid value."]
+    #[doc = " - cudaGraphExecUpdateErrorTopologyChanged if the graph topology changed"]
+    #[doc = " - cudaGraphExecUpdateErrorNodeTypeChanged if the type of a node changed, in which case"]
+    #[doc = "   \\p hErrorNode_out is set to the node from \\p hGraph."]
+    #[doc = " - cudaGraphExecUpdateErrorFunctionChanged if the func field of a kernel changed, in which"]
+    #[doc = "   case \\p hErrorNode_out is set to the node from \\p hGraph"]
+    #[doc = " - cudaGraphExecUpdateErrorParametersChanged if any parameters to a node changed in a way"]
+    #[doc = "   that is not supported, in which case \\p hErrorNode_out is set to the node from \\p hGraph"]
+    #[doc = " - cudaGraphExecUpdateErrorNotSupported if something about a node is unsupported, like"]
+    #[doc = "   the node's type or configuration, in which case \\p hErrorNode_out is set to the node from \\p hGraph"]
+    #[doc = ""]
+    #[doc = " If \\p updateResult_out isn't set in one of the situations described above, the update check passes"]
+    #[doc = " and cudaGraphExecUpdate updates \\p hGraphExec to match the contents of \\p hGraph.  If an error happens"]
+    #[doc = " during the update, \\p updateResult_out will be set to cudaGraphExecUpdateError; otherwise,"]
+    #[doc = " \\p updateResult_out is set to cudaGraphExecUpdateSuccess."]
+    #[doc = ""]
+    #[doc = " cudaGraphExecUpdate returns cudaSuccess when the updated was performed successfully.  It returns"]
+    #[doc = " cudaErrorGraphExecUpdateFailure if the graph update was not performed because it included"]
+    #[doc = " changes which violated constraints specific to instantiated graph update."]
+    #[doc = ""]
+    #[doc = " \\param hGraphExec The instantiated graph to be updated"]
+    #[doc = " \\param hGraph The graph containing the updated parameters"]
+    #[doc = " \\param hErrorNode_out The node which caused the permissibility check to forbid the update, if any"]
+    #[doc = " \\param updateResult_out Whether the graph update was permitted.  If was forbidden, the reason why"]
+    #[doc = ""]
+    #[doc = " \\return"]
+    #[doc = " ::cudaSuccess,"]
+    #[doc = " ::cudaErrorGraphExecUpdateFailure,"]
+    #[doc = " \\note_graph_thread_safety"]
+    #[doc = " \\notefnerr"]
+    #[doc = " \\note_init_rt"]
+    #[doc = " \\note_callback"]
+    #[doc = ""]
+    #[doc = " \\sa"]
+    #[doc = " ::cudaGraphInstantiate,"]
+    pub fn cudaGraphExecUpdate(
+        hGraphExec: cudaGraphExec_t,
+        hGraph: cudaGraph_t,
+        hErrorNode_out: *mut cudaGraphNode_t,
+        updateResult_out: *mut cudaGraphExecUpdateResult,
     ) -> cudaError_t;
 }
 extern "C" {
@@ -22105,6 +24157,22 @@ extern "C" {
     pub fn cudaGetExportTable(
         ppExportTable: *mut *const ::std::os::raw::c_void,
         pExportTableId: *const cudaUUID_t,
+    ) -> cudaError_t;
+}
+extern "C" {
+    #[doc = " \\brief Get pointer to device entry function that matches entry function \\p symbolPtr"]
+    #[doc = ""]
+    #[doc = " Returns in \\p functionPtr the device entry function corresponding to the symbol \\p symbolPtr."]
+    #[doc = ""]
+    #[doc = " \\param functionPtr     - Returns the device entry function"]
+    #[doc = " \\param symbolPtr       - Pointer to device entry function to search for"]
+    #[doc = ""]
+    #[doc = " \\return"]
+    #[doc = " ::cudaSuccess"]
+    #[doc = ""]
+    pub fn cudaGetFuncBySymbol(
+        functionPtr: *mut cudaFunction_t,
+        symbolPtr: *const ::std::os::raw::c_void,
     ) -> cudaError_t;
 }
 pub mod nvrtcResult {
