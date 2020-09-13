@@ -1,7 +1,6 @@
 [workspace]
 
 members = [
-    "optix-sys",
-    "optix-derive",
-    "optix"
+    "optix",
+    "cu",
 ]

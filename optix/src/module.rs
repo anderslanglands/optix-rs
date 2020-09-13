@@ -1,52 +1,18 @@
-use optix_sys as sys;
-
-use super::error::Error;
+use crate::{sys, DeviceContext, Error};
 type Result<T, E = Error> = std::result::Result<T, E>;
 
-pub use super::device_context::DeviceContext;
+pub use sys::{CompileDebugLevel, CompileOptimizationLevel};
+pub type ModuleCompileOptions = sys::OptixModuleCompileOptions;
 
 use std::ffi::{CStr, CString};
-use ustr::Ustr;
 
-#[repr(u32)]
-#[derive(Debug, Hash, PartialEq, Copy, Clone)]
-pub enum CompileOptimizationLevel {
-    Level0 =
-        sys::OptixCompileOptimizationLevel::OPTIX_COMPILE_OPTIMIZATION_LEVEL_0,
-    Level1 =
-        sys::OptixCompileOptimizationLevel::OPTIX_COMPILE_OPTIMIZATION_LEVEL_1,
-    Level2 =
-        sys::OptixCompileOptimizationLevel::OPTIX_COMPILE_OPTIMIZATION_LEVEL_2,
-    Level3 =
-        sys::OptixCompileOptimizationLevel::OPTIX_COMPILE_OPTIMIZATION_LEVEL_3,
+#[derive(Clone)]
+#[repr(transparent)]
+pub struct Module {
+    pub(crate) inner: sys::OptixModule,
 }
 
-#[repr(u32)]
-#[derive(Debug, Hash, PartialEq, Copy, Clone)]
-pub enum CompileDebugLevel {
-    None = sys::OptixCompileDebugLevel::OPTIX_COMPILE_DEBUG_LEVEL_NONE,
-    LineInfo = sys::OptixCompileDebugLevel::OPTIX_COMPILE_DEBUG_LEVEL_LINEINFO,
-    FULL = sys::OptixCompileDebugLevel::OPTIX_COMPILE_DEBUG_LEVEL_FULL,
-}
-
-#[derive(Debug, Hash, PartialEq, Copy, Clone)]
-pub struct ModuleCompileOptions {
-    pub max_register_count: i32,
-    pub opt_level: CompileOptimizationLevel,
-    pub debug_level: CompileDebugLevel,
-}
-
-impl From<ModuleCompileOptions> for sys::OptixModuleCompileOptions {
-    fn from(o: ModuleCompileOptions) -> sys::OptixModuleCompileOptions {
-        sys::OptixModuleCompileOptions {
-            maxRegisterCount: o.max_register_count,
-            optLevel: o.opt_level as u32,
-            debugLevel: o.debug_level as u32,
-        }
-    }
-}
-
-bitflags! {
+bitflags::bitflags! {
     pub struct TraversableGraphFlags: u32 {
         const ALLOW_ANY = sys::OptixTraversableGraphFlags::OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY;
         const ALLOW_SINGLE_GAS = sys::OptixTraversableGraphFlags::OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
@@ -54,7 +20,7 @@ bitflags! {
     }
 }
 
-bitflags! {
+bitflags::bitflags! {
     pub struct ExceptionFlags: u32 {
         const NONE = sys::OptixExceptionFlags::OPTIX_EXCEPTION_FLAG_NONE;
         const STACK_OVERFLOW = sys::OptixExceptionFlags::OPTIX_EXCEPTION_FLAG_STACK_OVERFLOW;
@@ -64,68 +30,119 @@ bitflags! {
     }
 }
 
+bitflags::bitflags! {
+    pub struct PrimitiveTypeFlags: i32 {
+        const DEFAULT = 0;
+        const CUSTOM =  sys::OptixPrimitiveTypeFlags_OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM;
+        const ROUND_QUADRATIC_BSPLINE = sys::OptixPrimitiveTypeFlags_OPTIX_PRIMITIVE_TYPE_FLAGS_ROUND_QUADRATIC_BSPLINE;
+        const ROUND_CUBIC_BSPLINE =  sys::OptixPrimitiveTypeFlags_OPTIX_PRIMITIVE_TYPE_FLAGS_ROUND_CUBIC_BSPLINE;
+        const ROUND_LINEAR =  sys::OptixPrimitiveTypeFlags_OPTIX_PRIMITIVE_TYPE_FLAGS_ROUND_LINEAR;
+        const TRIANGLE = sys::OptixPrimitiveTypeFlags_OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE;
+    }
+}
+
 #[derive(Debug, Hash, PartialEq, Clone)]
 pub struct PipelineCompileOptions {
-    pub uses_motion_blur: bool,
-    pub traversable_graph_flags: TraversableGraphFlags,
-    pub num_payload_values: i32,
-    pub num_attribute_values: i32,
-    pub exception_flags: ExceptionFlags,
-    pub pipeline_launch_params_variable_name: Ustr,
+    uses_motion_blur: bool,
+    traversable_graph_flags: TraversableGraphFlags,
+    num_payload_values: i32,
+    num_attribute_values: i32,
+    exception_flags: ExceptionFlags,
+    pipeline_launch_params_variable_name: Option<ustr::Ustr>,
+    primitive_type_flags: PrimitiveTypeFlags,
 }
 
-pub struct Module {
-    pub(crate) module: sys::OptixModule,
-}
+impl PipelineCompileOptions {
+    pub fn new() -> PipelineCompileOptions {
+        PipelineCompileOptions {
+            uses_motion_blur: false,
+            traversable_graph_flags: TraversableGraphFlags::ALLOW_ANY,
+            num_payload_values: 0,
+            num_attribute_values: 0,
+            exception_flags: ExceptionFlags::NONE,
+            pipeline_launch_params_variable_name: None,
+            primitive_type_flags: PrimitiveTypeFlags::DEFAULT,
+        }
+    }
 
-pub type ModuleRef = super::Ref<Module>;
+    pub fn build(&self) -> Result<sys::OptixPipelineCompileOptions> {
+        if let Some(name) = self.pipeline_launch_params_variable_name {
+            Ok(sys::OptixPipelineCompileOptions {
+                usesMotionBlur: if self.uses_motion_blur { 1 } else { 0 },
+                traversableGraphFlags: self.traversable_graph_flags.bits(),
+                numPayloadValues: self.num_payload_values,
+                numAttributeValues: self.num_attribute_values,
+                exceptionFlags: self.exception_flags.bits(),
+                pipelineLaunchParamsVariableName: unsafe { name.as_char_ptr() },
+                usesPrimitiveTypeFlags: self.primitive_type_flags.bits() as u32,
+            })
+        } else {
+            Err(Error::PipelineLaunchParamsVariableNameNotSpecified)
+        }
+    }
+
+    pub fn uses_motion_blur(mut self, umb: bool) -> Self {
+        self.uses_motion_blur = umb;
+        self
+    }
+
+    pub fn traversable_graph_flags(
+        mut self,
+        tgf: TraversableGraphFlags,
+    ) -> Self {
+        self.traversable_graph_flags = tgf;
+        self
+    }
+
+    pub fn num_payload_values(mut self, npv: i32) -> Self {
+        self.num_payload_values = npv;
+        self
+    }
+
+    pub fn num_attribute_values(mut self, nav: i32) -> Self {
+        self.num_attribute_values = nav;
+        self
+    }
+
+    pub fn exception_flags(mut self, ef: ExceptionFlags) -> Self {
+        self.exception_flags = ef;
+        self
+    }
+
+    pub fn pipeline_launch_params_variable_name(
+        mut self,
+        name: ustr::Ustr,
+    ) -> Self {
+        self.pipeline_launch_params_variable_name = Some(name);
+        self
+    }
+}
 
 impl DeviceContext {
     pub fn module_create_from_ptx(
         &mut self,
-        module_compile_options: ModuleCompileOptions,
+        module_compile_options: &ModuleCompileOptions,
         pipeline_compile_options: &PipelineCompileOptions,
         ptx: &str,
-    ) -> Result<(ModuleRef, String)> {
+    ) -> Result<(Module, String)> {
         let cptx = CString::new(ptx).unwrap();
         let mut log = [0u8; 4096];
         let mut log_len = log.len();
 
-        let launch_param = CString::new(
-            pipeline_compile_options
-                .pipeline_launch_params_variable_name
-                .as_str(),
-        )
-        .unwrap();
+        let popt = pipeline_compile_options.build()?;
 
-        let popt = sys::OptixPipelineCompileOptions {
-            usesMotionBlur: if pipeline_compile_options.uses_motion_blur {
-                1
-            } else {
-                0
-            },
-            traversableGraphFlags: pipeline_compile_options
-                .traversable_graph_flags
-                .bits(),
-            numPayloadValues: pipeline_compile_options.num_payload_values,
-            numAttributeValues: pipeline_compile_options.num_attribute_values,
-            exceptionFlags: pipeline_compile_options.exception_flags.bits(),
-            pipelineLaunchParamsVariableName: launch_param.as_ptr(),
-        };
-
-        let mopt = module_compile_options.into();
-        let mut module = std::ptr::null_mut();
+        let mut inner = std::ptr::null_mut();
         let res = unsafe {
             sys::optixModuleCreateFromPTX(
-                self.ctx,
-                &mopt,
+                self.inner,
+                module_compile_options,
                 &popt,
                 cptx.as_ptr(),
                 cptx.as_bytes().len(),
                 log.as_mut_ptr() as *mut i8,
                 &mut log_len,
-                &mut module,
-            )
+                &mut inner,
+            ).to_result()
         };
 
         let log = CStr::from_bytes_with_nul(&log[0..log_len])
@@ -133,15 +150,9 @@ impl DeviceContext {
             .to_string_lossy()
             .into_owned();
 
-        if res != sys::OptixResult::OPTIX_SUCCESS {
-            return Err(Error::ModuleCreationFailed {
-                source: res.into(),
-                log,
-            });
+        match res {
+            Ok(()) => Ok((Module{inner}, log)),
+            Err(source) => Err(Error::ModuleCreationFailed { source, log }),
         }
-
-        let module = super::Ref::new(Module { module });
-        // self.modules.push(super::Ref::clone(&module));
-        Ok((module, log))
     }
 }
