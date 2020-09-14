@@ -16,6 +16,7 @@ fn main() {
     ];
 
     compile_to_ptx("examples/02_pipeline/device_programs.cu", &args);
+    compile_to_ptx("examples/03_window/device_programs.cu", &args);
 }
 
 fn compile_to_ptx(cu_path: &str, args: &[String]) {

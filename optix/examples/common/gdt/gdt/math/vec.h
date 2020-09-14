@@ -22,6 +22,25 @@
 #include <math.h>
 #include <algorithm>
 
+#ifndef __CUDACC__
+// define builtins for IDE
+struct float2 {
+    float x;
+    float y;
+};
+struct float3 {
+    float x;
+    float y;
+    float z;
+};
+struct float4 {
+    float x;
+    float y;
+    float z;
+    float w;
+};
+#endif
+
 namespace gdt {
 
   template<typename T> struct long_type_of { typedef T type; };

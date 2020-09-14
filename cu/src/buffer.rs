@@ -1,5 +1,5 @@
 use crate::{
-    allocator::Layout, sys, DefaultDeviceAlloc, DeviceAllocRef, DeviceCopy,
+    allocator::Layout, sys, DefaultDeviceAlloc, DeviceAllocRef, 
     DevicePtr, Error,
 };
 type Result<T, E = Error> = std::result::Result<T, E>;
@@ -66,8 +66,6 @@ impl<A: DeviceAllocRef> Drop for Buffer<A> {
 }
 
 pub struct TypedBuffer<T, A: DeviceAllocRef = DefaultDeviceAlloc>
-where
-    T: DeviceCopy,
 {
     ptr: DevicePtr,
     len: usize,
@@ -76,8 +74,6 @@ where
 }
 
 impl<T> TypedBuffer<T, DefaultDeviceAlloc>
-where
-    T: DeviceCopy,
 {
     pub fn from_slice(slice: &[T]) -> Result<Self> {
         TypedBuffer::from_slice_in(slice, DefaultDeviceAlloc)
@@ -89,8 +85,6 @@ where
 }
 
 impl<T, A: DeviceAllocRef> TypedBuffer<T, A>
-where
-    T: DeviceCopy,
 {
     pub fn from_slice_in(slice: &[T], alloc: A) -> Result<TypedBuffer<T, A>> {
         let byte_size = slice.len() * std::mem::size_of::<T>();
@@ -185,8 +179,6 @@ where
 }
 
 impl<T, A: DeviceAllocRef> Drop for TypedBuffer<T, A>
-where
-    T: DeviceCopy,
 {
     fn drop(&mut self) {
         self.alloc
