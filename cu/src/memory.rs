@@ -4,7 +4,7 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 #[derive(Copy, Clone, Debug)]
 #[repr(transparent)]
 pub struct DevicePtr {
-    inner: sys::CUdeviceptr,
+    pub(crate) inner: sys::CUdeviceptr,
 }
 
 impl DevicePtr {

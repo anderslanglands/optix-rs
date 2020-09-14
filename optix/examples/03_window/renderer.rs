@@ -1,17 +1,45 @@
+use cu::{
+    allocator::{DeviceFrameAllocator, Layout},
+    DevicePtr,
+};
+
 pub use optix::{DeviceContext, Error};
 type Result<T, E = Error> = std::result::Result<T, E>;
 
 use crate::vector::*;
 
+use once_cell::sync::Lazy;
+use parking_lot::Mutex;
 use ustr::ustr;
+
+static FRAME_ALLOC: Lazy<Mutex<DeviceFrameAllocator>> = Lazy::new(|| {
+    Mutex::new(
+        DeviceFrameAllocator::new(256 * 1024 * 1024)
+            .expect("Frame allocator failed"),
+    )
+});
+
+pub struct FrameAlloc;
+unsafe impl cu::allocator::DeviceAllocRef for FrameAlloc {
+    fn alloc(&self, layout: Layout) -> Result<DevicePtr, cu::Error> {
+        FRAME_ALLOC.lock().alloc(layout)
+    }
+
+    fn dealloc(&self, ptr: DevicePtr) -> Result<(), cu::Error> {
+        FRAME_ALLOC.lock().dealloc(ptr)
+    }
+}
 
 pub struct Renderer {
     stream: cu::Stream,
     launch_params: LaunchParams,
-    buf_launch_params: cu::TypedBuffer<LaunchParams>,
+    buf_launch_params: cu::TypedBuffer<LaunchParams, FrameAlloc>,
+    buf_raygen: cu::TypedBuffer<RaygenRecord, FrameAlloc>,
+    buf_hitgroup: cu::TypedBuffer<HitgroupRecord, FrameAlloc>,
+    buf_miss: cu::TypedBuffer<MissRecord, FrameAlloc>,
     sbt: optix::sys::OptixShaderBindingTable,
     pipeline: optix::Pipeline,
-    color_buffer: cu::TypedBuffer<V4f32>,
+    color_buffer: cu::TypedBuffer<V4f32, FrameAlloc>,
 }
 
 impl Renderer {
@@ -23,8 +51,10 @@ impl Renderer {
 
         // create CUDA and OptiX contexts
         let device = cu::Device::get(0)?;
-        let tex_align = device.get_attribute(cu::DeviceAttribute::TextureAlignment)?;
-        let srf_align = device.get_attribute(cu::DeviceAttribute::SurfaceAlignment)?;
+        let tex_align =
+            device.get_attribute(cu::DeviceAttribute::TextureAlignment)?;
+        let srf_align =
+            device.get_attribute(cu::DeviceAttribute::SurfaceAlignment)?;
         println!("tex align: {}\nsrf align: {}", tex_align, srf_align);
 
         let cuda_context = device.ctx_create(
@@ -137,16 +167,20 @@ impl Renderer {
             })
             .collect();
 
-        let buf_raygen = cu::TypedBuffer::from_slice(&rec_raygen)?;
-        let buf_miss = cu::TypedBuffer::from_slice(&rec_miss)?;
-        let buf_hitgroup = cu::TypedBuffer::from_slice(&rec_hitgroup)?;
+        let buf_raygen = cu::TypedBuffer::from_slice_in(&rec_raygen, FrameAlloc)?;
+        let buf_miss = cu::TypedBuffer::from_slice_in(&rec_miss, FrameAlloc)?;
+        let buf_hitgroup = cu::TypedBuffer::from_slice_in(&rec_hitgroup,FrameAlloc)?;
 
         let sbt = optix::ShaderBindingTable::new(&buf_raygen)
             .miss(&buf_miss)
             .hitgroup(&buf_hitgroup)
             .build();
 
-        let color_buffer = cu::TypedBuffer::uninitialized((width * height) as usize)?;
+        let color_buffer = cu::TypedBuffer::uninitialized_with_align_in(
+            (width * height) as usize,
+            16,
+            FrameAlloc,
+        )?;
 
         let launch_params = LaunchParams {
             frame_id: 0,
@@ -157,12 +191,18 @@ impl Renderer {
             },
         };
 
-        let buf_launch_params = cu::TypedBuffer::from_slice(&[launch_params])?;
+        let buf_launch_params = cu::TypedBuffer::from_slice_in(
+            &[launch_params],
+            FrameAlloc,
+        )?;
 
         Ok(Renderer {
             stream,
             launch_params,
             buf_launch_params,
+            buf_raygen,
+            buf_hitgroup,
+            buf_miss,
             sbt,
             pipeline,
             color_buffer,
@@ -200,7 +240,10 @@ impl Renderer {
         Ok(())
     }
 
-    pub fn download_pixels(&self, slice: &mut[V4f32]) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn download_pixels(
+        &self,
+        slice: &mut [V4f32],
+    ) -> Result<(), Box<dyn std::error::Error>> {
         self.color_buffer.copy_to_slice(slice)?;
         Ok(())
     }

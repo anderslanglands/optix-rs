@@ -36,10 +36,10 @@ pub fn init() -> Result<()> {
     }
 }
 
-pub fn launch<T: cu::DeviceCopy>(
+pub fn launch<T, A: cu::DeviceAllocRef>(
     pipeline: &Pipeline,
     stream: &cu::Stream,
-    buf_launch_params: &cu::TypedBuffer<T>,
+    buf_launch_params: &cu::TypedBuffer<T, A>,
     sbt: &sys::OptixShaderBindingTable,
     width: u32,
     height: u32,

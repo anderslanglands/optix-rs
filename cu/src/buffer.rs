@@ -1,6 +1,6 @@
 use crate::{
-    allocator::Layout, sys, DefaultDeviceAlloc, DeviceAllocRef, 
-    DevicePtr, Error,
+    allocator::Layout, sys, DefaultDeviceAlloc, DeviceAllocRef, DevicePtr,
+    Error,
 };
 type Result<T, E = Error> = std::result::Result<T, E>;
 
@@ -65,16 +65,14 @@ impl<A: DeviceAllocRef> Drop for Buffer<A> {
     }
 }
 
-pub struct TypedBuffer<T, A: DeviceAllocRef = DefaultDeviceAlloc>
-{
+pub struct TypedBuffer<T, A: DeviceAllocRef = DefaultDeviceAlloc> {
     ptr: DevicePtr,
     len: usize,
     alloc: A,
     _phantom: std::marker::PhantomData<T>,
 }
 
-impl<T> TypedBuffer<T, DefaultDeviceAlloc>
-{
+impl<T> TypedBuffer<T, DefaultDeviceAlloc> {
     pub fn from_slice(slice: &[T]) -> Result<Self> {
         TypedBuffer::from_slice_in(slice, DefaultDeviceAlloc)
     }
@@ -84,8 +82,26 @@ impl<T> TypedBuffer<T, DefaultDeviceAlloc>
     }
 }
 
-impl<T, A: DeviceAllocRef> TypedBuffer<T, A>
-{
+impl<T, A: DeviceAllocRef> TypedBuffer<T, A> {
+    pub fn from_slice_with_align_in(slice: &[T], align: usize, alloc: A) -> Result<TypedBuffer<T, A>> {
+        let byte_size = slice.len() * std::mem::size_of::<T>();
+        let ptr = alloc.alloc(Layout::from_size_align(byte_size, align).unwrap())?;
+        unsafe {
+            sys::cuMemcpyHtoD_v2(
+                ptr.device_ptr(),
+                slice.as_ptr() as *const _,
+                byte_size as u64,
+            )
+            .to_result()?;
+        }
+        Ok(TypedBuffer {
+            ptr,
+            len: slice.len(),
+            alloc,
+            _phantom: std::marker::PhantomData,
+        })
+    }
+
     pub fn from_slice_in(slice: &[T], alloc: A) -> Result<TypedBuffer<T, A>> {
         let byte_size = slice.len() * std::mem::size_of::<T>();
         let ptr = alloc.alloc(Layout::array::<T>(slice.len()).unwrap())?;
@@ -106,8 +122,23 @@ impl<T, A: DeviceAllocRef> TypedBuffer<T, A>
     }
 
     pub fn uninitialized_in(len: usize, alloc: A) -> Result<TypedBuffer<T, A>> {
-        let byte_size = len * std::mem::size_of::<T>();
         let ptr = alloc.alloc(Layout::array::<T>(len).unwrap())?;
+        Ok(TypedBuffer {
+            ptr,
+            len,
+            alloc,
+            _phantom: std::marker::PhantomData,
+        })
+    }
+
+    pub fn uninitialized_with_align_in(
+        len: usize,
+        align: usize,
+        alloc: A,
+    ) -> Result<TypedBuffer<T, A>> {
+        let byte_size = len * std::mem::size_of::<T>();
+        let ptr =
+            alloc.alloc(Layout::from_size_align(byte_size, align).unwrap())?;
         Ok(TypedBuffer {
             ptr,
             len,
@@ -178,8 +209,7 @@ impl<T, A: DeviceAllocRef> TypedBuffer<T, A>
     }
 }
 
-impl<T, A: DeviceAllocRef> Drop for TypedBuffer<T, A>
-{
+impl<T, A: DeviceAllocRef> Drop for TypedBuffer<T, A> {
     fn drop(&mut self) {
         self.alloc
             .dealloc(self.ptr)

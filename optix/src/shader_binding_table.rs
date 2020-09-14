@@ -4,16 +4,12 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 #[repr(C)]
 #[repr(align(16))]
 pub struct SbtRecord<T>
-where
-    T: cu::DeviceCopy,
 {
     header: sys::SbtRecordHeader,
     data: T,
 }
 
 impl<T> SbtRecord<T>
-where
-    T: cu::DeviceCopy,
 {
     pub fn pack(data: T, program_group: &ProgramGroup) -> Result<SbtRecord<T>> {
         let mut rec = SbtRecord {
@@ -51,8 +47,8 @@ pub struct ShaderBindingTable {
 }
 
 impl ShaderBindingTable {
-    pub fn new<RG: cu::DeviceCopy>(
-        buf_raygen_record: &cu::TypedBuffer<SbtRecord<RG>>,
+    pub fn new<RG, A: cu::DeviceAllocRef>(
+        buf_raygen_record: &cu::TypedBuffer<SbtRecord<RG>, A>,
     ) -> Self {
         let raygen_record = buf_raygen_record.device_ptr();
         ShaderBindingTable {
@@ -74,9 +70,9 @@ impl ShaderBindingTable {
         unsafe { std::mem::transmute::<ShaderBindingTable, sys::OptixShaderBindingTable>(self) }
     }
 
-    pub fn exception<EX: cu::DeviceCopy>(
+    pub fn exception<EX, A: cu::DeviceAllocRef>(
         mut self,
-        buf_exception_record: &cu::TypedBuffer<SbtRecord<EX>>,
+        buf_exception_record: &cu::TypedBuffer<SbtRecord<EX>, A>,
     ) -> Self {
         if buf_exception_record.len() != 1 {
             panic!(
@@ -87,9 +83,9 @@ impl ShaderBindingTable {
         self
     }
 
-    pub fn miss<MS: cu::DeviceCopy>(
+    pub fn miss<MS, A: cu::DeviceAllocRef>(
         mut self,
-        buf_miss_records: &cu::TypedBuffer<SbtRecord<MS>>,
+        buf_miss_records: &cu::TypedBuffer<SbtRecord<MS>, A>,
     ) -> Self {
         if buf_miss_records.len() == 0 {
             panic!("SBT passed empty miss records");
@@ -100,9 +96,9 @@ impl ShaderBindingTable {
         self
     }
 
-    pub fn hitgroup<HG: cu::DeviceCopy>(
+    pub fn hitgroup<HG, A: cu::DeviceAllocRef>(
         mut self,
-        buf_hitgroup_records: &cu::TypedBuffer<SbtRecord<HG>>,
+        buf_hitgroup_records: &cu::TypedBuffer<SbtRecord<HG>, A>,
     ) -> Self {
         if buf_hitgroup_records.len() == 0 {
             panic!("SBT passed empty hitgroup records");
@@ -113,9 +109,9 @@ impl ShaderBindingTable {
         self
     }
 
-    pub fn callables<CL: cu::DeviceCopy>(
+    pub fn callables<CL, A: cu::DeviceAllocRef>(
         mut self,
-        buf_callables_records: &cu::TypedBuffer<SbtRecord<CL>>,
+        buf_callables_records: &cu::TypedBuffer<SbtRecord<CL>, A>,
     ) -> Self {
         if buf_callables_records.len() == 0 {
             panic!("SBT passed empty callables records");
