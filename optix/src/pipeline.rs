@@ -71,7 +71,7 @@ impl Pipeline {
     /// turned on (see OPTIX_EXCEPTION_FLAG_TRACE_DEPTH) will throw an
     /// exception if the specified maxTraversableGraphDepth is too small.
     ///
-    /// #Arguments
+    /// # Arguments
     /// * `direct_callable_stack_size_from_traversable` - The direct stack size
     /// requirement for direct callables invoked from IS or AH
     /// * `direct_callable_stack_size_from_state` - The direct stack size
@@ -80,9 +80,6 @@ impl Pipeline {
     /// * `max_traversable_graph_depth` - The maximum depth of a traversable
     ///   graph
     /// passed to trace
-    ///
-    /// # Panics
-    /// If the FFI call to optixPipelineSetStackSize returns an error
     pub fn set_stack_size(
         &self,
         direct_callable_stack_size_from_traversable: u32,
@@ -100,6 +97,15 @@ impl Pipeline {
             ).to_result().map_err(|source| {
                 Error::PipelineSetStackSize{source}
             })
+        }
+    }
+
+    /// Destroys the pipeline
+    pub fn destroy(pipeline: Pipeline) -> Result<()> {
+        unsafe {
+            sys::optixPipelineDestroy(pipeline.inner)
+            .to_result()
+            .map_err(|source| Error::PipelineDestroy{source})
         }
     }
 }

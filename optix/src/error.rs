@@ -37,6 +37,8 @@ pub enum Error {
     Memcpy{source: cu::Error},
     #[error("Deallocation failed")]
     Deallocation{source: cu::Error},
+    #[error("Failed to destroy pipeline object")]
+    PipelineDestroy{source: OptixError}
 }
 
 impl sys::OptixResult {

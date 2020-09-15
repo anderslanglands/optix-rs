@@ -4,7 +4,7 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 
 use std::alloc::Layout;
 
-/// Trait used to specify types that represent some chunk of storage on the 
+/// Trait used to specify types that represent some chunk of storage on the
 /// device. Could be a buffer or a shared variable.
 pub trait DeviceStorage {
     /// Returns the address of this storage on the device
@@ -13,7 +13,8 @@ pub trait DeviceStorage {
     fn byte_size(&self) -> usize;
 }
 
-/// An untyped, opaque chunk of device memory
+/// An untyped, opaque chunk of device memory that can be used to copy data to
+/// and from the device.
 pub struct Buffer<A: DeviceAllocRef = DefaultDeviceAlloc> {
     ptr: DevicePtr,
     byte_size: usize,
@@ -21,12 +22,18 @@ pub struct Buffer<A: DeviceAllocRef = DefaultDeviceAlloc> {
 }
 
 impl Buffer<DefaultDeviceAlloc> {
+    /// Get a block of memory on the device from the default allocator
+    /// sufficient and correctly aligned to hold `slice`, then copy the
+    /// contents of `slice` to it.
     pub fn from_slice<T>(slice: &[T]) -> Result<Buffer> {
         Buffer::from_slice_in(slice, DefaultDeviceAlloc)
     }
 }
 
 impl<A: DeviceAllocRef> Buffer<A> {
+    /// Get a block of memory on the device from allocator `alloc` sufficient
+    /// and correctly aligned to hold `slice`, then copy the contents of
+    /// `slice` to it.
     pub fn from_slice_in<T>(slice: &[T], alloc: A) -> Result<Buffer<A>> {
         let byte_size = slice.len() * std::mem::size_of::<T>();
         let ptr = alloc
@@ -48,6 +55,8 @@ impl<A: DeviceAllocRef> Buffer<A> {
         })
     }
 
+    /// Get a block of uninitialized memory on the device of size `byte_size`
+    /// bytes with alignment `align` from allocator `alloc`.
     pub fn uninitialized_with_align_in(
         byte_size: usize,
         align: usize,
@@ -63,7 +72,10 @@ impl<A: DeviceAllocRef> Buffer<A> {
         })
     }
 
-    pub fn copy_to_slice<T>(&self, slice: &mut [T]) -> Result<()> {
+    /// Copy the contents of the buffer from the device into `slice`
+    /// # Panics
+    /// If the size of `slice` and the device buffer do not match
+    pub fn download<T>(&self, slice: &mut [T]) -> Result<()> {
         let byte_size = slice.len() * std::mem::size_of::<T>();
         if byte_size != self.byte_size {
             panic!(
@@ -110,10 +122,16 @@ pub struct TypedBuffer<T: DeviceCopy, A: DeviceAllocRef = DefaultDeviceAlloc> {
 }
 
 impl<T: DeviceCopy> TypedBuffer<T, DefaultDeviceAlloc> {
+    /// Get a block of memory on the device from the default allocator
+    /// sufficient and correctly aligned to hold `slice`, then copy the
+    /// contents of `slice` to it.
     pub fn from_slice(slice: &[T]) -> Result<Self> {
         TypedBuffer::from_slice_in(slice, DefaultDeviceAlloc)
     }
 
+    /// Get a block of uninitialized memory on the device from the default
+    /// allocator sufficient and correctly aligned to hold a slice of `len`
+    /// elements of type `T`
     pub fn uninitialized(len: usize) -> Result<Self> {
         TypedBuffer::uninitialized_in(len, DefaultDeviceAlloc)
     }
@@ -211,10 +229,13 @@ impl<T: DeviceCopy, A: DeviceAllocRef> TypedBuffer<T, A> {
                 .map_err(|source| Error::Deallocation { source })?;
             self.ptr = self
                 .alloc
-                .alloc(Layout::from_size_align(
-                    len * std::mem::size_of::<T>(),
-                    self.align,
-                ).unwrap())
+                .alloc(
+                    Layout::from_size_align(
+                        len * std::mem::size_of::<T>(),
+                        self.align,
+                    )
+                    .unwrap(),
+                )
                 .map_err(|source| Error::Allocation { source })?;
             self.len = len;
         }
@@ -288,33 +309,32 @@ impl<T: DeviceCopy, A: DeviceAllocRef> DeviceStorage for TypedBuffer<T, A> {
 
 /// `Deref`able wrapper around a POD variable whose value can be transferred to
 /// and from the device.
-pub struct DeviceVariable<T: DeviceCopy, A: DeviceAllocRef = DefaultDeviceAlloc> {
+pub struct DeviceVariable<T: DeviceCopy, A: DeviceAllocRef = DefaultDeviceAlloc>
+{
     ptr: cu::DevicePtr,
     alloc: A,
     inner: T,
 }
 
-impl<T:DeviceCopy, A: DeviceAllocRef> DeviceVariable<T, A> {
+impl<T: DeviceCopy, A: DeviceAllocRef> DeviceVariable<T, A> {
     pub fn new_in(inner: T, alloc: A) -> Result<DeviceVariable<T, A>> {
         let byte_size = std::mem::size_of::<T>();
         let ptr = alloc
-            .alloc(Layout::from_size_align(byte_size, T::device_align()).unwrap())
+            .alloc(
+                Layout::from_size_align(byte_size, T::device_align()).unwrap(),
+            )
             .map_err(|source| Error::Allocation { source })?;
 
         unsafe {
             sys::cuMemcpyHtoD_v2(
                 ptr.ptr(),
-                &inner as *const _ as  *const _,
+                &inner as *const _ as *const _,
                 byte_size as u64,
             )
             .to_result()
             .map_err(|source| Error::Memcpy { source })?;
         }
-        Ok(
-            DeviceVariable::<T, A> {
-                ptr, alloc, inner
-            }
-        )
+        Ok(DeviceVariable::<T, A> { ptr, alloc, inner })
     }
 
     pub fn download(&mut self) -> Result<()> {
@@ -333,8 +353,8 @@ impl<T:DeviceCopy, A: DeviceAllocRef> DeviceVariable<T, A> {
         unsafe {
             sys::cuMemcpyHtoD_v2(
                 self.ptr.ptr(),
-                &self.inner as *const _ as  *const _,
-                std::mem::size_of::<T>() as u64
+                &self.inner as *const _ as *const _,
+                std::mem::size_of::<T>() as u64,
             )
             .to_result()
             .map_err(|source| Error::Memcpy { source })
@@ -342,7 +362,7 @@ impl<T:DeviceCopy, A: DeviceAllocRef> DeviceVariable<T, A> {
     }
 }
 
-impl<T:DeviceCopy> DeviceVariable<T, DefaultDeviceAlloc> {
+impl<T: DeviceCopy> DeviceVariable<T, DefaultDeviceAlloc> {
     pub fn new(inner: T) -> Result<Self> {
         DeviceVariable::new_in(inner, DefaultDeviceAlloc)
     }
@@ -358,7 +378,9 @@ impl<T: DeviceCopy, A: DeviceAllocRef> DeviceStorage for DeviceVariable<T, A> {
     }
 }
 
-impl<T: DeviceCopy, A: DeviceAllocRef> std::ops::Deref for DeviceVariable<T, A> {
+impl<T: DeviceCopy, A: DeviceAllocRef> std::ops::Deref
+    for DeviceVariable<T, A>
+{
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -366,7 +388,9 @@ impl<T: DeviceCopy, A: DeviceAllocRef> std::ops::Deref for DeviceVariable<T, A> 
     }
 }
 
-impl<T: DeviceCopy, A: DeviceAllocRef> std::ops::DerefMut for DeviceVariable<T, A> {
+impl<T: DeviceCopy, A: DeviceAllocRef> std::ops::DerefMut
+    for DeviceVariable<T, A>
+{
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.inner
     }
