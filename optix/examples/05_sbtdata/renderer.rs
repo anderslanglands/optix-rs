@@ -75,6 +75,9 @@ impl Renderer {
             4,
         );
 
+        let testptr = cu::memory::mem_alloc_with_tag(64, 17)?;
+        println!("testptr: {}", testptr.tag());
+
         // create module
         let module_compile_options = optix::ModuleCompileOptions {
             max_register_count: 50,

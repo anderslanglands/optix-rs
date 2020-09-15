@@ -62,7 +62,7 @@ pub fn launch<S: DeviceStorage>(
         sys::optixLaunch(
             pipeline.inner,
             stream.inner(),
-            buf_launch_params.device_ptr(),
+            buf_launch_params.device_ptr().ptr(),
             buf_launch_params.byte_size(),
             sbt,
             width,

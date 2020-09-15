@@ -53,14 +53,14 @@ impl ShaderBindingTable {
         let raygen_record = buf_raygen_record.device_ptr();
         ShaderBindingTable {
             raygen_record,
-            exception_record: 0,
-            miss_record_base: 0,
+            exception_record: cu::DevicePtr::null(),
+            miss_record_base: cu::DevicePtr::null(),
             miss_record_stride_in_bytes: 0,
             miss_record_count: 0,
-            hitgroup_record_base: 0,
+            hitgroup_record_base: cu::DevicePtr::null(),
             hitgroup_record_stride_in_bytes: 0,
             hitgroup_record_count: 0,
-            callables_record_base: 0,
+            callables_record_base: cu::DevicePtr::null(),
             callables_record_stride_in_bytes: 0,
             callables_record_count: 0,
         }

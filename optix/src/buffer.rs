@@ -29,7 +29,7 @@ impl<A: DeviceAllocRef> Buffer<A> {
             .map_err(|source| Error::Allocation { source })?;
         unsafe {
             sys::cuMemcpyHtoD_v2(
-                ptr,
+                ptr.ptr(),
                 slice.as_ptr() as *const _,
                 byte_size as u64,
             )
@@ -70,7 +70,7 @@ impl<A: DeviceAllocRef> Buffer<A> {
         unsafe {
             sys::cuMemcpyDtoH_v2(
                 slice.as_mut_ptr() as *mut _,
-                self.ptr,
+                self.ptr.ptr(),
                 byte_size as u64,
             )
             .to_result()
@@ -125,7 +125,7 @@ impl<T: DeviceCopy, A: DeviceAllocRef> TypedBuffer<T, A> {
             .map_err(|source| Error::Allocation { source })?;
         unsafe {
             sys::cuMemcpyHtoD_v2(
-                ptr,
+                ptr.ptr(),
                 slice.as_ptr() as *const _,
                 byte_size as u64,
             )
@@ -149,7 +149,7 @@ impl<T: DeviceCopy, A: DeviceAllocRef> TypedBuffer<T, A> {
             .map_err(|source| Error::Allocation { source })?;
         unsafe {
             sys::cuMemcpyHtoD_v2(
-                ptr,
+                ptr.ptr(),
                 slice.as_ptr() as *const _,
                 byte_size as u64,
             )
@@ -228,7 +228,7 @@ impl<T: DeviceCopy, A: DeviceAllocRef> TypedBuffer<T, A> {
         unsafe {
             sys::cuMemcpyDtoH_v2(
                 slice.as_mut_ptr() as *mut _,
-                self.ptr,
+                self.ptr.ptr(),
                 byte_size as u64,
             )
             .to_result()
@@ -248,7 +248,7 @@ impl<T: DeviceCopy, A: DeviceAllocRef> TypedBuffer<T, A> {
         let byte_size = slice.len() * std::mem::size_of::<T>();
         unsafe {
             sys::cuMemcpyHtoD_v2(
-                self.ptr,
+                self.ptr.ptr(),
                 slice.as_ptr() as *mut _,
                 byte_size as u64,
             )
@@ -295,7 +295,7 @@ impl<T:DeviceCopy, A: DeviceAllocRef> DeviceVariable<T, A> {
 
         unsafe {
             sys::cuMemcpyHtoD_v2(
-                ptr,
+                ptr.ptr(),
                 &inner as *const _ as  *const _,
                 byte_size as u64,
             )
@@ -313,7 +313,7 @@ impl<T:DeviceCopy, A: DeviceAllocRef> DeviceVariable<T, A> {
         unsafe {
             sys::cuMemcpyDtoH_v2(
                 &mut self.inner as *mut _ as *mut _,
-                self.ptr,
+                self.ptr.ptr(),
                 std::mem::size_of::<T>() as u64,
             )
             .to_result()
@@ -324,7 +324,7 @@ impl<T:DeviceCopy, A: DeviceAllocRef> DeviceVariable<T, A> {
     pub fn upload(&mut self) -> Result<()> {
         unsafe {
             sys::cuMemcpyHtoD_v2(
-                self.ptr,
+                self.ptr.ptr(),
                 &self.inner as *const _ as  *const _,
                 std::mem::size_of::<T>() as u64
             )

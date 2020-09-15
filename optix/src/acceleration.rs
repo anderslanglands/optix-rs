@@ -59,9 +59,9 @@ impl DeviceContext {
                 accel_options.as_ptr() as *const _,
                 build_inputs.as_ptr(),
                 build_inputs.len() as u32,
-                temp_buffer.device_ptr(),
+                temp_buffer.device_ptr().ptr(),
                 temp_buffer.byte_size(),
-                output_buffer.device_ptr(),
+                output_buffer.device_ptr().ptr(),
                 output_buffer.byte_size(),
                 &mut traversable_handle as *mut _ as *mut _,
                 properties.as_ptr() as *const _,
@@ -88,7 +88,7 @@ impl DeviceContext {
                 self.inner,
                 stream.inner(),
                 input_handle.inner,
-                output_buffer.device_ptr(),
+                output_buffer.device_ptr().ptr(),
                 output_buffer.byte_size(),
                 &mut traversable_handle as *mut _ as *mut _,
             )
@@ -197,11 +197,11 @@ impl From<&AccelEmitDesc> for sys::OptixAccelEmitDesc {
     fn from(aed: &AccelEmitDesc) -> Self {
         match aed {
             AccelEmitDesc::CompactedSize(p) => Self {
-                result: *p,
+                result: p.ptr(),
                 type_: sys::OptixAccelPropertyType_OPTIX_PROPERTY_TYPE_COMPACTED_SIZE,
             },
             AccelEmitDesc::Aabbs(p) => Self {
-                result: *p,
+                result: p.ptr(),
                 type_: sys::OptixAccelPropertyType_OPTIX_PROPERTY_TYPE_AABBS,
             }
         }
@@ -294,14 +294,14 @@ impl BuildInputTriangleArray {
             num_vertices,
             vertex_format,
             vertex_stride_in_bytes,
-            index_buffer: 0,
+            index_buffer: cu::DevicePtr::null(),
             num_index_triplets: 0,
             index_format: IndicesFormat::None,
             index_stride_in_bytes: 0,
-            pre_transform: 0,
+            pre_transform: cu::DevicePtr::null(),
             flags: flags as *const _,
             num_sbt_records: 1,
-            sbt_index_offset_buffer: 0,
+            sbt_index_offset_buffer: cu::DevicePtr::null(),
             sbt_index_offset_size_in_bytes: 0,
             sbt_index_offset_stride_in_bytes: 0,
             primitive_index_offset: 0,

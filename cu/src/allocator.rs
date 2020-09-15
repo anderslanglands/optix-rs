@@ -1,6 +1,6 @@
 use crate::{
     memory::{mem_alloc, mem_free},
-    sys, DevicePtr, Error,
+    sys::CUdeviceptr, DevicePtr, Error,
 };
 type Result<T, E = Error> = std::result::Result<T, E>;
 
@@ -51,18 +51,18 @@ fn align_up(ptr: u64, align: usize) -> u64 {
 }
 
 pub struct DeviceFrameAllocator {
-    old_blocks: Vec<DevicePtr>,
-    block: DevicePtr,
+    old_blocks: Vec<CUdeviceptr>,
+    block: CUdeviceptr,
     block_size: usize,
-    current_ptr: u64,
-    current_end: u64,
+    current_ptr: CUdeviceptr,
+    current_end: CUdeviceptr,
 }
 
 impl DeviceFrameAllocator {
     pub fn new(block_size: usize) -> Result<Self> {
         // make sure the block size matches our alignment
         let block_size = align_up(block_size as u64, MAX_ALIGNMENT) as usize;
-        let block = mem_alloc(block_size)?;
+        let block = mem_alloc(block_size)?.ptr();
         let current_ptr = block;
         let current_end = current_ptr + block_size as u64;
         Ok(Self {
@@ -85,15 +85,15 @@ impl DeviceFrameAllocator {
         if (new_ptr + layout.size() as u64) > self.current_end {
             // allocate a new block
             self.old_blocks.push(self.block);
-            self.block = mem_alloc(self.block_size)?;
+            self.block = mem_alloc(self.block_size)?.ptr();
             self.current_end = self.block + self.block_size as u64;
 
             let new_ptr = align_up(self.block, layout.align());
             self.current_ptr = new_ptr + layout.size() as u64;
-            Ok(new_ptr)
+            Ok(DevicePtr::new(new_ptr))
         } else {
             self.current_ptr = new_ptr + layout.size() as u64;
-            Ok(new_ptr)
+            Ok(DevicePtr::new(new_ptr))
         }
     }
 

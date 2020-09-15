@@ -17,7 +17,7 @@
 #pragma once
 
 #include "gdt/math/vec.h"
-#include "optix.h"
+#include <optix.h>
 
 namespace osc {
 using namespace gdt;
