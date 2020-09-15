@@ -1,5 +1,5 @@
 use crate::{
-    memory::{mem_alloc, mem_free},
+    memory::{mem_alloc, mem_alloc_with_tag, mem_free},
     sys::CUdeviceptr, DevicePtr, Error,
 };
 type Result<T, E = Error> = std::result::Result<T, E>;
@@ -13,6 +13,7 @@ const MAX_ALIGNMENT: usize = 512;
 
 pub unsafe trait DeviceAllocRef {
     fn alloc(&self, layout: Layout) -> Result<DevicePtr>;
+    fn alloc_with_tag(&self, layout: Layout, tag: u16) -> Result<DevicePtr>;
     fn dealloc(&self, ptr: DevicePtr) -> Result<()>;
 }
 
@@ -29,16 +30,18 @@ unsafe impl DeviceAllocRef for DefaultDeviceAlloc {
         mem_alloc(layout.size())
     }
 
+    fn alloc_with_tag(&self, layout: Layout, tag: u16) -> Result<DevicePtr> {
+        if !layout.align().is_power_of_two() || layout.align() > MAX_ALIGNMENT {
+            let msg = format!("Cannot satisfy alignment of {}", layout.align());
+            panic!("{}", msg);
+        }
+
+        mem_alloc_with_tag(layout.size(), tag)
+    }
+
     fn dealloc(&self, ptr: DevicePtr) -> Result<()> {
         mem_free(ptr)
     }
-}
-
-/// A block of memory allocated from the default device allocator that a custom
-/// allocator will portion up and give out
-struct DeviceBlock {
-    ptr: DevicePtr,
-    size: usize,
 }
 
 fn align_offset(ptr: u64, align: usize) -> u64 {
@@ -74,7 +77,7 @@ impl DeviceFrameAllocator {
         })
     }
 
-    pub fn alloc(&mut self, layout: Layout) -> Result<DevicePtr> {
+    fn alloc_impl(&mut self, layout: Layout) -> Result<CUdeviceptr> {
         if u64::MAX - self.current_ptr < (layout.size() + layout.align()) as u64
         {
             panic!("allocation too big for u64!");
@@ -90,11 +93,19 @@ impl DeviceFrameAllocator {
 
             let new_ptr = align_up(self.block, layout.align());
             self.current_ptr = new_ptr + layout.size() as u64;
-            Ok(DevicePtr::new(new_ptr))
+            Ok(new_ptr)
         } else {
             self.current_ptr = new_ptr + layout.size() as u64;
-            Ok(DevicePtr::new(new_ptr))
+            Ok(new_ptr)
         }
+    }
+
+    pub fn alloc(&mut self, layout: Layout) -> Result<DevicePtr> {
+        Ok(DevicePtr::new(self.alloc_impl(layout)?))
+    }
+
+    pub fn alloc_with_tag(&mut self, layout: Layout, tag: u16) -> Result<DevicePtr> {
+        Ok(DevicePtr::with_tag(self.alloc_impl(layout)?, tag))
     }
 
     pub fn dealloc(&self, _ptr: DevicePtr) -> Result<()> {
@@ -105,15 +116,5 @@ impl DeviceFrameAllocator {
 impl Drop for DeviceFrameAllocator {
     fn drop(&mut self) {
         // just let it leak
-    }
-}
-
-unsafe impl DeviceAllocRef for &Mutex<DeviceFrameAllocator> {
-    fn alloc(&self, layout: Layout) -> Result<DevicePtr> {
-        self.lock().alloc(layout)
-    }
-
-    fn dealloc(&self, ptr: DevicePtr) -> Result<()> {
-        self.lock().dealloc(ptr)
     }
 }
