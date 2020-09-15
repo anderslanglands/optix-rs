@@ -63,7 +63,7 @@ impl DeviceFrameAllocator {
         // make sure the block size matches our alignment
         let block_size = align_up(block_size as u64, MAX_ALIGNMENT) as usize;
         let block = mem_alloc(block_size)?;
-        let current_ptr = block.device_ptr();
+        let current_ptr = block;
         let current_end = current_ptr + block_size as u64;
         Ok(Self {
             old_blocks: Vec::new(),
@@ -86,18 +86,18 @@ impl DeviceFrameAllocator {
             // allocate a new block
             self.old_blocks.push(self.block);
             self.block = mem_alloc(self.block_size)?;
-            self.current_end = self.block.device_ptr() + self.block_size as u64;
+            self.current_end = self.block + self.block_size as u64;
 
-            let new_ptr = align_up(self.block.device_ptr(), layout.align());
+            let new_ptr = align_up(self.block, layout.align());
             self.current_ptr = new_ptr + layout.size() as u64;
-            Ok(DevicePtr { inner: new_ptr })
+            Ok(new_ptr)
         } else {
             self.current_ptr = new_ptr + layout.size() as u64;
-            Ok(DevicePtr { inner: new_ptr })
+            Ok(new_ptr)
         }
     }
 
-    pub fn dealloc(&self, ptr: DevicePtr) -> Result<()> {
+    pub fn dealloc(&self, _ptr: DevicePtr) -> Result<()> {
         Ok(())
     }
 }

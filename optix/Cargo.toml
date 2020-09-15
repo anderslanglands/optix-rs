@@ -13,6 +13,10 @@ enum-primitive-derive = "0.2.1"
 bitflags = "1.2.1"
 thiserror = "1.0.20"
 ustr = "0.7.0"
+cfg-if = "0.1.10"
+# Optional math crate dependencies to allow defining traits
+cgmath = { version = "0.17", optional = true }
+nalgebra-glm = {version = "0.8.0", optional = true }
 
 [dev-dependencies]
 glfw = "0.32.0"

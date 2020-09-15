@@ -52,9 +52,18 @@ impl<'m> ProgramGroupDesc<'m> {
         is: Option<(&'m Module, Ustr)>,
     ) -> ProgramGroupDesc<'m> {
         ProgramGroupDesc::Hitgroup {
-            ch: ch.map(|(module, entry_function_name)| ProgramGroupModule{module, entry_function_name}),
-            ah: ah.map(|(module, entry_function_name)| ProgramGroupModule{module, entry_function_name}),
-            is: is.map(|(module, entry_function_name)| ProgramGroupModule{module, entry_function_name}),
+            ch: ch.map(|(module, entry_function_name)| ProgramGroupModule {
+                module,
+                entry_function_name,
+            }),
+            ah: ah.map(|(module, entry_function_name)| ProgramGroupModule {
+                module,
+                entry_function_name,
+            }),
+            is: is.map(|(module, entry_function_name)| ProgramGroupModule {
+                module,
+                entry_function_name,
+            }),
         }
     }
 }
@@ -112,9 +121,7 @@ impl DeviceContext {
                     .collect(),
                 log,
             )),
-            Err(source) => {
-                Err(Error::ProgramGroupCreationFailed { source, log })
-            }
+            Err(source) => Err(Error::ProgramGroupCreation { source, log }),
         }
     }
 }

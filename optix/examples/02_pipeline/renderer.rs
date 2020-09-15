@@ -1,4 +1,4 @@
-pub use optix::{DeviceContext, Error};
+pub use optix::{DeviceContext, Error, DeviceStorage};
 type Result<T, E = Error> = std::result::Result<T, E>;
 
 use ustr::ustr;
@@ -6,13 +6,13 @@ use ustr::ustr;
 pub struct Renderer {
     stream: cu::Stream,
     launch_params: LaunchParams,
-    buf_launch_params: cu::TypedBuffer<LaunchParams>,
-    buf_raygen: cu::TypedBuffer<RaygenRecord>,
-    buf_hitgroup: cu::TypedBuffer<HitgroupRecord>,
-    buf_miss: cu::TypedBuffer<MissRecord>,
+    buf_launch_params: optix::TypedBuffer<LaunchParams>,
+    buf_raygen: optix::TypedBuffer<RaygenRecord>,
+    buf_hitgroup: optix::TypedBuffer<HitgroupRecord>,
+    buf_miss: optix::TypedBuffer<MissRecord>,
     sbt: optix::sys::OptixShaderBindingTable,
     pipeline: optix::Pipeline,
-    color_buffer: cu::TypedBuffer<u32>,
+    color_buffer: optix::TypedBuffer<u32>,
 }
 
 impl Renderer {
@@ -138,16 +138,16 @@ impl Renderer {
             })
             .collect();
 
-        let buf_raygen = cu::TypedBuffer::from_slice(&rec_raygen)?;
-        let buf_miss = cu::TypedBuffer::from_slice(&rec_miss)?;
-        let buf_hitgroup = cu::TypedBuffer::from_slice(&rec_hitgroup)?;
+        let buf_raygen = optix::TypedBuffer::from_slice(&rec_raygen)?;
+        let buf_miss = optix::TypedBuffer::from_slice(&rec_miss)?;
+        let buf_hitgroup = optix::TypedBuffer::from_slice(&rec_hitgroup)?;
 
         let sbt = optix::ShaderBindingTable::new(&buf_raygen)
             .miss(&buf_miss)
             .hitgroup(&buf_hitgroup)
             .build();
 
-        let color_buffer = cu::TypedBuffer::uninitialized(width * height)?;
+        let color_buffer = optix::TypedBuffer::uninitialized(width * height)?;
 
         let launch_params = LaunchParams {
             frame_id: 0,
@@ -158,7 +158,7 @@ impl Renderer {
             },
         };
 
-        let buf_launch_params = cu::TypedBuffer::from_slice(&[launch_params])?;
+        let buf_launch_params = optix::TypedBuffer::from_slice(&[launch_params])?;
 
         Ok(Renderer {
             stream,
@@ -186,7 +186,7 @@ impl Renderer {
 
     pub fn render(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         self.buf_launch_params
-            .copy_from_slice(&[self.launch_params])?;
+            .upload(&[self.launch_params])?;
         self.launch_params.frame_id += 1;
 
         optix::launch(
@@ -220,14 +220,14 @@ struct LaunchParams {
     pub fb_size: Point2i,
 }
 
-unsafe impl cu::DeviceCopy for LaunchParams {}
+unsafe impl optix::DeviceCopy for LaunchParams {}
 
 type RaygenRecord = optix::SbtRecord<i32>;
 type MissRecord = optix::SbtRecord<i32>;
 struct HitgroupSbtData {
     object_id: u32,
 }
-unsafe impl cu::DeviceCopy for HitgroupSbtData {}
+unsafe impl optix::DeviceCopy for HitgroupSbtData {}
 type HitgroupRecord = optix::SbtRecord<HitgroupSbtData>;
 
 fn init_optix() -> Result<(), Box<dyn std::error::Error>> {

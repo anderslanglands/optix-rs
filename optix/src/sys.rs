@@ -30,7 +30,8 @@ impl Default for SbtRecordHeader {
 #[repr(C)]
 pub union OptixBuildInputUnion {
     pub triangle_array: OptixBuildInputTriangleArray,
-    pub aabb_array: OptixBuildInputCustomPrimitiveArray,
+    pub curve_array: OptixBuildInputCurveArray,
+    pub custom_primitive_array: OptixBuildInputCustomPrimitiveArray,
     pub instance_array: OptixBuildInputInstanceArray,
     pad: [std::os::raw::c_char; 1024],
 }

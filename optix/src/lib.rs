@@ -24,39 +24,69 @@ pub use pipeline::{Pipeline, PipelineLinkOptions};
 pub mod shader_binding_table;
 pub use shader_binding_table::{SbtRecord, ShaderBindingTable};
 
+pub mod acceleration;
+pub use acceleration::{
+    AccelBuildOptions, AccelEmitDesc, BuildFlags, BuildInputTriangleArray,
+    BuildOperation, GeometryFlags, MotionFlags, TraversableHandle,
+    VertexFormat, IndicesFormat
+};
+
+pub mod buffer;
+pub use buffer::{Buffer, TypedBuffer, DeviceStorage, DeviceVariable};
+
+pub mod math;
+pub use math::*;
+
 /// Initialize the OptiX library function table. This function *MUST* be called
 /// before any other optix functions.
 pub fn init() -> Result<()> {
     unsafe {
         sys::optixInit()
             .to_result()
-            .map_err(|source| Error::InitializationFailed { source })?;
+            .map_err(|source| Error::Initialization { source })?;
 
         Ok(())
     }
 }
 
-pub fn launch<T, A: cu::DeviceAllocRef>(
+pub fn launch<S: DeviceStorage>(
     pipeline: &Pipeline,
     stream: &cu::Stream,
-    buf_launch_params: &cu::TypedBuffer<T, A>,
+    buf_launch_params: &S,
     sbt: &sys::OptixShaderBindingTable,
     width: u32,
     height: u32,
     depth: u32,
 ) -> Result<()> {
-
     unsafe {
         sys::optixLaunch(
             pipeline.inner,
             stream.inner(),
-            buf_launch_params.device_ptr().device_ptr(),
+            buf_launch_params.device_ptr(),
             buf_launch_params.byte_size(),
             sbt,
-            width, height, depth
-        ).to_result().map_err(|source| Error::LaunchFailed{source})
+            width,
+            height,
+            depth,
+        )
+        .to_result()
+        .map_err(|source| Error::Launch { source })
     }
 }
+
+pub const SBT_RECORD_HEADER_SIZE: usize =
+    sys::OptixSbtRecordHeaderSize as usize;
+pub const SBT_RECORD_SLIGNMENT: usize = sys::OptixSbtRecordAlignment as usize;
+pub const ACCEL_BUFFER_BYTE_ALIGNMENT: usize =
+    sys::OptixAccelBufferByteAlignment as usize;
+pub const INSTANCE_BYTE_ALIGNMENT: usize =
+    sys::OptixInstanceByteAlignment as usize;
+pub const AABB_BUFFER_BYTE_ALIGNMENT: usize =
+    sys::OptixAabbBufferByteAlignment as usize;
+pub const GEOMETRY_TRANSFORM_BYTE_ALIGNMENT: usize =
+    sys::OptixGeometryTransformByteAlignment as usize;
+pub const TRANSFORM_BYTE_ALIGNMENT: usize =
+    sys::OptixTransformByteAlignment as usize;
 
 #[cfg(test)]
 mod tests {
@@ -67,4 +97,112 @@ mod tests {
         optix::init()?;
         Ok(())
     }
+}
+
+pub unsafe trait DeviceCopy: Sized {
+    // Empty
+    fn device_align() -> usize {
+        std::mem::align_of::<Self>()
+    }
+}
+
+macro_rules! impl_device_copy {
+    ($($t:ty)*) => {
+        $(
+            unsafe impl DeviceCopy for $t {}
+        )*
+    }
+}
+
+#[macro_export]
+macro_rules! impl_device_copy_align {
+    ($($t:ty : $a:expr)*) => {
+        $(
+            unsafe impl DeviceCopy for $t {
+                fn device_align() -> usize {
+                    $a
+                }
+            }
+        )*
+    }
+}
+
+impl_device_copy!(
+    usize u8 u16 u32 u64 u128
+    isize i8 i16 i32 i64 i128
+    f32 f64
+    bool char
+
+    std::num::NonZeroU8 std::num::NonZeroU16 std::num::NonZeroU32 std::num::NonZeroU64 std::num::NonZeroU128
+);
+unsafe impl<T: DeviceCopy> DeviceCopy for Option<T> {}
+unsafe impl<L: DeviceCopy, R: DeviceCopy> DeviceCopy for Result<L, R> {}
+unsafe impl<T: ?Sized + DeviceCopy> DeviceCopy for std::marker::PhantomData<T> {}
+unsafe impl<T: DeviceCopy> DeviceCopy for std::num::Wrapping<T> {}
+
+macro_rules! impl_device_copy_array {
+    ($($n:expr)*) => {
+        $(
+            unsafe impl<T: DeviceCopy> DeviceCopy for [T;$ n] {}
+        )*
+    }
+}
+
+impl_device_copy_array! {
+    1 2 3 4 5 6 7 8 9 10
+    11 12 13 14 15 16 17 18 19 20
+    21 22 23 24 25 26 27 28 29 30
+    31 32
+}
+unsafe impl DeviceCopy for () {}
+unsafe impl<A: DeviceCopy, B: DeviceCopy> DeviceCopy for (A, B) {}
+unsafe impl<A: DeviceCopy, B: DeviceCopy, C: DeviceCopy> DeviceCopy
+    for (A, B, C)
+{
+}
+unsafe impl<A: DeviceCopy, B: DeviceCopy, C: DeviceCopy, D: DeviceCopy>
+    DeviceCopy for (A, B, C, D)
+{
+}
+unsafe impl<
+        A: DeviceCopy,
+        B: DeviceCopy,
+        C: DeviceCopy,
+        D: DeviceCopy,
+        E: DeviceCopy,
+    > DeviceCopy for (A, B, C, D, E)
+{
+}
+unsafe impl<
+        A: DeviceCopy,
+        B: DeviceCopy,
+        C: DeviceCopy,
+        D: DeviceCopy,
+        E: DeviceCopy,
+        F: DeviceCopy,
+    > DeviceCopy for (A, B, C, D, E, F)
+{
+}
+unsafe impl<
+        A: DeviceCopy,
+        B: DeviceCopy,
+        C: DeviceCopy,
+        D: DeviceCopy,
+        E: DeviceCopy,
+        F: DeviceCopy,
+        G: DeviceCopy,
+    > DeviceCopy for (A, B, C, D, E, F, G)
+{
+}
+unsafe impl<
+        A: DeviceCopy,
+        B: DeviceCopy,
+        C: DeviceCopy,
+        D: DeviceCopy,
+        E: DeviceCopy,
+        F: DeviceCopy,
+        G: DeviceCopy,
+        H: DeviceCopy,
+    > DeviceCopy for (A, B, C, D, E, F, G, H)
+{
 }

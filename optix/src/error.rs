@@ -6,15 +6,15 @@ use crate::sys;
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum Error {
     #[error("OptiX initialization failed")]
-    InitializationFailed{source: OptixError},
+    Initialization{source: OptixError},
     #[error("Failed to create device context")]
     DeviceContextCreation{source: OptixError},
     #[error("pipeline_launch_params_variable_name must be specified on PipelineCompileOptions")]
     PipelineLaunchParamsVariableNameNotSpecified,
     #[error("Failed to create module")]
-    ModuleCreationFailed{source: OptixError, log: String},
+    ModuleCreation{source: OptixError, log: String},
     #[error("Failed to create program group")]
-    ProgramGroupCreationFailed{source: OptixError, log: String},
+    ProgramGroupCreation{source: OptixError, log: String},
     #[error("Failed to create pipelin")]
     PipelineCreationFailed{source: OptixError, log: String},
     #[error("Failed to set pipeline stack size")]
@@ -24,7 +24,19 @@ pub enum Error {
     #[error("Wrong number of raygen records supplied. Expected 1, got: {len:}" )]
     WrongRaygenRecordLen{len: usize},
     #[error("Launch failed")]
-    LaunchFailed{source: OptixError},
+    Launch{source: OptixError},
+    #[error("Failed to compute accel memory usage")]
+    AccelComputeMemoryUsage{source: OptixError},
+    #[error("Failed to build acceleration structure")]
+    AccelBuild{source: OptixError},
+    #[error("Failed to compact accel structure")]
+    AccelCompact{source: OptixError},
+    #[error("Allocation failed")]
+    Allocation{source: cu::Error},
+    #[error("Memcpy failed")]
+    Memcpy{source: cu::Error},
+    #[error("Deallocation failed")]
+    Deallocation{source: cu::Error},
 }
 
 impl sys::OptixResult {

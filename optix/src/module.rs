@@ -142,7 +142,8 @@ impl DeviceContext {
                 log.as_mut_ptr() as *mut i8,
                 &mut log_len,
                 &mut inner,
-            ).to_result()
+            )
+            .to_result()
         };
 
         let log = CStr::from_bytes_with_nul(&log[0..log_len])
@@ -151,8 +152,8 @@ impl DeviceContext {
             .into_owned();
 
         match res {
-            Ok(()) => Ok((Module{inner}, log)),
-            Err(source) => Err(Error::ModuleCreationFailed { source, log }),
+            Ok(()) => Ok((Module { inner }, log)),
+            Err(source) => Err(Error::ModuleCreation { source, log }),
         }
     }
 }
