@@ -74,9 +74,13 @@ pub fn launch<S: DeviceStorage>(
     }
 }
 
+/// Specifies the size of the opaque SBT record header data
 pub const SBT_RECORD_HEADER_SIZE: usize =
     sys::OptixSbtRecordHeaderSize as usize;
-pub const SBT_RECORD_SLIGNMENT: usize = sys::OptixSbtRecordAlignment as usize;
+/// Specifies the alignment requirement for SBT records
+pub const SBT_RECORD_ALIGNMENT: usize = sys::OptixSbtRecordAlignment as usize;
+/// Specifies the required alignment for temporary and output buffers used for
+/// acceleration structures
 pub const ACCEL_BUFFER_BYTE_ALIGNMENT: usize =
     sys::OptixAccelBufferByteAlignment as usize;
 pub const INSTANCE_BYTE_ALIGNMENT: usize =
@@ -99,13 +103,18 @@ mod tests {
     }
 }
 
+/// This trait specifies that the type in question can safely be bitwise-copied
+/// to the device.
 pub unsafe trait DeviceCopy: Sized {
-    // Empty
+    /// Use this to specify any alignment requirements for the type. For example,
+    /// anything that translates to float4 on the CUDA side wants to be aligned
+    /// to 16 bytes, transformation matrices want to be aligned to 64 bytes, etc.
     fn device_align() -> usize {
         std::mem::align_of::<Self>()
     }
 }
 
+#[macro_export]
 macro_rules! impl_device_copy {
     ($($t:ty)*) => {
         $(

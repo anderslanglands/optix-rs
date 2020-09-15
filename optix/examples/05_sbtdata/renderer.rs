@@ -14,20 +14,34 @@ use ustr::ustr;
 
 pub use crate::vector::*;
 
+// Global device allocator
+// The DeviceFrameAllocator here is a very dumb bump allocator. You'll want to
+// write something a bit cleverer for a real program (or just use the default
+// allocator if you don't care).
+// Anything that allocates has an `_in()` variant that allows you to specify
+// the allocator you want to get memory from.
 static FRAME_ALLOC: Lazy<Mutex<DeviceFrameAllocator>> = Lazy::new(|| {
     Mutex::new(
+        // We'll use a block size of 256MB. When a block is exhausted, it will
+        // just get another from the default allocator
         DeviceFrameAllocator::new(256 * 1024 * 1024)
             .expect("Frame allocator failed"),
     )
 });
 
+// We set up a unit struct as a handle to the global alloc so we have an object
+// we can pass to allocating constructors
 pub struct FrameAlloc;
 unsafe impl cu::allocator::DeviceAllocRef for FrameAlloc {
     fn alloc(&self, layout: Layout) -> Result<DevicePtr, cu::Error> {
         FRAME_ALLOC.lock().alloc(layout)
     }
 
-    fn alloc_with_tag(&self, layout: Layout, tag: u16) -> Result<DevicePtr, cu::Error> {
+    fn alloc_with_tag(
+        &self,
+        layout: Layout,
+        tag: u16,
+    ) -> Result<DevicePtr, cu::Error> {
         FRAME_ALLOC.lock().alloc_with_tag(layout, tag)
     }
 
@@ -38,8 +52,6 @@ unsafe impl cu::allocator::DeviceAllocRef for FrameAlloc {
 
 pub struct Renderer {
     stream: cu::Stream,
-    // launch_params: LaunchParams,
-    // buf_launch_params: optix::TypedBuffer<LaunchParams, FrameAlloc>,
     launch_params: optix::DeviceVariable<LaunchParams, FrameAlloc>,
     buf_raygen: optix::TypedBuffer<RaygenRecord, FrameAlloc>,
     buf_hitgroup: optix::TypedBuffer<HitgroupRecord, FrameAlloc>,
@@ -58,15 +70,19 @@ impl Renderer {
         camera: Camera,
         mesh: TriangleMesh,
     ) -> Result<Renderer, Box<dyn std::error::Error>> {
-        init_optix()?;
+        // Initialize CUDA and check we've got a suitable device
+        cu::init()?;
+        let device_count = cu::Device::get_count()?;
+        if device_count == 0 {
+            panic!("No CUDA devices found!");
+        }
 
-        // create CUDA and OptiX contexts
+        // Initialize optix. This just loads the functions from the driver and
+        // must be called before any other optix function
+        optix::init()?;
+
+        // Create CUDA and OptiX contexts
         let device = cu::Device::get(0)?;
-        let tex_align =
-            device.get_attribute(cu::DeviceAttribute::TextureAlignment)?;
-        let srf_align =
-            device.get_attribute(cu::DeviceAttribute::SurfaceAlignment)?;
-        println!("tex align: {}\nsrf align: {}", tex_align, srf_align);
 
         let cuda_context = device.ctx_create(
             cu::ContextFlags::SCHED_AUTO | cu::ContextFlags::MAP_HOST,
@@ -74,13 +90,11 @@ impl Renderer {
         let stream = cu::Stream::create(cu::StreamFlags::DEFAULT)?;
 
         let mut ctx = optix::DeviceContext::create(&cuda_context)?;
+        // Set up logging callback with a closure
         ctx.set_log_callback(
             |_level, tag, msg| println!("[{}]: {}", tag, msg),
             4,
         );
-
-        let testptr = cu::memory::mem_alloc_with_tag(64, 17)?;
-        println!("testptr: {}", testptr.tag());
 
         // create module
         let module_compile_options = optix::ModuleCompileOptions {
@@ -89,6 +103,7 @@ impl Renderer {
             debug_level: optix::CompileDebugLevel::None,
         };
 
+        // set our compile options
         let pipeline_compile_options = optix::PipelineCompileOptions::new()
             .uses_motion_blur(false)
             .num_attribute_values(2)
@@ -99,6 +114,8 @@ impl Renderer {
             .exception_flags(optix::ExceptionFlags::NONE)
             .pipeline_launch_params_variable_name(ustr("optixLaunchParams"));
 
+        // load our precompiled PTX as a str
+        // see build.rs for how this is compiled from the cuda source
         let ptx = include_str!(concat!(
             env!("OUT_DIR"),
             "/examples/05_sbtdata/device_programs.ptx"
@@ -165,6 +182,8 @@ impl Renderer {
             ctx.accel_compute_memory_usage(&[accel_options], &build_inputs)?;
 
         // prepare compaction
+        // we need scratch space for the BVH build which we allocate here as
+        // an untyped buffer. Note that we need to specify the alignment
         let temp_buffer = optix::Buffer::uninitialized_with_align_in(
             blas_buffer_sizes.temp_size_in_bytes,
             optix::ACCEL_BUFFER_BYTE_ALIGNMENT,
@@ -177,12 +196,19 @@ impl Renderer {
             FrameAlloc,
         )?;
 
-        let mut compacted_size = optix::DeviceVariable::new_in(0usize, FrameAlloc)?;
+        // DeviceVariable is a type that wraps a POD type to allow easy access
+        // to the data rather than having to carry around the host type and a
+        // separate device allocation for it
+        let mut compacted_size =
+            optix::DeviceVariable::new_in(0usize, FrameAlloc)?;
 
+        // tell the accel build we want to know the size the compacted buffer
+        // will be
         let mut properties = vec![optix::AccelEmitDesc::CompactedSize(
             compacted_size.device_ptr(),
         )];
 
+        // build the bvh
         let as_handle = ctx.accel_build(
             &stream,
             &[accel_options],
@@ -194,14 +220,19 @@ impl Renderer {
 
         cu::Context::synchronize()?;
 
+        // copy the size back from the device, we can now treat it as
+        // the underlying type by `Deref`
         compacted_size.download()?;
 
+        // allocate the final acceleration structure storage
         let as_buffer = optix::Buffer::uninitialized_with_align_in(
             *compacted_size,
             optix::ACCEL_BUFFER_BYTE_ALIGNMENT,
             FrameAlloc,
         )?;
 
+        // compact the accel.
+        // we don't need the original handle any more
         let as_handle = ctx.accel_compact(&stream, as_handle, &as_buffer)?;
         cu::Context::synchronize()?;
 
@@ -244,12 +275,12 @@ impl Renderer {
             .map(|i| {
                 let object_type = 0;
                 let rec = HitgroupRecord::pack(
-                    HitgroupSbtData { 
+                    HitgroupSbtData {
                         data: TriangleMeshSbtData {
                             color: mesh.color,
                             vertex: buf_vertex.device_ptr(),
                             index: buf_indices.device_ptr(),
-                        }
+                        },
                     },
                     &pg_hitgroup[object_type],
                 )
@@ -258,6 +289,9 @@ impl Renderer {
             })
             .collect();
 
+        // Create storage to hold all our SBT records
+        // TypedBuffer will take care of the allocation alignment for us as the
+        // host type is correctly aligned
         let buf_raygen =
             optix::TypedBuffer::from_slice_in(&rec_raygen, FrameAlloc)?;
         let buf_miss =
@@ -270,12 +304,18 @@ impl Renderer {
             .hitgroup(&buf_hitgroup)
             .build();
 
-        let color_buffer = optix::TypedBuffer::uninitialized_with_align_in(
+        // Allocate storage for our output framebuffer.
+        // Note that the element type here is V4f32, which has a natural 
+        // alignment on the host of 4 bytes. On the device we require 16-byte
+        // alignment. This is handled for us because V4f32 implements the
+        // DeviceCopy trait and overrides the device_align() method to return
+        // 16 bytes, which TypedBuffer uses to allocate the storage correctly
+        let color_buffer = optix::TypedBuffer::uninitialized_in(
             (width * height) as usize,
-            16,
             FrameAlloc,
         )?;
 
+        // camera setup
         let cosfovy = 0.66f32;
         let aspect = width as f32 / height as f32;
         let direction = normalize(camera.at - camera.from);
@@ -283,20 +323,27 @@ impl Renderer {
             cosfovy * aspect * normalize(cross(direction, camera.up));
         let vertical = cosfovy * normalize(cross(horizontal, direction));
 
-        let launch_params = optix::DeviceVariable::new_in(LaunchParams {
-            frame: Frame {
-                color_buffer: color_buffer.device_ptr(),
-                size: v2i32(width as i32, height as i32),
+        // we use DeviceVariable again for easy access to the launch params
+        let launch_params = optix::DeviceVariable::new_in(
+            LaunchParams {
+                frame: Frame {
+                    color_buffer: color_buffer.device_ptr(),
+                    size: v2i32(width as i32, height as i32),
+                },
+                camera: RenderCamera {
+                    position: camera.from,
+                    direction,
+                    horizontal,
+                    vertical,
+                },
+                traversable: as_handle,
             },
-            camera: RenderCamera {
-                position: camera.from,
-                direction,
-                horizontal,
-                vertical,
-            },
-            traversable: as_handle,
-        }, FrameAlloc)?;
+            FrameAlloc,
+        )?;
 
+        // Finally, we pack all the buffers that need to persist into the 
+        // Renderer. All the temporary storage that we don't need to keep around
+        // will be cleaned up by RAII on the Buffer types
         Ok(Renderer {
             stream,
             launch_params,
@@ -316,6 +363,8 @@ impl Renderer {
         width: u32,
         height: u32,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        // resize the output buffer (which will change its address) and put the
+        // new buffer into the launch params
         self.color_buffer.resize((width * height) as usize)?;
         self.launch_params.frame.color_buffer = self.color_buffer.device_ptr();
         self.launch_params.frame.size.x = width as i32;
@@ -324,8 +373,10 @@ impl Renderer {
     }
 
     pub fn render(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        // upload the launch params
         self.launch_params.upload()?;
 
+        // launch the kernel
         optix::launch(
             &self.pipeline,
             &self.stream,
@@ -336,6 +387,7 @@ impl Renderer {
             1,
         )?;
 
+        // stop-the-world
         cu::Context::synchronize()?;
 
         Ok(())
@@ -345,6 +397,7 @@ impl Renderer {
         &self,
         slice: &mut [V4f32],
     ) -> Result<(), Box<dyn std::error::Error>> {
+        // copy the output color data from the device
         self.color_buffer.download(slice)?;
         Ok(())
     }
@@ -359,17 +412,6 @@ struct HitgroupSbtData {
 }
 unsafe impl optix::DeviceCopy for HitgroupSbtData {}
 type HitgroupRecord = optix::SbtRecord<HitgroupSbtData>;
-
-fn init_optix() -> Result<(), Box<dyn std::error::Error>> {
-    cu::init()?;
-    let device_count = cu::Device::get_count()?;
-    if device_count == 0 {
-        panic!("No CUDA devices found!");
-    }
-
-    optix::init()?;
-    Ok(())
-}
 
 #[repr(C)]
 pub struct Frame {

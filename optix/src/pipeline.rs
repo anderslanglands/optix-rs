@@ -2,8 +2,6 @@ use crate::{sys, DeviceContext, Error, PipelineCompileOptions, ProgramGroup};
 pub use sys::OptixPipelineLinkOptions as PipelineLinkOptions;
 type Result<T, E = Error> = std::result::Result<T, E>;
 
-use ustr::Ustr;
-
 use std::ffi::CStr;
 
 #[repr(transparent)]

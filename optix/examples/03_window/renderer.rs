@@ -25,6 +25,10 @@ unsafe impl cu::allocator::DeviceAllocRef for FrameAlloc {
         FRAME_ALLOC.lock().alloc(layout)
     }
 
+    fn alloc_with_tag(&self, layout: Layout, tag: u16) -> Result<DevicePtr, cu::Error> {
+        FRAME_ALLOC.lock().alloc_with_tag(layout, tag)
+    }
+
     fn dealloc(&self, ptr: DevicePtr) -> Result<(), cu::Error> {
         FRAME_ALLOC.lock().dealloc(ptr)
     }

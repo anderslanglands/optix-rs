@@ -4,11 +4,16 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 
 use std::alloc::Layout;
 
+/// Trait used to specify types that represent some chunk of storage on the 
+/// device. Could be a buffer or a shared variable.
 pub trait DeviceStorage {
+    /// Returns the address of this storage on the device
     fn device_ptr(&self) -> DevicePtr;
+    /// Returns the size in bytes of the stored data
     fn byte_size(&self) -> usize;
 }
 
+/// An untyped, opaque chunk of device memory
 pub struct Buffer<A: DeviceAllocRef = DefaultDeviceAlloc> {
     ptr: DevicePtr,
     byte_size: usize,
@@ -95,6 +100,7 @@ impl<A: DeviceAllocRef> Drop for Buffer<A> {
     }
 }
 
+/// Device storage for a buffer (array) of a particular type.
 pub struct TypedBuffer<T: DeviceCopy, A: DeviceAllocRef = DefaultDeviceAlloc> {
     ptr: DevicePtr,
     len: usize,
@@ -280,6 +286,8 @@ impl<T: DeviceCopy, A: DeviceAllocRef> DeviceStorage for TypedBuffer<T, A> {
     }
 }
 
+/// `Deref`able wrapper around a POD variable whose value can be transferred to
+/// and from the device.
 pub struct DeviceVariable<T: DeviceCopy, A: DeviceAllocRef = DefaultDeviceAlloc> {
     ptr: cu::DevicePtr,
     alloc: A,
