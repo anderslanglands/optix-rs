@@ -7,6 +7,12 @@ pub struct DevicePtr {
     ptr: sys::CUdeviceptr,
 }
 
+impl std::fmt::Display for DevicePtr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:p}", self.ptr as *const u64)
+    }
+}
+
 impl DevicePtr {
     const TAG_SHIFT:u64 = 48;
     const TAG_MASK: u64 = ((1 << 16) - 1) << DevicePtr::TAG_SHIFT;

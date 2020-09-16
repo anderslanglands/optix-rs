@@ -4,9 +4,10 @@ use cu::{
 };
 
 pub use optix::{DeviceContext, DeviceStorage, Error};
-type Result<T, E = Error> = std::result::Result<T, E>;
 
 use crate::{V2f32, V3f32, V3i32, V4f32};
+
+pub use anyhow::{Context, Result};
 
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
@@ -53,8 +54,8 @@ unsafe impl cu::allocator::DeviceAllocRef for FrameAlloc {
 pub struct Renderer {
     stream: cu::Stream,
     launch_params: optix::DeviceVariable<LaunchParams, FrameAlloc>,
-    buf_vertex: optix::TypedBuffer<V3f32, FrameAlloc>,
-    buf_indices: optix::TypedBuffer<V3i32, FrameAlloc>,
+    buf_vertex: Vec<optix::TypedBuffer<V3f32, FrameAlloc>>,
+    buf_index: Vec<optix::TypedBuffer<V3i32, FrameAlloc>>,
     buf_raygen: optix::TypedBuffer<RaygenRecord, FrameAlloc>,
     buf_hitgroup: optix::TypedBuffer<HitgroupRecord, FrameAlloc>,
     buf_miss: optix::TypedBuffer<MissRecord, FrameAlloc>,
@@ -70,8 +71,8 @@ impl Renderer {
         width: u32,
         height: u32,
         camera: Camera,
-        mesh: TriangleMesh,
-    ) -> Result<Renderer, Box<dyn std::error::Error>> {
+        meshes: Vec<TriangleMesh>,
+    ) -> Result<Renderer> {
         // Initialize CUDA and check we've got a suitable device
         cu::init()?;
         let device_count = cu::Device::get_count()?;
@@ -120,7 +121,7 @@ impl Renderer {
         // see build.rs for how this is compiled from the cuda source
         let ptx = include_str!(concat!(
             env!("OUT_DIR"),
-            "/examples/05_sbtdata/device_programs.ptx"
+            "/examples/06_multiple/device_programs.ptx"
         ));
 
         let (module, _log) = ctx.module_create_from_ptx(
@@ -153,24 +154,64 @@ impl Renderer {
         let (pg_hitgroup, _log) =
             ctx.program_group_create(&[pgdesc_hitgroup])?;
 
-        // create geometry and accels
-        let buf_vertex =
-            optix::TypedBuffer::from_slice_in(&mesh.vertex, FrameAlloc)?;
-        let buf_indices =
-            optix::TypedBuffer::from_slice_in(&mesh.index, FrameAlloc)?;
+        let buf_vertex: Vec<optix::TypedBuffer<V3f32, FrameAlloc>> = meshes
+            .iter()
+            .map(|m| optix::TypedBuffer::from_slice_in(&m.vertex, FrameAlloc))
+            .collect::<Result<Vec<_>, optix::Error>>()
+            .context("allocating vertex buffer")?;
 
-        let triangle_input = optix::BuildInputTriangleArray::new(
-            &[buf_vertex.device_ptr()],
-            mesh.vertex.len() as u32,
-            optix::VertexFormat::Float3,
-            &optix::GeometryFlags::None,
-        )
-        .index_buffer(
-            buf_indices.device_ptr(),
-            mesh.index.len() as u32,
-            optix::IndicesFormat::Int3,
-        )
-        .build();
+        let buf_index: Vec<optix::TypedBuffer<V3i32, FrameAlloc>> = meshes
+            .iter()
+            .map(|m| optix::TypedBuffer::from_slice_in(&m.index, FrameAlloc))
+            .collect::<Result<Vec<_>, optix::Error>>()
+            .context("Allocating index buffer")?;
+
+        let d_vertex: Vec<cu::DevicePtr> =
+            buf_vertex.iter().map(|b| b.device_ptr()).collect();
+
+        let d_index: Vec<cu::DevicePtr> =
+            buf_index.iter().map(|b| b.device_ptr()).collect();
+
+            /*
+        let triangle_inputs: Vec<_> = buf_vertex
+            .iter()
+            .zip(&buf_index)
+            .map(
+                |(vertex, index): (
+                    &optix::TypedBuffer<V3f32, FrameAlloc>,
+                    &optix::TypedBuffer<V3i32, FrameAlloc>,
+                )| {
+                    println!("vertex ptr: {}", vertex.device_ptr());
+                    optix::BuildInputTriangleArray::new(
+                        std::slice::from_ref(&vertex.device_ptr()),
+                        vertex.len() as u32,
+                        optix::VertexFormat::Float3,
+                        &optix::GeometryFlags::None,
+                    )
+                    .index_buffer(
+                        index.device_ptr(),
+                        index.len() as u32,
+                        optix::IndicesFormat::Int3,
+                    )
+                    .build()
+                },
+            )
+            .collect();
+            */
+        let triangle_inputs: Vec<_> = (0..buf_vertex.len()).map(|i| {
+            optix::BuildInputTriangleArray::new(
+                std::slice::from_ref(&d_vertex[i]),
+                buf_vertex[i].len() as u32,
+                optix::VertexFormat::Float3,
+                &optix::GeometryFlags::None,
+            )
+            .index_buffer(
+                d_index[i],
+                buf_index[i].len() as u32,
+                optix::IndicesFormat::Int3,
+            )
+            .build()
+        }).collect();
 
         // blas setup
         let accel_options = optix::AccelBuildOptions::new(
@@ -178,10 +219,9 @@ impl Renderer {
             optix::BuildOperation::Build,
         );
 
-        let build_inputs = vec![triangle_input];
-
-        let blas_buffer_sizes =
-            ctx.accel_compute_memory_usage(&[accel_options], &build_inputs)?;
+        let blas_buffer_sizes = ctx
+            .accel_compute_memory_usage(&[accel_options], &triangle_inputs)
+            .context("Accel compute memory usage")?;
 
         // prepare compaction
         // we need scratch space for the BVH build which we allocate here as
@@ -211,16 +251,18 @@ impl Renderer {
         )];
 
         // build the bvh
-        let as_handle = ctx.accel_build(
-            &stream,
-            &[accel_options],
-            &build_inputs,
-            &temp_buffer,
-            &output_buffer,
-            &mut properties,
-        )?;
+        let as_handle = ctx
+            .accel_build(
+                &stream,
+                &[accel_options],
+                &triangle_inputs,
+                &temp_buffer,
+                &output_buffer,
+                &mut properties,
+            )
+            .context("accel build")?;
 
-        cu::Context::synchronize()?;
+        cu::Context::synchronize().context("Accel build sync")?;
 
         // copy the size back from the device, we can now treat it as
         // the underlying type by `Deref`
@@ -235,8 +277,10 @@ impl Renderer {
 
         // compact the accel.
         // we don't need the original handle any more
-        let as_handle = ctx.accel_compact(&stream, as_handle, &as_buffer)?;
-        cu::Context::synchronize()?;
+        let as_handle = ctx
+            .accel_compact(&stream, as_handle, &as_buffer)
+            .context("Accel compact")?;
+        cu::Context::synchronize().context("Accel compact sync")?;
 
         // create pipeline
         let mut program_groups = Vec::new();
@@ -272,24 +316,42 @@ impl Renderer {
             })
             .collect();
 
-        let num_objects = 1;
-        let rec_hitgroup: Vec<_> = (0..num_objects)
-            .map(|i| {
+        // let num_objects = 1;
+        // let rec_hitgroup: Vec<_> = (0..num_objects)
+        //     .map(|i| {
+        //         let object_type = 0;
+        //         let rec = HitgroupRecord::pack(
+        //             HitgroupSbtData {
+        //                 data: TriangleMeshSbtData {
+        //                     color: mesh.color,
+        //                     vertex: buf_vertex.device_ptr(),
+        //                     index: buf_indices.device_ptr(),
+        //                 },
+        //             },
+        //             &pg_hitgroup[object_type],
+        //         )
+        //         .expect("failed to pack hitgroup record");
+        //         rec
+        //     })
+        //     .collect();
+
+        let rec_hitgroup: Vec<_> = meshes
+            .iter()
+            .enumerate()
+            .map(|(i, mesh)| {
                 let object_type = 0;
-                let rec = HitgroupRecord::pack(
+                HitgroupRecord::pack(
                     HitgroupSbtData {
                         data: TriangleMeshSbtData {
                             color: mesh.color,
-                            vertex: buf_vertex.device_ptr(),
-                            index: buf_indices.device_ptr(),
+                            vertex: buf_vertex[i].device_ptr(),
+                            index: buf_index[i].device_ptr(),
                         },
                     },
                     &pg_hitgroup[object_type],
                 )
-                .expect("failed to pack hitgroup record");
-                rec
             })
-            .collect();
+            .collect::<Result<Vec<_>, optix::Error>>()?;
 
         // Create storage to hold all our SBT records
         // TypedBuffer will take care of the allocation alignment for us as the
@@ -307,7 +369,7 @@ impl Renderer {
             .build();
 
         // Allocate storage for our output framebuffer.
-        // Note that the element type here is V4f32, which has a natural 
+        // Note that the element type here is V4f32, which has a natural
         // alignment on the host of 4 bytes. On the device we require 16-byte
         // alignment. This is handled for us because V4f32 implements the
         // DeviceCopy trait and overrides the device_align() method to return
@@ -343,14 +405,14 @@ impl Renderer {
             FrameAlloc,
         )?;
 
-        // Finally, we pack all the buffers that need to persist into the 
+        // Finally, we pack all the buffers that need to persist into the
         // Renderer. All the temporary storage that we don't need to keep around
         // will be cleaned up by RAII on the Buffer types
         Ok(Renderer {
             stream,
             launch_params,
             buf_vertex,
-            buf_indices,
+            buf_index,
             buf_raygen,
             buf_hitgroup,
             buf_miss,
@@ -362,11 +424,7 @@ impl Renderer {
         })
     }
 
-    pub fn resize(
-        &mut self,
-        width: u32,
-        height: u32,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn resize(&mut self, width: u32, height: u32) -> Result<()> {
         // resize the output buffer (which will change its address) and put the
         // new buffer into the launch params
         self.color_buffer.resize((width * height) as usize)?;
@@ -376,7 +434,7 @@ impl Renderer {
         Ok(())
     }
 
-    pub fn render(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn render(&mut self) -> Result<()> {
         // upload the launch params
         self.launch_params.upload()?;
 
@@ -397,10 +455,7 @@ impl Renderer {
         Ok(())
     }
 
-    pub fn download_pixels(
-        &self,
-        slice: &mut [V4f32],
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn download_pixels(&self, slice: &mut [V4f32]) -> Result<()> {
         // copy the output color data from the device
         self.color_buffer.download(slice)?;
         Ok(())

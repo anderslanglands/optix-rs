@@ -13,12 +13,14 @@ fn main() {
     let args = vec![
         format!("-I{}/include", optix_root),
         format!("-I{}/examples/common/gdt", manifest_dir),
+        "-G".into(),
     ];
 
     compile_to_ptx("examples/02_pipeline/device_programs.cu", &args);
     compile_to_ptx("examples/03_window/device_programs.cu", &args);
     compile_to_ptx("examples/04_mesh/device_programs.cu", &args);
     compile_to_ptx("examples/05_sbtdata/device_programs.cu", &args);
+    compile_to_ptx("examples/06_multiple/device_programs.cu", &args);
 }
 
 fn compile_to_ptx(cu_path: &str, args: &[String]) {
