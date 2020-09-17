@@ -412,12 +412,47 @@ cfg_if::cfg_if! {
             v / v.length2().sqrt()
         }
 
-        impl optix::Vertex for V3f32 {
-            const FORMAT: optix::VertexFormat = optix::VertexFormat::Float3;
-        }
-
-        impl optix::IndexTriple for V3i32 {
-            const FORMAT: optix::IndicesFormat = optix::IndicesFormat::Int3;
-        }
    }
+}
+
+impl From<[f32; 3]> for V3f32 {
+    fn from(a: [f32; 3]) -> V3f32 {
+        v3f32(a[0], a[1], a[2])
+    }
+}
+
+impl optix::Vertex for V3f32 {
+    const FORMAT: optix::VertexFormat = optix::VertexFormat::Float3;
+}
+
+impl optix::IndexTriple for V3i32 {
+    const FORMAT: optix::IndicesFormat = optix::IndicesFormat::Int3;
+}
+
+pub struct Box3f32 {
+    min: V3f32,
+    max: V3f32,
+}
+
+impl Box3f32 {
+    pub fn make_empty() -> Self {
+        Self {
+            min: v3f32(std::f32::MAX, std::f32::MAX, std::f32::MAX),
+            max: v3f32(std::f32::MIN, std::f32::MIN, std::f32::MIN),
+        }
+    }
+
+    pub fn extend_by_pnt(&mut self, p: V3f32) {
+        self.min.x = self.min.x.min(p.x);
+        self.min.y = self.min.y.min(p.y);
+        self.min.z = self.min.z.min(p.z);
+
+        self.max.x = self.max.x.max(p.x);
+        self.max.y = self.max.y.max(p.y);
+        self.max.z = self.max.z.max(p.z);
+    }
+
+    pub fn center(&self) -> V3f32 {
+        (self.max + self.min) / 2.0
+    }
 }

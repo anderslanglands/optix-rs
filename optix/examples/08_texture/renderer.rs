@@ -46,9 +46,45 @@ unsafe impl cu::allocator::DeviceAllocRef for FrameAlloc {
         FRAME_ALLOC.lock().alloc_with_tag(layout, tag)
     }
 
+    fn alloc_pitch(
+        &self,
+        width_in_bytes: usize,
+        height_in_rows: usize,
+        element_byte_size: usize,
+    ) -> Result<(DevicePtr, usize), cu::Error> {
+        FRAME_ALLOC.lock().alloc_pitch(
+            width_in_bytes,
+            height_in_rows,
+            element_byte_size,
+        )
+    }
+
+    fn alloc_pitch_with_tag(
+        &self,
+        width_in_bytes: usize,
+        height_in_rows: usize,
+        element_byte_size: usize,
+        tag: u16,
+    ) -> Result<(DevicePtr, usize), cu::Error> {
+        FRAME_ALLOC.lock().alloc_pitch_with_tag(
+            width_in_bytes,
+            height_in_rows,
+            element_byte_size,
+            tag,
+        )
+    }
+
     fn dealloc(&self, ptr: DevicePtr) -> Result<(), cu::Error> {
         FRAME_ALLOC.lock().dealloc(ptr)
     }
+}
+
+pub fn alloc_mem_report() {
+    let (num_allocs, total_allocated) = FRAME_ALLOC.lock().report();
+    println!(
+        "{} bytes allocated in {} allocations",
+        total_allocated, num_allocs
+    );
 }
 
 pub struct Renderer {
@@ -56,6 +92,8 @@ pub struct Renderer {
     launch_params: optix::DeviceVariable<LaunchParams, FrameAlloc>,
     buf_vertex: Vec<optix::TypedBuffer<V3f32, FrameAlloc>>,
     buf_index: Vec<optix::TypedBuffer<V3i32, FrameAlloc>>,
+    buf_normal: Vec<Option<optix::TypedBuffer<V3f32, FrameAlloc>>>,
+    buf_texcoord: Vec<Option<optix::TypedBuffer<V2f32, FrameAlloc>>>,
     buf_raygen: optix::TypedBuffer<RaygenRecord, FrameAlloc>,
     buf_hitgroup: optix::TypedBuffer<HitgroupRecord, FrameAlloc>,
     buf_miss: optix::TypedBuffer<MissRecord, FrameAlloc>,
@@ -71,7 +109,7 @@ impl Renderer {
         width: u32,
         height: u32,
         camera: Camera,
-        meshes: Vec<TriangleMesh>,
+        model: Model,
     ) -> Result<Renderer> {
         // Initialize CUDA and check we've got a suitable device
         cu::init()?;
@@ -102,8 +140,8 @@ impl Renderer {
         // create module
         let module_compile_options = optix::ModuleCompileOptions {
             max_register_count: 50,
-            opt_level: optix::CompileOptimizationLevel::Default,
-            debug_level: optix::CompileDebugLevel::None,
+            opt_level: optix::CompileOptimizationLevel::Level0,
+            debug_level: optix::CompileDebugLevel::Full,
         };
 
         // set our compile options
@@ -121,7 +159,7 @@ impl Renderer {
         // see build.rs for how this is compiled from the cuda source
         let ptx = include_str!(concat!(
             env!("OUT_DIR"),
-            "/examples/06_multiple/device_programs.ptx"
+            "/examples/08_texture/device_programs.ptx"
         ));
 
         let (module, _log) = ctx.module_create_from_ptx(
@@ -154,13 +192,14 @@ impl Renderer {
         let (pg_hitgroup, _log) =
             ctx.program_group_create(&[pgdesc_hitgroup])?;
 
-        let buf_vertex: Vec<optix::TypedBuffer<V3f32, FrameAlloc>> = meshes
+        /*
+        let buf_vertex: Vec<optix::TypedBuffer<V3f32, FrameAlloc>> = model.meshes
             .iter()
             .map(|m| optix::TypedBuffer::from_slice_in(&m.vertex, FrameAlloc))
             .collect::<Result<Vec<_>, optix::Error>>()
             .context("allocating vertex buffer")?;
 
-        let buf_index: Vec<optix::TypedBuffer<V3i32, FrameAlloc>> = meshes
+        let buf_index: Vec<optix::TypedBuffer<V3i32, FrameAlloc>> = model.meshes
             .iter()
             .map(|m| optix::TypedBuffer::from_slice_in(&m.index, FrameAlloc))
             .collect::<Result<Vec<_>, optix::Error>>()
@@ -185,6 +224,110 @@ impl Renderer {
                 },
             )
             .collect();
+            */
+        let mut buf_vertex = Vec::with_capacity(model.meshes.len());
+        let mut buf_index = Vec::with_capacity(model.meshes.len());
+        let mut buf_normal = Vec::with_capacity(model.meshes.len());
+        let mut buf_texcoord = Vec::with_capacity(model.meshes.len());
+        let geometry_flags = optix::GeometryFlags::None;
+
+        for mesh in &model.meshes {
+            buf_vertex.push(optix::TypedBuffer::from_slice_in(
+                &mesh.vertex,
+                FrameAlloc,
+            )?);
+
+            buf_index.push(optix::TypedBuffer::from_slice_in(
+                &mesh.index,
+                FrameAlloc,
+            )?);
+
+            println!("mesh has {} normals", mesh.normal.len());
+            if !mesh.normal.is_empty() {
+                buf_normal.push(Some(optix::TypedBuffer::from_slice_in(
+                    &mesh.normal,
+                    FrameAlloc,
+                )?));
+            } else {
+                buf_normal.push(None);
+            }
+
+            if !mesh.texcoord.is_empty() {
+                buf_texcoord.push(Some(optix::TypedBuffer::from_slice_in(
+                    &mesh.texcoord,
+                    FrameAlloc,
+                )?));
+            } else {
+                buf_texcoord.push(None);
+            }
+        }
+
+        let triangle_inputs: Vec<_> = buf_vertex
+            .iter()
+            .zip(&buf_index)
+            .map(
+                |(vertex, index): (
+                    &optix::TypedBuffer<V3f32, FrameAlloc>,
+                    &optix::TypedBuffer<V3i32, FrameAlloc>,
+                )| {
+                    optix::BuildInput::TriangleArray(
+                        optix::TriangleArray::new(
+                            std::slice::from_ref(vertex),
+                            std::slice::from_ref(&geometry_flags),
+                        )
+                        .index_buffer(index),
+                    )
+                },
+            )
+            .collect();
+
+        // upload textures
+        let mut buf_texture = Vec::new();
+        let mut tex_objects = Vec::new();
+        for texture in model.textures {
+            let element_byte_size = 4;
+            let width_in_bytes =
+                texture.resolution.x as usize * element_byte_size;
+            let height = texture.resolution.y as usize;
+            let (ptr, pitch_in_bytes) = FRAME_ALLOC.lock().alloc_pitch(
+                width_in_bytes,
+                height,
+                element_byte_size,
+            )?;
+            let tex_object = cu::TexObject::create_pitch2d(
+                ptr,
+                cu::ArrayFormat::Uint8,
+                4,
+                texture.resolution.x as usize,
+                texture.resolution.y as usize,
+                pitch_in_bytes,
+            )
+            .filter_mode(cu::FilterMode::Linear)
+            .address_mode(cu::AddressMode::Wrap)
+            .flags(
+                cu::TextureReadFlags::NORMALIZED_COORDINATES
+                    | cu::TextureReadFlags::SRGB,
+            )
+            .build()
+            .context("texture create")?;
+
+            unsafe {
+                cu::memory::memcpy2d_htod(
+                    ptr,
+                    width_in_bytes,
+                    height,
+                    pitch_in_bytes,
+                    texture.pixels.as_ptr() as *const _,
+                    width_in_bytes,
+                    height,
+                    width_in_bytes,
+                )
+                .context("texture memcpy")?;
+            }
+
+            buf_texture.push(ptr);
+            tex_objects.push(tex_object);
+        }
 
         // blas setup
         let accel_options = optix::AccelBuildOptions::new(
@@ -263,7 +406,7 @@ impl Renderer {
 
         let pipeline_link_options = optix::PipelineLinkOptions {
             max_trace_depth: 2,
-            debug_level: optix::CompileDebugLevel::LineInfo,
+            debug_level: optix::CompileDebugLevel::Full,
         };
 
         let (pipeline, _log) = ctx.pipeline_create(
@@ -289,36 +432,31 @@ impl Renderer {
             })
             .collect();
 
-        // let num_objects = 1;
-        // let rec_hitgroup: Vec<_> = (0..num_objects)
-        //     .map(|i| {
-        //         let object_type = 0;
-        //         let rec = HitgroupRecord::pack(
-        //             HitgroupSbtData {
-        //                 data: TriangleMeshSbtData {
-        //                     color: mesh.color,
-        //                     vertex: buf_vertex.device_ptr(),
-        //                     index: buf_indices.device_ptr(),
-        //                 },
-        //             },
-        //             &pg_hitgroup[object_type],
-        //         )
-        //         .expect("failed to pack hitgroup record");
-        //         rec
-        //     })
-        //     .collect();
-
-        let rec_hitgroup: Vec<_> = meshes
+        let rec_hitgroup: Vec<_> = model
+            .meshes
             .iter()
             .enumerate()
             .map(|(i, mesh)| {
                 let object_type = 0;
+
+                let (has_texture, texture) =
+                    if let Some(texid) = mesh.diffuse_texture_id {
+                        (true, tex_objects[texid].inner())
+                    } else {
+                        (false, 0)
+                    };
+
                 HitgroupRecord::pack(
                     HitgroupSbtData {
                         data: TriangleMeshSbtData {
-                            color: mesh.color,
+                            color: mesh.diffuse,
                             vertex: buf_vertex[i].device_ptr(),
                             index: buf_index[i].device_ptr(),
+                            // normal: if let Some(b) = &buf_normal[i] { b.device_ptr() } else { cu::DevicePtr::null() },
+                            normal: DevicePtr::null(),
+                            texcoord: if let Some(b) = &buf_texcoord[i] { b.device_ptr() } else { cu::DevicePtr::null() },
+                            has_texture,
+                            texture,
                         },
                     },
                     &pg_hitgroup[object_type],
@@ -386,6 +524,8 @@ impl Renderer {
             launch_params,
             buf_vertex,
             buf_index,
+            buf_normal,
+            buf_texcoord,
             buf_raygen,
             buf_hitgroup,
             buf_miss,
@@ -476,7 +616,11 @@ pub struct Camera {
 struct TriangleMeshSbtData {
     color: V3f32,
     vertex: cu::DevicePtr,
+    normal: cu::DevicePtr,
+    texcoord: cu::DevicePtr,
     index: cu::DevicePtr,
+    has_texture: bool,
+    texture: u64,
 }
 
 pub struct TriangleMesh {
@@ -616,4 +760,24 @@ impl TriangleMesh {
             ));
         }
     }
+}
+
+pub struct Mesh {
+    pub vertex: Vec<V3f32>,
+    pub normal: Vec<V3f32>,
+    pub texcoord: Vec<V2f32>,
+    pub index: Vec<V3i32>,
+    pub diffuse: V3f32,
+    pub diffuse_texture_id: Option<usize>,
+}
+
+pub struct Model {
+    pub meshes: Vec<Mesh>,
+    pub textures: Vec<Texture>,
+    pub bounds: Box3f32,
+}
+
+pub struct Texture {
+    pub pixels: Vec<u8>,
+    pub resolution: V2i32,
 }

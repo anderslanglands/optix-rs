@@ -229,24 +229,24 @@ pub struct OptixDeviceContextOptions {
 pub const OptixHitKind_OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE: OptixHitKind = 254;
 pub const OptixHitKind_OPTIX_HIT_KIND_TRIANGLE_BACK_FACE: OptixHitKind = 255;
 pub type OptixHitKind = ::std::os::raw::c_uint;
-#[repr(u32)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub enum OptixIndicesFormat {
-    OPTIX_INDICES_FORMAT_NONE = 0,
-    OPTIX_INDICES_FORMAT_UNSIGNED_SHORT3 = 8450,
-    OPTIX_INDICES_FORMAT_UNSIGNED_INT3 = 8451,
-}
-#[repr(u32)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub enum OptixVertexFormat {
-    OPTIX_VERTEX_FORMAT_NONE = 0,
-    OPTIX_VERTEX_FORMAT_FLOAT3 = 8481,
-    OPTIX_VERTEX_FORMAT_FLOAT2 = 8482,
-    OPTIX_VERTEX_FORMAT_HALF3 = 8483,
-    OPTIX_VERTEX_FORMAT_HALF2 = 8484,
-    OPTIX_VERTEX_FORMAT_SNORM16_3 = 8485,
-    OPTIX_VERTEX_FORMAT_SNORM16_2 = 8486,
-}
+pub const OptixIndicesFormat_OPTIX_INDICES_FORMAT_NONE: OptixIndicesFormat = 0;
+pub const OptixIndicesFormat_OPTIX_INDICES_FORMAT_UNSIGNED_SHORT3:
+    OptixIndicesFormat = 8450;
+pub const OptixIndicesFormat_OPTIX_INDICES_FORMAT_UNSIGNED_INT3:
+    OptixIndicesFormat = 8451;
+pub type OptixIndicesFormat = ::std::os::raw::c_uint;
+pub const OptixVertexFormat_OPTIX_VERTEX_FORMAT_NONE: OptixVertexFormat = 0;
+pub const OptixVertexFormat_OPTIX_VERTEX_FORMAT_FLOAT3: OptixVertexFormat =
+    8481;
+pub const OptixVertexFormat_OPTIX_VERTEX_FORMAT_FLOAT2: OptixVertexFormat =
+    8482;
+pub const OptixVertexFormat_OPTIX_VERTEX_FORMAT_HALF3: OptixVertexFormat = 8483;
+pub const OptixVertexFormat_OPTIX_VERTEX_FORMAT_HALF2: OptixVertexFormat = 8484;
+pub const OptixVertexFormat_OPTIX_VERTEX_FORMAT_SNORM16_3: OptixVertexFormat =
+    8485;
+pub const OptixVertexFormat_OPTIX_VERTEX_FORMAT_SNORM16_2: OptixVertexFormat =
+    8486;
+pub type OptixVertexFormat = ::std::os::raw::c_uint;
 pub const OptixTransformFormat_OPTIX_TRANSFORM_FORMAT_NONE:
     OptixTransformFormat = 0;
 pub const OptixTransformFormat_OPTIX_TRANSFORM_FORMAT_MATRIX_FLOAT12:

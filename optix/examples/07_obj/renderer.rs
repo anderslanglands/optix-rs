@@ -46,9 +46,38 @@ unsafe impl cu::allocator::DeviceAllocRef for FrameAlloc {
         FRAME_ALLOC.lock().alloc_with_tag(layout, tag)
     }
 
+    fn alloc_pitch(
+        &self,
+        width_in_bytes: usize,
+        height_in_rows: usize,
+        element_byte_size: usize,
+    ) -> Result<(DevicePtr, usize), cu::Error> {
+        cu::memory::mem_alloc_pitch(width_in_bytes, height_in_rows, element_byte_size)
+    }
+
+    fn alloc_pitch_with_tag(
+        &self,
+        width_in_bytes: usize,
+        height_in_rows: usize,
+        element_byte_size: usize,
+        tag: u16,
+    ) -> Result<(DevicePtr, usize), cu::Error> {
+        cu::memory::mem_alloc_pitch_with_tag(
+            width_in_bytes,
+            height_in_rows,
+            element_byte_size,
+            tag,
+        )
+    }
+
     fn dealloc(&self, ptr: DevicePtr) -> Result<(), cu::Error> {
         FRAME_ALLOC.lock().dealloc(ptr)
     }
+}
+
+pub fn alloc_mem_report() {
+    let (num_allocs, total_allocated) = FRAME_ALLOC.lock().report();
+    println!("{} bytes allocated in {} allocations", total_allocated, num_allocs);
 }
 
 pub struct Renderer {
@@ -71,7 +100,7 @@ impl Renderer {
         width: u32,
         height: u32,
         camera: Camera,
-        meshes: Vec<TriangleMesh>,
+        model: Model,
     ) -> Result<Renderer> {
         // Initialize CUDA and check we've got a suitable device
         cu::init()?;
@@ -93,6 +122,26 @@ impl Renderer {
         let stream = cu::Stream::create(cu::StreamFlags::DEFAULT)?;
 
         let mut ctx = optix::DeviceContext::create(&cuda_context)?;
+
+        println!("Max texture dimensions: {}x{}",
+            device.get_attribute(cu::DeviceAttribute::MaximumTexture2DWidth)?,
+            device.get_attribute(cu::DeviceAttribute::MaximumTexture2DHeight)?,
+        );
+
+        println!("Texture alignment: {}, pitch alignment: {}",
+            device.get_attribute(cu::DeviceAttribute::TextureAlignment)?,
+            device.get_attribute(cu::DeviceAttribute::TexturePitchAlignment)?,
+        );
+
+        {
+            let width = 1021;
+            let height = 150;
+            let element_size = 4;
+
+            let (ptr, pitch) = cu::memory::mem_alloc_pitch(width * element_size, height, element_size).unwrap();
+            println!("pitch from {} ({}) is {}",  width, width*element_size, pitch);
+        }
+
         // Set up logging callback with a closure
         ctx.set_log_callback(
             |_level, tag, msg| println!("[{}]: {}", tag, msg),
@@ -121,7 +170,7 @@ impl Renderer {
         // see build.rs for how this is compiled from the cuda source
         let ptx = include_str!(concat!(
             env!("OUT_DIR"),
-            "/examples/06_multiple/device_programs.ptx"
+            "/examples/07_obj/device_programs.ptx"
         ));
 
         let (module, _log) = ctx.module_create_from_ptx(
@@ -154,13 +203,13 @@ impl Renderer {
         let (pg_hitgroup, _log) =
             ctx.program_group_create(&[pgdesc_hitgroup])?;
 
-        let buf_vertex: Vec<optix::TypedBuffer<V3f32, FrameAlloc>> = meshes
+        let buf_vertex: Vec<optix::TypedBuffer<V3f32, FrameAlloc>> = model.meshes
             .iter()
             .map(|m| optix::TypedBuffer::from_slice_in(&m.vertex, FrameAlloc))
             .collect::<Result<Vec<_>, optix::Error>>()
             .context("allocating vertex buffer")?;
 
-        let buf_index: Vec<optix::TypedBuffer<V3i32, FrameAlloc>> = meshes
+        let buf_index: Vec<optix::TypedBuffer<V3i32, FrameAlloc>> = model.meshes
             .iter()
             .map(|m| optix::TypedBuffer::from_slice_in(&m.index, FrameAlloc))
             .collect::<Result<Vec<_>, optix::Error>>()
@@ -289,26 +338,7 @@ impl Renderer {
             })
             .collect();
 
-        // let num_objects = 1;
-        // let rec_hitgroup: Vec<_> = (0..num_objects)
-        //     .map(|i| {
-        //         let object_type = 0;
-        //         let rec = HitgroupRecord::pack(
-        //             HitgroupSbtData {
-        //                 data: TriangleMeshSbtData {
-        //                     color: mesh.color,
-        //                     vertex: buf_vertex.device_ptr(),
-        //                     index: buf_indices.device_ptr(),
-        //                 },
-        //             },
-        //             &pg_hitgroup[object_type],
-        //         )
-        //         .expect("failed to pack hitgroup record");
-        //         rec
-        //     })
-        //     .collect();
-
-        let rec_hitgroup: Vec<_> = meshes
+        let rec_hitgroup: Vec<_> = model.meshes
             .iter()
             .enumerate()
             .map(|(i, mesh)| {
@@ -316,7 +346,7 @@ impl Renderer {
                 HitgroupRecord::pack(
                     HitgroupSbtData {
                         data: TriangleMeshSbtData {
-                            color: mesh.color,
+                            color: mesh.diffuse,
                             vertex: buf_vertex[i].device_ptr(),
                             index: buf_index[i].device_ptr(),
                         },
@@ -616,4 +646,17 @@ impl TriangleMesh {
             ));
         }
     }
+}
+
+pub struct Mesh {
+    pub vertex: Vec<V3f32>,
+    pub normal: Vec<V3f32>,
+    pub texcoord: Vec<V2f32>,
+    pub index: Vec<V3i32>,
+    pub diffuse: V3f32,
+}
+
+pub struct Model {
+    pub meshes: Vec<Mesh>,
+    pub bounds: Box3f32,
 }

@@ -331,50 +331,49 @@ pub const CUoccupancy_flags_enum_CU_OCCUPANCY_DISABLE_CACHING_OVERRIDE:
 #[doc = " Occupancy calculator flag"]
 pub type CUoccupancy_flags_enum = ::std::os::raw::c_uint;
 pub use self::CUoccupancy_flags_enum as CUoccupancy_flags;
-#[doc = "< Unsigned 8-bit integers"]
-pub const CUarray_format_enum_CU_AD_FORMAT_UNSIGNED_INT8: CUarray_format_enum =
-    1;
-#[doc = "< Unsigned 16-bit integers"]
-pub const CUarray_format_enum_CU_AD_FORMAT_UNSIGNED_INT16: CUarray_format_enum =
-    2;
-#[doc = "< Unsigned 32-bit integers"]
-pub const CUarray_format_enum_CU_AD_FORMAT_UNSIGNED_INT32: CUarray_format_enum =
-    3;
-#[doc = "< Signed 8-bit integers"]
-pub const CUarray_format_enum_CU_AD_FORMAT_SIGNED_INT8: CUarray_format_enum = 8;
-#[doc = "< Signed 16-bit integers"]
-pub const CUarray_format_enum_CU_AD_FORMAT_SIGNED_INT16: CUarray_format_enum =
-    9;
-#[doc = "< Signed 32-bit integers"]
-pub const CUarray_format_enum_CU_AD_FORMAT_SIGNED_INT32: CUarray_format_enum =
-    10;
-#[doc = "< 16-bit floating point"]
-pub const CUarray_format_enum_CU_AD_FORMAT_HALF: CUarray_format_enum = 16;
-#[doc = "< 32-bit floating point"]
-pub const CUarray_format_enum_CU_AD_FORMAT_FLOAT: CUarray_format_enum = 32;
-#[doc = " Array formats"]
-pub type CUarray_format_enum = ::std::os::raw::c_uint;
-pub use self::CUarray_format_enum as CUarray_format;
-#[doc = "< Wrapping address mode"]
-pub const CUaddress_mode_enum_CU_TR_ADDRESS_MODE_WRAP: CUaddress_mode_enum = 0;
-#[doc = "< Clamp to edge address mode"]
-pub const CUaddress_mode_enum_CU_TR_ADDRESS_MODE_CLAMP: CUaddress_mode_enum = 1;
-#[doc = "< Mirror address mode"]
-pub const CUaddress_mode_enum_CU_TR_ADDRESS_MODE_MIRROR: CUaddress_mode_enum =
-    2;
-#[doc = "< Border address mode"]
-pub const CUaddress_mode_enum_CU_TR_ADDRESS_MODE_BORDER: CUaddress_mode_enum =
-    3;
-#[doc = " Texture reference addressing modes"]
-pub type CUaddress_mode_enum = ::std::os::raw::c_uint;
-pub use self::CUaddress_mode_enum as CUaddress_mode;
-#[doc = "< Point filter mode"]
-pub const CUfilter_mode_enum_CU_TR_FILTER_MODE_POINT: CUfilter_mode_enum = 0;
-#[doc = "< Linear filter mode"]
-pub const CUfilter_mode_enum_CU_TR_FILTER_MODE_LINEAR: CUfilter_mode_enum = 1;
-#[doc = " Texture reference filtering modes"]
-pub type CUfilter_mode_enum = ::std::os::raw::c_uint;
-pub use self::CUfilter_mode_enum as CUfilter_mode;
+pub mod CUarray_format_enum {
+    #[doc = " Array formats"]
+    pub type Type = ::std::os::raw::c_uint;
+    #[doc = "< Unsigned 8-bit integers"]
+    pub const CU_AD_FORMAT_UNSIGNED_INT8: Type = 1;
+    #[doc = "< Unsigned 16-bit integers"]
+    pub const CU_AD_FORMAT_UNSIGNED_INT16: Type = 2;
+    #[doc = "< Unsigned 32-bit integers"]
+    pub const CU_AD_FORMAT_UNSIGNED_INT32: Type = 3;
+    #[doc = "< Signed 8-bit integers"]
+    pub const CU_AD_FORMAT_SIGNED_INT8: Type = 8;
+    #[doc = "< Signed 16-bit integers"]
+    pub const CU_AD_FORMAT_SIGNED_INT16: Type = 9;
+    #[doc = "< Signed 32-bit integers"]
+    pub const CU_AD_FORMAT_SIGNED_INT32: Type = 10;
+    #[doc = "< 16-bit floating point"]
+    pub const CU_AD_FORMAT_HALF: Type = 16;
+    #[doc = "< 32-bit floating point"]
+    pub const CU_AD_FORMAT_FLOAT: Type = 32;
+}
+pub use self::CUarray_format_enum::Type as CUarray_format;
+pub mod CUaddress_mode_enum {
+    #[doc = " Texture reference addressing modes"]
+    pub type Type = ::std::os::raw::c_uint;
+    #[doc = "< Wrapping address mode"]
+    pub const CU_TR_ADDRESS_MODE_WRAP: Type = 0;
+    #[doc = "< Clamp to edge address mode"]
+    pub const CU_TR_ADDRESS_MODE_CLAMP: Type = 1;
+    #[doc = "< Mirror address mode"]
+    pub const CU_TR_ADDRESS_MODE_MIRROR: Type = 2;
+    #[doc = "< Border address mode"]
+    pub const CU_TR_ADDRESS_MODE_BORDER: Type = 3;
+}
+pub use self::CUaddress_mode_enum::Type as CUaddress_mode;
+pub mod CUfilter_mode_enum {
+    #[doc = " Texture reference filtering modes"]
+    pub type Type = ::std::os::raw::c_uint;
+    #[doc = "< Point filter mode"]
+    pub const CU_TR_FILTER_MODE_POINT: Type = 0;
+    #[doc = "< Linear filter mode"]
+    pub const CU_TR_FILTER_MODE_LINEAR: Type = 1;
+}
+pub use self::CUfilter_mode_enum::Type as CUfilter_mode;
 #[doc = "< Maximum number of threads per block"]
 pub const CUdevice_attribute_enum_CU_DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK:
     CUdevice_attribute_enum = 1;
@@ -826,17 +825,19 @@ pub const CUshared_carveout_enum_CU_SHAREDMEM_CARVEOUT_MAX_L1:
 #[doc = " Shared memory carveout configurations. These may be passed to ::cuFuncSetAttribute"]
 pub type CUshared_carveout_enum = ::std::os::raw::c_int;
 pub use self::CUshared_carveout_enum as CUshared_carveout;
-#[doc = "< Host memory"]
-pub const CUmemorytype_enum_CU_MEMORYTYPE_HOST: CUmemorytype_enum = 1;
-#[doc = "< Device memory"]
-pub const CUmemorytype_enum_CU_MEMORYTYPE_DEVICE: CUmemorytype_enum = 2;
-#[doc = "< Array memory"]
-pub const CUmemorytype_enum_CU_MEMORYTYPE_ARRAY: CUmemorytype_enum = 3;
-#[doc = "< Unified device or host memory"]
-pub const CUmemorytype_enum_CU_MEMORYTYPE_UNIFIED: CUmemorytype_enum = 4;
-#[doc = " Memory types"]
-pub type CUmemorytype_enum = ::std::os::raw::c_uint;
-pub use self::CUmemorytype_enum as CUmemorytype;
+pub mod CUmemorytype_enum {
+    #[doc = " Memory types"]
+    pub type Type = ::std::os::raw::c_uint;
+    #[doc = "< Host memory"]
+    pub const CU_MEMORYTYPE_HOST: Type = 1;
+    #[doc = "< Device memory"]
+    pub const CU_MEMORYTYPE_DEVICE: Type = 2;
+    #[doc = "< Array memory"]
+    pub const CU_MEMORYTYPE_ARRAY: Type = 3;
+    #[doc = "< Unified device or host memory"]
+    pub const CU_MEMORYTYPE_UNIFIED: Type = 4;
+}
+pub use self::CUmemorytype_enum::Type as CUmemorytype;
 #[doc = "< Default compute mode (Multiple contexts allowed per device)"]
 pub const CUcomputemode_enum_CU_COMPUTEMODE_DEFAULT: CUcomputemode_enum = 0;
 #[doc = "< Compute-prohibited mode (No contexts can be created on this device at this time)"]
@@ -13052,4 +13053,13 @@ extern "C" {
         name_expression: *const ::std::os::raw::c_char,
         lowered_name: *mut *const ::std::os::raw::c_char,
     ) -> nvrtcResult::Type;
+}
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum TextureReadFlags {
+    None = 0,
+    ReadAsInteger = 1,
+    NormalizedCoordinates = 2,
+    Srgb = 16,
+    DisableTrilinearOptimization = 32,
 }

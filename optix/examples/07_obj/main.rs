@@ -1,5 +1,5 @@
 mod renderer;
-use renderer::{Renderer, Camera, TriangleMesh};
+use renderer::{Renderer, Camera, TriangleMesh, Mesh, Model};
 
 pub mod vector;
 use vector::*;
@@ -20,24 +20,26 @@ fn main() -> Result<()> {
     let mut width = 960;
     let mut height = 540;
 
-    let mut mesh1 = TriangleMesh::new(v3f32(0.2, 0.8, 0.2));
-    mesh1.add_cube(v3f32(0.0, -1.5, 0.0), v3f32(10.0, 0.1, 10.0));
-    let mut mesh2 = TriangleMesh::new(v3f32(0.2, 0.8, 0.8));
-    mesh2.add_cube(v3f32(0.0, 0.0, 0.0), v3f32(2.0, 2.0, 2.0));
+    let model = load_model(&std::path::Path::new(&format!(
+        "{}/examples/data/sponza.obj",
+        std::env::var("CARGO_MANIFEST_DIR").unwrap()
+    )));
 
     let camera = Camera {
-        from: v3f32(-10.0, 2.0, -12.0),
-        at: v3f32(0.0, 0.0, 0.0),
+        from: v3f32(-1293.07, 154.681, -0.7304),
+        at: model.bounds.center() - v3f32(0.0, 400.0, 0.0),
         up: v3f32(0.0, 1.0, 0.0),
     };
 
-    let mut renderer = Renderer::new(width, height, camera, vec![mesh1, mesh2])
+    let mut renderer = Renderer::new(width, height, camera, model)
         .map_err(|error| {
             for cause in error.chain() {
                 eprintln!("ERROR: {}", cause)
             }
             anyhow!("Renderer creation failed")
         })?;
+
+    renderer::alloc_mem_report();
 
     let (mut window, events) = glfw
         .create_window(
@@ -113,4 +115,62 @@ fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent) {
         }
         _ => {}
     }
+}
+
+fn load_model(path: &std::path::Path) -> Model {
+    let (models, materials) = tobj::load_obj(path, true).unwrap();
+
+    let mut bounds = Box3f32::make_empty();
+    let meshes = models
+        .into_iter()
+        .map(|model| {
+            let diffuse = if let Some(material_id) = model.mesh.material_id {
+                materials[material_id].diffuse.into()
+            } else {
+                v3f32(0.8, 0.8, 0.8)
+            };
+
+            let vertex: Vec<V3f32> = model
+                .mesh
+                .positions
+                .chunks(3)
+                .map(|c| {
+                    let p = v3f32(c[0], c[1], c[2]);
+                    bounds.extend_by_pnt(p);
+                    p
+                })
+                .collect();
+
+            let normal: Vec<V3f32> = model
+                .mesh
+                .normals
+                .chunks(3)
+                .map(|c| v3f32(c[0], c[1], c[2]))
+                .collect();
+
+            let texcoord: Vec<V2f32> = model
+                .mesh
+                .texcoords
+                .chunks(2)
+                .map(|c| v2f32(c[0], c[1]))
+                .collect();
+
+            let index: Vec<V3i32> = model
+                .mesh
+                .indices
+                .chunks(3)
+                .map(|c| v3i32(c[0] as i32, c[1] as i32, c[2] as i32))
+                .collect();
+
+            Mesh {
+                vertex,
+                normal,
+                texcoord,
+                index,
+                diffuse,
+            }
+        })
+        .collect::<Vec<_>>();
+
+    Model { meshes, bounds }
 }

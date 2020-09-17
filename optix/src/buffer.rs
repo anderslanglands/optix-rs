@@ -180,7 +180,6 @@ impl<T: DeviceCopy, A: DeviceAllocRef> TypedBuffer<T, A> {
             .to_result()
             .map_err(|source| Error::Memcpy { source })?;
         }
-        println!("Allocated {}", ptr);
         Ok(TypedBuffer {
             ptr,
             len: slice.len(),
@@ -292,7 +291,6 @@ impl<T: DeviceCopy, A: DeviceAllocRef> TypedBuffer<T, A> {
 
 impl<T: DeviceCopy, A: DeviceAllocRef> Drop for TypedBuffer<T, A> {
     fn drop(&mut self) {
-        println!("Dropping {}", self.ptr);
         self.alloc
             .dealloc(self.ptr)
             .expect("TypedBuffer dealloc failed");

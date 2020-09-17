@@ -25,6 +25,9 @@ pub use memory::DevicePtr;
 pub mod allocator;
 pub use allocator::{DefaultDeviceAlloc, DeviceAllocRef};
 
+pub mod texture;
+pub use texture::{AddressMode, ArrayFormat, FilterMode, TexObject, TextureReadFlags};
+
 type Result<T, E = Error> = std::result::Result<T, E>;
 
 pub fn init() -> Result<()> {

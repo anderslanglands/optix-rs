@@ -21,6 +21,8 @@ fn main() {
     compile_to_ptx("examples/04_mesh/device_programs.cu", &args);
     compile_to_ptx("examples/05_sbtdata/device_programs.cu", &args);
     compile_to_ptx("examples/06_multiple/device_programs.cu", &args);
+    compile_to_ptx("examples/07_obj/device_programs.cu", &args);
+    compile_to_ptx("examples/08_texture/device_programs.cu", &args);
 }
 
 fn compile_to_ptx(cu_path: &str, args: &[String]) {
@@ -101,8 +103,8 @@ fn bindgen_optix(optix_root: &str, cuda_root: &str) {
             .constified_enum_module("OptixProgramGroupKind")
             .rustified_enum("GeometryFlags")
             .rustified_enum("OptixGeometryFlags")
-            .rustified_enum("OptixVertexFormat")
-            .rustified_enum("OptixIndicesFormat")
+            .constified_enum("OptixVertexFormat")
+            .constified_enum("OptixIndicesFormat")
             .rust_target(bindgen::RustTarget::Nightly)
             .rustfmt_bindings(true)
             .generate()

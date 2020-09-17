@@ -1,5 +1,12 @@
-use crate::{sys, DeviceContext, DeviceStorage, Error};
+use crate::{
+    sys, DeviceContext, DeviceCopy, DeviceStorage, Error, TypedBuffer,
+};
+use cu::DeviceAllocRef;
 type Result<T, E = Error> = std::result::Result<T, E>;
+use smallvec::SmallVec;
+
+pub mod triangle_array;
+pub use triangle_array::*;
 
 /// Opaque handle to a traversable acceleration structure.
 /// # Safety
@@ -17,18 +24,32 @@ impl DeviceContext {
     /// Computes the device memory required for temporary and output buffers
     /// when building the acceleration structure. Use the returned sizes to
     /// allocate enough memory to pass to `accel_build()`
-    pub fn accel_compute_memory_usage(
+    pub fn accel_compute_memory_usage<T: BuildInputTriangleArray>(
         &self,
         accel_options: &[AccelBuildOptions],
-        build_inputs: &[sys::OptixBuildInput],
+        build_inputs: &[BuildInput<T>],
     ) -> Result<AccelBufferSizes> {
         let mut buffer_sizes = AccelBufferSizes::default();
+        let build_sys: SmallVec<[_; 4]> = build_inputs.iter().map(|b| {
+            match b {
+                BuildInput::TriangleArray(bita) => {
+                    sys::OptixBuildInput {
+                        type_: sys::OptixBuildInputType_OPTIX_BUILD_INPUT_TYPE_TRIANGLES,
+                        input: sys::OptixBuildInputUnion{
+                            triangle_array: bita.to_sys(),
+                        },
+                    }
+                }
+                _ => unimplemented!(),
+            }
+        }).collect();
+
         unsafe {
             sys::optixAccelComputeMemoryUsage(
                 self.inner,
                 accel_options.as_ptr() as *const _,
-                build_inputs.as_ptr(),
-                build_inputs.len() as u32,
+                build_sys.as_ptr(),
+                build_sys.len() as u32,
                 &mut buffer_sizes as *mut _ as *mut _,
             )
             .to_result()
@@ -40,11 +61,11 @@ impl DeviceContext {
     /// Builds the acceleration structure.
     /// `temp_buffer` and `output_buffer` must be at least as large as the sizes
     /// returned by `accel_compute_memory_usage()`
-    pub fn accel_build<S1: DeviceStorage, S2: DeviceStorage>(
+    pub fn accel_build<T: BuildInputTriangleArray, S1: DeviceStorage, S2: DeviceStorage>(
         &self,
         stream: &cu::Stream,
         accel_options: &[AccelBuildOptions],
-        build_inputs: &[sys::OptixBuildInput],
+        build_inputs: &[BuildInput<T>],
         temp_buffer: &S1,
         output_buffer: &S2,
         emitted_properties: &mut [AccelEmitDesc],
@@ -52,13 +73,28 @@ impl DeviceContext {
         let mut traversable_handle = TraversableHandle { inner: 0 };
         let properties: Vec<sys::OptixAccelEmitDesc> =
             emitted_properties.iter().map(|p| p.into()).collect();
+
+        let build_sys: SmallVec<[_; 4]> = build_inputs.iter().map(|b| {
+            match b {
+                BuildInput::TriangleArray(bita) => {
+                    sys::OptixBuildInput {
+                        type_: sys::OptixBuildInputType_OPTIX_BUILD_INPUT_TYPE_TRIANGLES,
+                        input: sys::OptixBuildInputUnion{
+                            triangle_array: bita.to_sys(),
+                        },
+                    }
+                }
+                _ => unimplemented!(),
+            }
+        }).collect();
+
         unsafe {
             sys::optixAccelBuild(
                 self.inner,
                 stream.inner(),
                 accel_options.as_ptr() as *const _,
-                build_inputs.as_ptr(),
-                build_inputs.len() as u32,
+                build_sys.as_ptr(),
+                build_sys.len() as u32,
                 temp_buffer.device_ptr().ptr(),
                 temp_buffer.byte_size(),
                 output_buffer.device_ptr().ptr(),
@@ -181,8 +217,8 @@ pub struct AccelBufferSizes {
     pub temp_update_size_in_bytes: usize,
 }
 
-pub enum BuildInput {
-    TriangleArray(BuildInputTriangleArray),
+pub enum BuildInput<T: BuildInputTriangleArray = ()> {
+    TriangleArray(T),
     CurveArray,
     CustomPrimitiveArray,
     InstanceArray,
@@ -210,148 +246,9 @@ impl From<&AccelEmitDesc> for sys::OptixAccelEmitDesc {
 
 #[repr(u32)]
 #[derive(Copy, Clone, PartialEq)]
-pub enum VertexFormat {
-    None = sys::OptixVertexFormat::OPTIX_VERTEX_FORMAT_NONE as u32,
-    Float3 = sys::OptixVertexFormat::OPTIX_VERTEX_FORMAT_FLOAT3 as u32,
-    Float2 = sys::OptixVertexFormat::OPTIX_VERTEX_FORMAT_FLOAT2 as u32,
-    Half3 = sys::OptixVertexFormat::OPTIX_VERTEX_FORMAT_HALF3 as u32,
-    Half2 = sys::OptixVertexFormat::OPTIX_VERTEX_FORMAT_HALF2 as u32,
-    SNorm16 = sys::OptixVertexFormat::OPTIX_VERTEX_FORMAT_SNORM16_3 as u32,
-    SNorm32 = sys::OptixVertexFormat::OPTIX_VERTEX_FORMAT_SNORM16_2 as u32,
-}
-
-#[repr(u32)]
-#[derive(Copy, Clone, PartialEq)]
-pub enum IndicesFormat {
-    None = sys::OptixIndicesFormat::OPTIX_INDICES_FORMAT_NONE as u32,
-    Short3 =
-        sys::OptixIndicesFormat::OPTIX_INDICES_FORMAT_UNSIGNED_SHORT3 as u32,
-    Int3 = sys::OptixIndicesFormat::OPTIX_INDICES_FORMAT_UNSIGNED_INT3 as u32,
-}
-
-#[repr(u32)]
-#[derive(Copy, Clone, PartialEq)]
 pub enum GeometryFlags {
     None = sys::OptixGeometryFlags::None as u32,
     DisableAnyHit = sys::OptixGeometryFlags::DisableAnyHit as u32,
     RequireSingleAnyHitCall =
         sys::OptixGeometryFlags::RequireSingleAnyHitCall as u32,
-}
-
-#[repr(u32)]
-#[derive(Copy, Clone, PartialEq)]
-pub enum TransformFormat {
-    None = sys::OptixTransformFormat_OPTIX_TRANSFORM_FORMAT_NONE,
-    MatrixFloat12 =
-        sys::OptixTransformFormat_OPTIX_TRANSFORM_FORMAT_MATRIX_FLOAT12,
-}
-
-#[repr(C)]
-pub struct BuildInputTriangleArray {
-    vertex_buffers: *const cu::DevicePtr,
-    num_vertices: u32,
-    vertex_format: VertexFormat,
-    vertex_stride_in_bytes: u32,
-    index_buffer: cu::DevicePtr,
-    num_index_triplets: u32,
-    index_format: IndicesFormat,
-    index_stride_in_bytes: u32,
-    pre_transform: cu::DevicePtr,
-    flags: *const GeometryFlags,
-    num_sbt_records: u32,
-    sbt_index_offset_buffer: cu::DevicePtr,
-    sbt_index_offset_size_in_bytes: u32,
-    sbt_index_offset_stride_in_bytes: u32,
-    primitive_index_offset: u32,
-    transform_format: TransformFormat,
-}
-
-impl BuildInputTriangleArray {
-    pub fn new(
-        vertex_buffers: &[cu::DevicePtr],
-        num_vertices: u32,
-        vertex_format: VertexFormat,
-        flags: &GeometryFlags,
-    ) -> Self {
-        BuildInputTriangleArray::new_with_stride(
-            vertex_buffers,
-            num_vertices,
-            vertex_format,
-            flags,
-            0,
-        )
-    }
-
-    pub fn new_with_stride(
-        vertex_buffers: &[cu::DevicePtr],
-        num_vertices: u32,
-        vertex_format: VertexFormat,
-        flags: &GeometryFlags,
-        vertex_stride_in_bytes: u32,
-    ) -> Self {
-        BuildInputTriangleArray {
-            vertex_buffers: vertex_buffers.as_ptr(),
-            num_vertices,
-            vertex_format,
-            vertex_stride_in_bytes,
-            index_buffer: cu::DevicePtr::null(),
-            num_index_triplets: 0,
-            index_format: IndicesFormat::None,
-            index_stride_in_bytes: 0,
-            pre_transform: cu::DevicePtr::null(),
-            flags: flags as *const _,
-            num_sbt_records: 1,
-            sbt_index_offset_buffer: cu::DevicePtr::null(),
-            sbt_index_offset_size_in_bytes: 0,
-            sbt_index_offset_stride_in_bytes: 0,
-            primitive_index_offset: 0,
-            transform_format: TransformFormat::None,
-        }
-    }
-
-    pub fn build(self) -> sys::OptixBuildInput {
-        let triangle_array = unsafe {
-            std::mem::transmute::<
-                BuildInputTriangleArray,
-                sys::OptixBuildInputTriangleArray,
-            >(self)
-        };
-        sys::OptixBuildInput {
-            type_: sys::OptixBuildInputType_OPTIX_BUILD_INPUT_TYPE_TRIANGLES,
-            input: sys::OptixBuildInputUnion { triangle_array },
-        }
-    }
-
-    pub fn pre_transform(mut self, pre_transform: cu::DevicePtr) -> Self {
-        self.pre_transform = pre_transform;
-        self.transform_format = TransformFormat::MatrixFloat12;
-        self
-    }
-
-    pub fn index_buffer(
-        mut self,
-        index_buffer: cu::DevicePtr,
-        num_index_triplets: u32,
-        index_format: IndicesFormat,
-    ) -> Self {
-        self.index_buffer = index_buffer;
-        self.num_index_triplets = num_index_triplets;
-        self.index_format = index_format;
-        self.index_stride_in_bytes = 0;
-        self
-    }
-
-    pub fn index_buffer_with_stride(
-        mut self,
-        index_buffer: cu::DevicePtr,
-        num_index_triplets: u32,
-        index_format: IndicesFormat,
-        index_stride_in_bytes: u32,
-    ) -> Self {
-        self.index_buffer = index_buffer;
-        self.num_index_triplets = num_index_triplets;
-        self.index_format = index_format;
-        self.index_stride_in_bytes = index_stride_in_bytes;
-        self
-    }
 }
