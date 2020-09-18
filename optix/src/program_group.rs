@@ -124,6 +124,75 @@ impl DeviceContext {
             Err(source) => Err(Error::ProgramGroupCreation { source, log }),
         }
     }
+
+    pub fn program_group_create_single(
+        &mut self,
+        desc: &ProgramGroupDesc,
+    ) -> Result<(ProgramGroup, String)> {
+        let pg_options = sys::OptixProgramGroupOptions { placeholder: 0 };
+
+        let mut log = [0u8; 4096];
+        let mut log_len = log.len();
+
+        let pg_desc: sys::OptixProgramGroupDesc = desc.into();
+
+        let mut inner = std::ptr::null_mut();
+
+        let res = unsafe {
+            sys::optixProgramGroupCreate(
+                self.inner,
+                &pg_desc,
+                1,
+                &pg_options,
+                log.as_mut_ptr() as *mut i8,
+                &mut log_len,
+                &mut inner,
+            )
+            .to_result()
+        };
+
+        let log = CStr::from_bytes_with_nul(&log[0..log_len])
+            .unwrap()
+            .to_string_lossy()
+            .into_owned();
+
+        match res {
+            Ok(()) => Ok((
+                ProgramGroup{inner},
+                log,
+            )),
+            Err(source) => Err(Error::ProgramGroupCreation { source, log }),
+        }
+    }
+
+    pub fn program_group_raygen(
+        &mut self,
+        module: &Module,
+        entry_function_name: Ustr,
+    ) -> Result<ProgramGroup> {
+        let desc = ProgramGroupDesc::raygen(module, entry_function_name);
+        Ok(self.program_group_create_single(&desc)?.0)
+    }
+
+    pub fn program_group_miss(
+        &mut self,
+        module: &Module,
+        entry_function_name: Ustr,
+    ) -> Result<ProgramGroup> {
+        let desc = ProgramGroupDesc::miss(module, entry_function_name);
+        Ok(self.program_group_create_single(&desc)?.0)
+    }
+
+    pub fn program_group_hitgroup(
+        &mut self,
+        closest_hit: Option<(&Module, Ustr)>,
+        any_hit: Option<(&Module, Ustr)>,
+        intersection: Option<(&Module, Ustr)>,
+    ) -> Result<ProgramGroup> {
+        let desc =
+            ProgramGroupDesc::hitgroup(closest_hit, any_hit, intersection);
+        Ok(self.program_group_create_single(&desc)?.0)
+    }
 }
 
 impl<'m> From<&ProgramGroupDesc<'m>> for sys::OptixProgramGroupDesc {

@@ -23,6 +23,8 @@ fn main() {
     compile_to_ptx("examples/06_multiple/device_programs.cu", &args);
     compile_to_ptx("examples/07_obj/device_programs.cu", &args);
     compile_to_ptx("examples/08_texture/device_programs.cu", &args);
+    compile_to_ptx("examples/09_shadow/device_programs.cu", &args);
+    compile_to_ptx("examples/10_softshadow/device_programs.cu", &args);
 }
 
 fn compile_to_ptx(cu_path: &str, args: &[String]) {

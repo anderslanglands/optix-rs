@@ -110,6 +110,7 @@ impl Renderer {
         height: u32,
         camera: Camera,
         model: Model,
+        light: Light,
     ) -> Result<Renderer> {
         // Initialize CUDA and check we've got a suitable device
         cu::init()?;
@@ -159,7 +160,7 @@ impl Renderer {
         // see build.rs for how this is compiled from the cuda source
         let ptx = include_str!(concat!(
             env!("OUT_DIR"),
-            "/examples/08_texture/device_programs.ptx"
+            "/examples/10_softshadow/device_programs.ptx"
         ));
 
         let (module, _log) = ctx.module_create_from_ptx(
@@ -169,28 +170,31 @@ impl Renderer {
         )?;
 
         // create raygen program
-        let pgdesc_raygen = optix::ProgramGroupDesc::raygen(
-            &module,
-            ustr("__raygen__renderFrame"),
-        );
+        let pg_raygen =
+            vec![ctx.program_group_raygen(
+                &module,
+                ustr("__raygen__renderFrame"),
+            )?];
 
-        let (pg_raygen, _log) = ctx.program_group_create(&[pgdesc_raygen])?;
-
-        // create miss program
-        let pgdesc_miss =
-            optix::ProgramGroupDesc::miss(&module, ustr("__miss__radiance"));
-
-        let (pg_miss, _log) = ctx.program_group_create(&[pgdesc_miss])?;
-
-        let pgdesc_hitgroup = optix::ProgramGroupDesc::hitgroup(
-            Some((&module, ustr("__closesthit__radiance"))),
-            Some((&module, ustr("__anyhit__radiance"))),
-            None,
-        );
+        // create miss programs
+        let pg_miss = vec![
+            ctx.program_group_miss(&module, ustr("__miss__radiance"))?,
+            ctx.program_group_miss(&module, ustr("__miss__shadow"))?,
+        ];
 
         // create hitgroup programs
-        let (pg_hitgroup, _log) =
-            ctx.program_group_create(&[pgdesc_hitgroup])?;
+        let pg_hitgroup = vec![
+            ctx.program_group_hitgroup(
+                Some((&module, ustr("__closesthit__radiance"))),
+                Some((&module, ustr("__anyhit__radiance"))),
+                None,
+            )?,
+            ctx.program_group_hitgroup(
+                Some((&module, ustr("__closesthit__shadow"))),
+                Some((&module, ustr("__anyhit__shadow"))),
+                None,
+            )?,
+        ];
 
         let mut buf_vertex = Vec::with_capacity(model.meshes.len());
         let mut buf_index = Vec::with_capacity(model.meshes.len());
@@ -398,13 +402,9 @@ impl Renderer {
             })
             .collect();
 
-        let rec_hitgroup: Vec<_> = model
-            .meshes
-            .iter()
-            .enumerate()
-            .map(|(i, mesh)| {
-                let object_type = 0;
-
+        let mut rec_hitgroup = Vec::with_capacity(model.meshes.len() * 2);
+        for (i, mesh) in model.meshes.iter().enumerate() {
+            for raytype in 0..2 {
                 let (has_texture, texture) =
                     if let Some(texid) = mesh.diffuse_texture_id {
                         (true, tex_objects[texid].inner())
@@ -412,23 +412,32 @@ impl Renderer {
                         (false, 0)
                     };
 
-                HitgroupRecord::pack(
+                let rec = HitgroupRecord::pack(
                     HitgroupSbtData {
                         data: TriangleMeshSbtData {
                             color: mesh.diffuse,
                             vertex: buf_vertex[i].device_ptr(),
                             index: buf_index[i].device_ptr(),
-                            // normal: if let Some(b) = &buf_normal[i] { b.device_ptr() } else { cu::DevicePtr::null() },
-                            normal: DevicePtr::null(),
-                            texcoord: if let Some(b) = &buf_texcoord[i] { b.device_ptr() } else { cu::DevicePtr::null() },
+                            normal: if let Some(b) = &buf_normal[i] {
+                                b.device_ptr()
+                            } else {
+                                cu::DevicePtr::null()
+                            },
+                            texcoord: if let Some(b) = &buf_texcoord[i] {
+                                b.device_ptr()
+                            } else {
+                                cu::DevicePtr::null()
+                            },
                             has_texture,
                             texture,
                         },
                     },
-                    &pg_hitgroup[object_type],
-                )
-            })
-            .collect::<Result<Vec<_>, optix::Error>>()?;
+                    &pg_hitgroup[raytype],
+                )?;
+
+                rec_hitgroup.push(rec);
+            }
+        }
 
         // Create storage to hold all our SBT records
         // TypedBuffer will take care of the allocation alignment for us as the
@@ -470,6 +479,7 @@ impl Renderer {
                 frame: Frame {
                     color_buffer: color_buffer.device_ptr(),
                     size: v2i32(width as i32, height as i32),
+                    accum_id: 0,
                 },
                 camera: RenderCamera {
                     position: camera.from,
@@ -477,6 +487,7 @@ impl Renderer {
                     horizontal,
                     vertical,
                 },
+                light,
                 traversable: as_handle,
             },
             FrameAlloc,
@@ -516,6 +527,7 @@ impl Renderer {
     pub fn render(&mut self) -> Result<()> {
         // upload the launch params
         self.launch_params.upload()?;
+        self.launch_params.frame.accum_id += 1;
 
         // launch the kernel
         optix::launch(
@@ -555,6 +567,7 @@ type HitgroupRecord = optix::SbtRecord<HitgroupSbtData>;
 pub struct Frame {
     color_buffer: cu::DevicePtr,
     size: V2i32,
+    accum_id: i32,
 }
 
 #[repr(C)]
@@ -569,7 +582,17 @@ pub struct RenderCamera {
 pub struct LaunchParams {
     pub frame: Frame,
     pub camera: RenderCamera,
+    pub light: Light,
     pub traversable: optix::TraversableHandle,
+}
+
+#[repr(C)]
+pub struct Light {
+    pub origin: V3f32,
+    pub du: V3f32,
+    pub dv: V3f32,
+    pub power: V3f32,
+
 }
 
 pub struct Camera {

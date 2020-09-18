@@ -26,8 +26,9 @@ impl DevicePtr {
         DevicePtr { ptr: 0 }
     }
 
-    pub fn with_tag(ptr: sys::CUdeviceptr, tag: u16) -> DevicePtr {
+    pub fn with_tag<T: Into<u16>>(ptr: sys::CUdeviceptr, tag: T) -> DevicePtr {
         assert_eq!(ptr & DevicePtr::PTR_MASK, ptr);
+        let tag: u16 = tag.into();
         let ptr = ptr | ((tag as u64) << DevicePtr::TAG_SHIFT);
         DevicePtr { ptr }
     }
@@ -36,8 +37,9 @@ impl DevicePtr {
         self.ptr & DevicePtr::PTR_MASK
     }
 
-    pub fn tag(&self) -> u16 {
-        ((self.ptr & DevicePtr::TAG_MASK) >> DevicePtr::TAG_SHIFT) as u16
+    pub fn tag<T: From<u16>>(&self) -> T {
+        (((self.ptr & DevicePtr::TAG_MASK) >> DevicePtr::TAG_SHIFT) as u16)
+            .into()
     }
 }
 
