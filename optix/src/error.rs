@@ -6,39 +6,55 @@ use crate::sys;
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum Error {
     #[error("OptiX initialization failed")]
-    Initialization{source: OptixError},
+    Initialization { source: OptixError },
     #[error("Failed to create device context")]
-    DeviceContextCreation{source: OptixError},
+    DeviceContextCreation { source: OptixError },
     #[error("pipeline_launch_params_variable_name must be specified on PipelineCompileOptions")]
     PipelineLaunchParamsVariableNameNotSpecified,
     #[error("Failed to create module")]
-    ModuleCreation{source: OptixError, log: String},
+    ModuleCreation { source: OptixError, log: String },
     #[error("Failed to create program group")]
-    ProgramGroupCreation{source: OptixError, log: String},
+    ProgramGroupCreation { source: OptixError, log: String },
     #[error("Failed to create pipelin")]
-    PipelineCreationFailed{source: OptixError, log: String},
+    PipelineCreationFailed { source: OptixError, log: String },
     #[error("Failed to set pipeline stack size")]
-    PipelineSetStackSize{source: OptixError},
+    PipelineSetStackSize { source: OptixError },
     #[error("Failed to pack SBT record")]
-    PackSbtRecord{source: OptixError},
-    #[error("Wrong number of raygen records supplied. Expected 1, got: {len:}" )]
-    WrongRaygenRecordLen{len: usize},
+    PackSbtRecord { source: OptixError },
+    #[error(
+        "Wrong number of raygen records supplied. Expected 1, got: {len:}"
+    )]
+    WrongRaygenRecordLen { len: usize },
     #[error("Launch failed")]
-    Launch{source: OptixError},
+    Launch { source: OptixError },
     #[error("Failed to compute accel memory usage")]
-    AccelComputeMemoryUsage{source: OptixError},
+    AccelComputeMemoryUsage { source: OptixError },
     #[error("Failed to build acceleration structure")]
-    AccelBuild{source: OptixError},
+    AccelBuild { source: OptixError },
     #[error("Failed to compact accel structure")]
-    AccelCompact{source: OptixError},
+    AccelCompact { source: OptixError },
     #[error("Allocation failed")]
-    Allocation{source: cu::Error},
+    Allocation { source: cu::Error },
     #[error("Memcpy failed")]
-    Memcpy{source: cu::Error},
+    Memcpy { source: cu::Error },
     #[error("Deallocation failed")]
-    Deallocation{source: cu::Error},
+    Deallocation { source: cu::Error },
     #[error("Failed to destroy pipeline object")]
-    PipelineDestroy{source: OptixError}
+    PipelineDestroy { source: OptixError },
+    #[error("Failed to create denoiser")]
+    CreateDenoiser { source: OptixError },
+    #[error("Failed to destroy denoiser")]
+    DestroyDenoiser { source: OptixError },
+    #[error("Failed to compute intensity")]
+    DenoiserComputeIntensity { source: OptixError },
+    #[error("Failed to compute denoiser memory resources")]
+    DenoiserComputeMemoryResources { source: OptixError },
+    #[error("Failed to invoke denoiser")]
+    DenoiserInvoke { source: OptixError },
+    #[error("Failed to set LDR denoiser model")]
+    DenoiserSetModelLdr { source: OptixError },
+    #[error("Failed to setup denoiser state")]
+    DenoiserSetup { source: OptixError },
 }
 
 impl sys::OptixResult {
@@ -55,7 +71,6 @@ impl sys::OptixResult {
             panic!("OptiX returned an unhandled error code: {}", v)
         }
     }
-
 }
 
 #[repr(u32)]

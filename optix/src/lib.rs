@@ -26,13 +26,21 @@ pub use shader_binding_table::{SbtRecord, ShaderBindingTable};
 
 pub mod acceleration;
 pub use acceleration::{
-    AccelBuildOptions, AccelEmitDesc, BuildFlags, TriangleArray,
-    BuildOperation, GeometryFlags, MotionFlags, TraversableHandle,
-    VertexFormat, IndicesFormat, Vertex, IndexTriple, BuildInput,
+    AccelBuildOptions, AccelEmitDesc, BuildFlags, BuildInput, BuildOperation,
+    GeometryFlags, IndexTriple, IndicesFormat, MotionFlags, TraversableHandle,
+    TriangleArray, Vertex, VertexFormat,
 };
 
 pub mod buffer;
-pub use buffer::{Buffer, TypedBuffer, DeviceStorage, DeviceVariable};
+pub use buffer::{Buffer, DeviceStorage, DeviceVariable, TypedBuffer};
+
+pub mod image;
+pub use self::image::{Image2D, Pixel, PixelFormat};
+
+pub mod denoiser;
+pub use denoiser::{
+    Denoiser, DenoiserInputKind, DenoiserOptions, DenoiserParams, DenoiserSizes,
+};
 
 pub mod math;
 pub use math::*;
@@ -106,9 +114,10 @@ mod tests {
 /// This trait specifies that the type in question can safely be bitwise-copied
 /// to the device.
 pub unsafe trait DeviceCopy: Sized {
-    /// Use this to specify any alignment requirements for the type. For example,
-    /// anything that translates to float4 on the CUDA side wants to be aligned
-    /// to 16 bytes, transformation matrices want to be aligned to 64 bytes, etc.
+    /// Use this to specify any alignment requirements for the type. For
+    /// example, anything that translates to float4 on the CUDA side wants
+    /// to be aligned to 16 bytes, transformation matrices want to be
+    /// aligned to 64 bytes, etc.
     fn device_align() -> usize {
         std::mem::align_of::<Self>()
     }
