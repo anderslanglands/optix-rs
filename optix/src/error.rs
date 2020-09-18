@@ -9,12 +9,26 @@ pub enum Error {
     Initialization { source: OptixError },
     #[error("Failed to create device context")]
     DeviceContextCreation { source: OptixError },
+    #[error("Failed to set cache database sizes")]
+    DeviceContextSetCacheDatabaseSizes { source: OptixError },
+    #[error("Failed to enable compilation cache")]
+    DeviceContextSetCacheEnabled { source: OptixError },
+    #[error("Failed to set cache location")]
+    DeviceContextSetCacheLocation { source: OptixError },
     #[error("pipeline_launch_params_variable_name must be specified on PipelineCompileOptions")]
     PipelineLaunchParamsVariableNameNotSpecified,
     #[error("Failed to create module")]
     ModuleCreation { source: OptixError, log: String },
+    #[error("Failed to get builtin IS module")]
+    BuiltinIsModuleGet { source: OptixError },
+    #[error("Failed to destroy module")]
+    ModuleDestroy { source: OptixError },
     #[error("Failed to create program group")]
     ProgramGroupCreation { source: OptixError, log: String },
+    #[error("Failed to destroy program group")]
+    ProgramGroupDestroy { source: OptixError },
+    #[error("Failed to get program group stack sizes")]
+    ProgramGroupGetStackSizes { source: OptixError },
     #[error("Failed to create pipelin")]
     PipelineCreationFailed { source: OptixError, log: String },
     #[error("Failed to set pipeline stack size")]

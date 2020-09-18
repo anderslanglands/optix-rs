@@ -16,7 +16,9 @@ pub use module::{
 };
 
 pub mod program_group;
-pub use program_group::{ProgramGroup, ProgramGroupDesc, ProgramGroupModule};
+pub use program_group::{
+    ProgramGroup, ProgramGroupDesc, ProgramGroupModule, StackSizes,
+};
 
 pub mod pipeline;
 pub use pipeline::{Pipeline, PipelineLinkOptions};

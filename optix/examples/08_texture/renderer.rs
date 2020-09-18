@@ -88,6 +88,7 @@ pub fn alloc_mem_report() {
 }
 
 pub struct Renderer {
+    ctx: optix::DeviceContext,
     stream: cu::Stream,
     launch_params: optix::DeviceVariable<LaunchParams, FrameAlloc>,
     buf_vertex: Vec<optix::TypedBuffer<V3f32, FrameAlloc>>,
@@ -486,6 +487,7 @@ impl Renderer {
         // Renderer. All the temporary storage that we don't need to keep around
         // will be cleaned up by RAII on the Buffer types
         Ok(Renderer {
+            ctx,
             stream,
             launch_params,
             buf_vertex,

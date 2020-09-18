@@ -70,8 +70,56 @@ impl<'m> ProgramGroupDesc<'m> {
 
 #[repr(transparent)]
 #[derive(Clone)]
+/// Modules can contain more than one program. The program in the module is
+/// designated by its entry function name as part of the [ProgramGroupDesc]
+/// struct passed to [DeviceContext::program_group_create()] and
+/// [DeviceContext::program_group_create_single()], or specified directly in the
+/// case of [DeviceContext::program_group_raygen()],
+/// [DeviceContext::program_group_miss()] and
+/// [DeviceContext::program_group_hitgroup()]
+///
+/// Four program groups can contain only a single program; only hitgroups can
+/// designate up to three programs for the closest-hit, any-hit, and
+/// intersection programs.
+///
+/// Programs from modules can be used in any number of [ProgramGroup] objects.
+/// The resulting program groups can be used to fill in any number of
+/// SBT records. Program groups can also be used across pipelines as long as the
+/// compilation options match.
+///
+/// A hit group specifies the intersection program used to test whether a ray
+/// intersects a primitive, together with the hit shaders to be executed when a
+/// ray does intersect the primitive. For built-in primitive types, a built-in
+/// intersection program should be obtained from
+/// [DeviceContext::builtin_is_module_get()] and used in the hit group. As a
+/// special case, the intersection program is not required – and is ignored –
+/// for triangle primitives.
+///
+/// # Safety
+/// The lifetime of a module must extend to the lifetime of any
+/// OptixProgramGroup that references that module.
 pub struct ProgramGroup {
     pub(crate) inner: sys::OptixProgramGroup,
+}
+
+impl ProgramGroup {
+    /// Use this information to calculate the total required stack sizes for a
+    /// particular call graph of NVIDIA OptiX programs.
+    ///
+    /// To set the stack sizes for a particular pipeline, use
+    /// [Pipeline::set_stack_size()](crate::Pipeline::set_stack_size()).
+    pub fn get_stack_size(&self) -> Result<StackSizes> {
+        let mut stack_sizes = StackSizes::default();
+        unsafe {
+            sys::optixProgramGroupGetStackSize(
+                self.inner,
+                &mut stack_sizes as *mut _ as *mut _,
+            )
+            .to_result()
+            .map(|_| stack_sizes)
+            .map_err(|source| Error::ProgramGroupGetStackSizes { source })
+        }
+    }
 }
 
 impl PartialEq for ProgramGroup {
@@ -80,7 +128,10 @@ impl PartialEq for ProgramGroup {
     }
 }
 
+/// # Creating and destroying `ProgramGroup`s
 impl DeviceContext {
+    /// Create a [ProgramGroup] for each of the [ProgramGroupDesc] objects in 
+    /// `desc`.
     pub fn program_group_create(
         &mut self,
         desc: &[ProgramGroupDesc],
@@ -125,6 +176,7 @@ impl DeviceContext {
         }
     }
 
+    /// Create a single [ProgramGroup] specified by `desc`.
     pub fn program_group_create_single(
         &mut self,
         desc: &ProgramGroupDesc,
@@ -157,14 +209,12 @@ impl DeviceContext {
             .into_owned();
 
         match res {
-            Ok(()) => Ok((
-                ProgramGroup{inner},
-                log,
-            )),
+            Ok(()) => Ok((ProgramGroup { inner }, log)),
             Err(source) => Err(Error::ProgramGroupCreation { source, log }),
         }
     }
 
+    /// Create a raygen [ProgramGroup] from `entry_function_name` in `module`.
     pub fn program_group_raygen(
         &mut self,
         module: &Module,
@@ -174,6 +224,7 @@ impl DeviceContext {
         Ok(self.program_group_create_single(&desc)?.0)
     }
 
+    /// Create a miss [ProgramGroup] from `entry_function_name` in `module`.
     pub fn program_group_miss(
         &mut self,
         module: &Module,
@@ -183,6 +234,8 @@ impl DeviceContext {
         Ok(self.program_group_create_single(&desc)?.0)
     }
 
+    /// Create a hitgroup [ProgramGroup] from any combination of
+    /// `(module, entry_function_name)` pairs.
     pub fn program_group_hitgroup(
         &mut self,
         closest_hit: Option<(&Module, Ustr)>,
@@ -192,6 +245,22 @@ impl DeviceContext {
         let desc =
             ProgramGroupDesc::hitgroup(closest_hit, any_hit, intersection);
         Ok(self.program_group_create_single(&desc)?.0)
+    }
+
+    /// Destroy `program_group`
+    /// 
+    /// # Safety
+    /// Thread safety: A program group must not be destroyed while it is still
+    /// in use by concurrent API calls in other threads.
+    pub fn program_group_destroy(
+        &mut self,
+        program_group: ProgramGroup,
+    ) -> Result<()> {
+        unsafe {
+            sys::optixProgramGroupDestroy(program_group.inner)
+                .to_result()
+                .map_err(|source| Error::ProgramGroupDestroy { source })
+        }
     }
 }
 
@@ -304,4 +373,16 @@ impl<'m> From<&ProgramGroupDesc<'m>> for sys::OptixProgramGroupDesc {
             }
         }
     }
+}
+
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone, PartialEq)]
+pub struct StackSizes {
+    pub css_rg: u32,
+    pub css_mg: u32,
+    pub css_ch: u32,
+    pub css_ah: u32,
+    pub css_is: u32,
+    pub css_cc: u32,
+    pub css_dc: u32,
 }

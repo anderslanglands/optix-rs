@@ -9,6 +9,7 @@ pub struct Pipeline {
     pub(crate) inner: sys::OptixPipeline,
 }
 
+/// # Creating and destroying `Pipeline`s
 impl DeviceContext {
     pub fn pipeline_create(
         &mut self,
@@ -36,7 +37,8 @@ impl DeviceContext {
                 &mut log_len,
                 &mut inner,
             )
-        }.to_result();
+        }
+        .to_result();
 
         let log = CStr::from_bytes_with_nul(&log[0..log_len])
             .unwrap()
@@ -44,8 +46,20 @@ impl DeviceContext {
             .into_owned();
 
         match res {
-            Ok(()) => Ok((Pipeline{inner}, log)),
+            Ok(()) => Ok((Pipeline { inner }, log)),
             Err(source) => Err(Error::PipelineCreationFailed { source, log }),
+        }
+    }
+
+    /// Destroys the pipeline
+    /// # Safety
+    /// Thread safety: A pipeline must not be destroyed while it is still in use
+    /// by concurrent API calls in other threads.
+    pub fn pipeline_destroy(&mut self, pipeline: Pipeline) -> Result<()> {
+        unsafe {
+            sys::optixPipelineDestroy(pipeline.inner)
+                .to_result()
+                .map_err(|source| Error::PipelineDestroy { source })
         }
     }
 }
@@ -94,18 +108,9 @@ impl Pipeline {
                 direct_callable_stack_size_from_state,
                 continuation_stack_size,
                 max_traversable_graph_depth,
-            ).to_result().map_err(|source| {
-                Error::PipelineSetStackSize{source}
-            })
-        }
-    }
-
-    /// Destroys the pipeline
-    pub fn destroy(pipeline: Pipeline) -> Result<()> {
-        unsafe {
-            sys::optixPipelineDestroy(pipeline.inner)
+            )
             .to_result()
-            .map_err(|source| Error::PipelineDestroy{source})
+            .map_err(|source| Error::PipelineSetStackSize { source })
         }
     }
 }

@@ -41,6 +41,14 @@ bitflags::bitflags! {
     }
 }
 
+#[repr(u32)]
+pub enum PrimitiveType {
+    RoundQuadraticBspline = sys::OptixPrimitiveTypeFlags_OPTIX_PRIMITIVE_TYPE_FLAGS_ROUND_QUADRATIC_BSPLINE as u32,
+    RoundCubicBspline =  sys::OptixPrimitiveTypeFlags_OPTIX_PRIMITIVE_TYPE_FLAGS_ROUND_CUBIC_BSPLINE as u32,
+    RoundLinear =  sys::OptixPrimitiveTypeFlags_OPTIX_PRIMITIVE_TYPE_FLAGS_ROUND_LINEAR as u32,
+    Triangle = sys::OptixPrimitiveTypeFlags_OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE as u32,
+}
+
 #[derive(Debug, Hash, PartialEq, Clone)]
 pub struct PipelineCompileOptions {
     uses_motion_blur: bool,
@@ -118,6 +126,7 @@ impl PipelineCompileOptions {
     }
 }
 
+/// # Creating and destroying `Module`s
 impl DeviceContext {
     pub fn module_create_from_ptx(
         &mut self,
@@ -154,6 +163,48 @@ impl DeviceContext {
         match res {
             Ok(()) => Ok((Module { inner }, log)),
             Err(source) => Err(Error::ModuleCreation { source, log }),
+        }
+    }
+
+    pub fn builtin_is_module_get(
+        &self,
+        module_compile_options: &ModuleCompileOptions,
+        pipeline_compile_options: &PipelineCompileOptions,
+        builtin_is_module_type: PrimitiveType,
+        uses_motion_blur: bool,
+    ) -> Result<Module> {
+        let is_options = sys::OptixBuiltinISOptions {
+            builtinISModuleType: builtin_is_module_type as u32,
+            usesMotionBlur: if uses_motion_blur { 1 } else { 0 },
+        };
+
+        let mut inner = std::ptr::null_mut();
+
+        unsafe {
+            sys::optixBuiltinISModuleGet(
+                self.inner,
+                module_compile_options as *const _ as *const _,
+                pipeline_compile_options as *const _ as *const _,
+                &is_options as *const _,
+                &mut inner,
+            )
+            .to_result()
+            .map(|_| Module { inner })
+            .map_err(|source| Error::BuiltinIsModuleGet { source })
+        }
+    }
+
+    /// Destroy a module created with [DeviceContext::module_create_from_ptx()]
+    /// # Safety
+    /// Modules must not be destroyed while they are still used by any program
+    /// group.
+    /// A Module must not be destroyed while it is
+    /// still in use by concurrent API calls in other threads.
+    pub fn module_destroy(&mut self, module: Module) -> Result<()> {
+        unsafe {
+            sys::optixModuleDestroy(module.inner)
+                .to_result()
+                .map_err(|source| Error::ModuleDestroy { source })
         }
     }
 }
