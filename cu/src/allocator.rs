@@ -8,12 +8,14 @@ use crate::{
 };
 type Result<T, E = Error> = std::result::Result<T, E>;
 
-use parking_lot::Mutex;
 pub use std::alloc::Layout;
 pub use std::ptr::NonNull;
 
 // This is true for >= Kepler...
 const MAX_ALIGNMENT: usize = 512;
+// FIXME: we need to modify the allocators to grab this info from the device
+// upon creation
+const PITCH_ALIGNMENT: usize = 32;
 
 pub unsafe trait DeviceAllocRef {
     fn alloc(&self, layout: Layout) -> Result<DevicePtr>;
@@ -136,6 +138,12 @@ impl DeviceFrameAllocator {
         if (new_ptr + layout.size() as u64) > self.current_end {
             // allocate a new block
             self.old_blocks.push(self.block);
+
+            // first check if the block size is big enough for the alloc
+            while self.block_size < layout.size() {
+                self.block_size *= 2;
+            }
+
             self.block = mem_alloc(self.block_size)?.ptr();
             self.current_end = self.block + self.block_size as u64;
 
@@ -161,27 +169,38 @@ impl DeviceFrameAllocator {
     }
 
     pub fn alloc_pitch(
-        &self,
+        &mut self,
         width_in_bytes: usize,
         height_in_rows: usize,
-        element_byte_size: usize,
+        _element_byte_size: usize,
     ) -> Result<(DevicePtr, usize)> {
-        mem_alloc_pitch(width_in_bytes, height_in_rows, element_byte_size)
+        // each row must be aligned to PITCH_ALIGNMENT bytes
+        let pitch = align_up(width_in_bytes as u64, PITCH_ALIGNMENT);
+        let layout = Layout::from_size_align(
+            pitch as usize * height_in_rows,
+            MAX_ALIGNMENT,
+        )
+        .expect("bad layout");
+        let ptr = self.alloc_impl(layout)?;
+        Ok((DevicePtr::new(ptr), pitch as usize))
     }
 
     pub fn alloc_pitch_with_tag(
-        &self,
+        &mut self,
         width_in_bytes: usize,
         height_in_rows: usize,
-        element_byte_size: usize,
+        _element_byte_size: usize,
         tag: u16,
     ) -> Result<(DevicePtr, usize)> {
-        mem_alloc_pitch_with_tag(
-            width_in_bytes,
-            height_in_rows,
-            element_byte_size,
-            tag,
+        // each row must be aligned to PITCH_ALIGNMENT bytes
+        let pitch = align_up(width_in_bytes as u64, PITCH_ALIGNMENT);
+        let layout = Layout::from_size_align(
+            pitch as usize * height_in_rows,
+            MAX_ALIGNMENT,
         )
+        .expect("bad layout");
+        let ptr = self.alloc_impl(layout)?;
+        Ok((DevicePtr::with_tag(ptr, tag), pitch as usize))
     }
 
     pub fn dealloc(&self, _ptr: DevicePtr) -> Result<()> {
