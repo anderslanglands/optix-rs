@@ -11,11 +11,11 @@ not be acceptable for their use case.
 
 ## What this crate is:
 Instead, what this crate provides is a thin, ergonomic wrapper around the C API and leaves it up to the user to build their preferred ownership abstractions around it. This means that:
-- Related functionality is grouped onto struct methods, e.g. [ProgramGroup],
-[Pipeline] etc.
+- Related functionality is grouped onto struct methods, e.g. ProgramGroup,
+Pipeline etc.
 - Configuration is simplified by the addition of builders for complex config objects, or by providing higher-level functions for common functionality
-- Rather than mutable out pointers, all functions return `Result<T, optix::Error>`, where [optix::Error](Error) implements [std::error::Error] - Device memory management is eased with utility types such as [TypedBuffer] and [DeviceVariable], and functions that expect references to device memory are generic over the storage type. 
-- All functions that allocate are generic over a [cu::DeviceAllocRef], which allows the user to provide their own allocators. The design for this is very similar to wg-allocator. The default allocator simply calls through to `cuMemAlloc` and the underlying [cuda crate](crate::cu) also provides a simple bump allocator as an example, that is also used by the example programs.
+- Rather than mutable out pointers, all functions return `Result<T, optix::Error>`, where `optix::Error` implements `std::error::Error` - Device memory management is eased with utility types such as `TypedBuffer` and `DeviceVariable`, and functions that expect references to device memory are generic over the storage type. 
+- All functions that allocate are generic over a `cu::DeviceAllocRef`, which allows the user to provide their own allocators. The design for this is very similar to wg-allocator. The default allocator simply calls through to `cuMemAlloc` and the underlying cuda crate also provides a simple bump allocator as an example, that is also used by the example programs.
 
 # Examples
 The examples are a direct translation of Ingo Wald's OptiX 7 Siggraph course
