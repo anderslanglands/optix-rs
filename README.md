@@ -17,13 +17,16 @@ Instead, what this crate provides is a thin, ergonomic wrapper around the C API 
 
 # Examples
 The examples are a direct translation of Ingo Wald's OptiX 7 Siggraph course
-and it is highly recommended you read them to see how the crate works
+and it is highly recommended you read them to see how the crate works.
 
 # Building
 In order to build the crate you must have the Optix 7.1 SDK and a recent
 version of the CUDA SDK installed. The build script expects to be able to
 find these using the environment variables `OPTIX_ROOT` and `CUDA_ROOT`,
 respectively. You'll also need at least driver version 450 installed.
+```
+env OPTIX_ROOT=/path/to/optix CUDA_ROOT=/usr/local/cuda-11.0 cargo build
+```
 
 This crate has been tested on Linux only. It *should* work on Windows, and I
 will gratefully accept PRs for fixing any issues there.
