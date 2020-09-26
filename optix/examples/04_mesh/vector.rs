@@ -411,5 +411,13 @@ cfg_if::cfg_if! {
         pub fn normalize(v: V3f32) -> V3f32 {
             v / v.length2().sqrt()
         }
+
+        impl optix::Vertex for V3f32 {
+            const FORMAT: optix::VertexFormat = optix::VertexFormat::Float3;
+        }
+
+        impl optix::IndexTriple for V3i32 {
+            const FORMAT: optix::IndicesFormat = optix::IndicesFormat::Int3;
+        }
    }
 }

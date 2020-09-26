@@ -31,12 +31,41 @@ unsafe impl cu::allocator::DeviceAllocRef for FrameAlloc {
         FRAME_ALLOC.lock().alloc_with_tag(layout, tag)
     }
 
+    fn alloc_pitch(
+        &self,
+        width_in_bytes: usize,
+        height_in_rows: usize,
+        element_byte_size: usize,
+    ) -> Result<(DevicePtr, usize), cu::Error> {
+        FRAME_ALLOC.lock().alloc_pitch(
+            width_in_bytes,
+            height_in_rows,
+            element_byte_size,
+        )
+    }
+
+    fn alloc_pitch_with_tag(
+        &self,
+        width_in_bytes: usize,
+        height_in_rows: usize,
+        element_byte_size: usize,
+        tag: u16,
+    ) -> Result<(DevicePtr, usize), cu::Error> {
+        FRAME_ALLOC.lock().alloc_pitch_with_tag(
+            width_in_bytes,
+            height_in_rows,
+            element_byte_size,
+            tag,
+        )
+    }
+
     fn dealloc(&self, ptr: DevicePtr) -> Result<(), cu::Error> {
         FRAME_ALLOC.lock().dealloc(ptr)
     }
 }
 
 pub struct Renderer {
+    ctx: optix::DeviceContext,
     stream: cu::Stream,
     launch_params: LaunchParams,
     buf_launch_params: optix::TypedBuffer<LaunchParams, FrameAlloc>,
@@ -136,18 +165,14 @@ impl Renderer {
         let buf_indices =
             optix::TypedBuffer::from_slice_in(&mesh.index, FrameAlloc)?;
 
-        let triangle_input = optix::BuildInputTriangleArray::new(
-            &[buf_vertex.device_ptr()],
-            mesh.vertex.len() as u32,
-            optix::VertexFormat::Float3,
-            &optix::GeometryFlags::None,
-        )
-        .index_buffer(
-            buf_indices.device_ptr(),
-            mesh.index.len() as u32,
-            optix::IndicesFormat::Int3,
-        )
-        .build();
+        let geometry_flags = optix::GeometryFlags::None;
+        let triangle_input = optix::BuildInput::TriangleArray(
+            optix::TriangleArray::new(
+                std::slice::from_ref(&buf_vertex),
+                std::slice::from_ref(&geometry_flags),
+            )
+            .index_buffer(&buf_indices),
+        );
 
         // blas setup
         let accel_options = optix::AccelBuildOptions::new(
@@ -296,6 +321,7 @@ impl Renderer {
         )?;
 
         Ok(Renderer {
+            ctx,
             stream,
             launch_params,
             buf_launch_params,
