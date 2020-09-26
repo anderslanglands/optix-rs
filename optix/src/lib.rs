@@ -3,7 +3,6 @@
 //! # Introduction
 //! Rust bindings for [NVidia's Optix 7.1 raytracing API](https://raytracing-docs.nvidia.com)
 //!
-//! ## What this crate is not:
 //! These bindings are *not safe*. The OptiX API has you construct a scene graph
 //! of objects referencing each other by pointers. It's certainly possible to
 //! wrap these up in safe objects using lifetimes or Rc's to track ownership
@@ -11,7 +10,6 @@
 //! means imposing constrictive design decisions on the user, which may or may
 //! not be acceptable for their use case.
 //!
-//! ## What this crate is:
 //! Instead, what this crate provides is a thin, ergonomic wrapper around the C
 //! API and leaves it up to the user to build their preferred ownership
 //! abstractions around it.
@@ -43,6 +41,10 @@
 //! find these using the environment variables `OPTIX_ROOT` and `CUDA_ROOT`,
 //! respectively. You'll also need at least driver version 450 installed.
 //!
+//! ```
+//! env OPTIX_ROOT=/path/to/optix CUDA_ROOT=/usr/local/cuda-11.0 cargo build
+//! ```
+
 //! This crate has been tested on Linux only. It *should* work on Windows, and I
 //! will gratefully accept PRs for fixing any issues there.
 pub mod sys;
