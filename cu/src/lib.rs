@@ -23,7 +23,7 @@ pub mod memory;
 pub use memory::DevicePtr;
 
 pub mod allocator;
-pub use allocator::{DefaultDeviceAlloc, DeviceAllocRef};
+pub use allocator::{DefaultDeviceAlloc, DeviceAllocRef, DeviceAllocImpl};
 
 pub mod texture;
 pub use texture::{AddressMode, ArrayFormat, FilterMode, TexObject, TextureReadFlags};

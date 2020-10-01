@@ -14,9 +14,9 @@ impl std::fmt::Display for DevicePtr {
 }
 
 impl DevicePtr {
-    const TAG_SHIFT: u64 = 48;
-    const TAG_MASK: u64 = ((1 << 16) - 1) << DevicePtr::TAG_SHIFT;
-    const PTR_MASK: u64 = !DevicePtr::TAG_MASK;
+    pub const TAG_SHIFT: u64 = 48;
+    pub const TAG_MASK: u64 = ((1 << 16) - 1) << DevicePtr::TAG_SHIFT;
+    pub const PTR_MASK: u64 = !DevicePtr::TAG_MASK;
 
     pub fn new(ptr: sys::CUdeviceptr) -> DevicePtr {
         DevicePtr { ptr }
@@ -29,7 +29,8 @@ impl DevicePtr {
     pub fn with_tag<T: Into<u16>>(ptr: sys::CUdeviceptr, tag: T) -> DevicePtr {
         assert_eq!(ptr & DevicePtr::PTR_MASK, ptr);
         let tag: u16 = tag.into();
-        let ptr = ptr | ((tag as u64) << DevicePtr::TAG_SHIFT);
+        let ptr = (ptr & DevicePtr::PTR_MASK)
+            | ((tag as u64) << DevicePtr::TAG_SHIFT);
         DevicePtr { ptr }
     }
 

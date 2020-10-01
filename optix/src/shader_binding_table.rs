@@ -33,15 +33,15 @@ unsafe impl<T: DeviceCopy> DeviceCopy for SbtRecord<T> {}
 
 #[repr(C)]
 pub struct ShaderBindingTable {
-    raygen_record: cu::DevicePtr,
-    exception_record: cu::DevicePtr,
-    miss_record_base: cu::DevicePtr,
+    raygen_record: cu::sys::CUdeviceptr,
+    exception_record: cu::sys::CUdeviceptr,
+    miss_record_base: cu::sys::CUdeviceptr,
     miss_record_stride_in_bytes: u32,
     miss_record_count: u32,
-    hitgroup_record_base: cu::DevicePtr,
+    hitgroup_record_base: cu::sys::CUdeviceptr,
     hitgroup_record_stride_in_bytes: u32,
     hitgroup_record_count: u32,
-    callables_record_base: cu::DevicePtr,
+    callables_record_base: cu::sys::CUdeviceptr,
     callables_record_stride_in_bytes: u32,
     callables_record_count: u32,
 }
@@ -50,17 +50,17 @@ impl ShaderBindingTable {
     pub fn new<RG: DeviceCopy, A: cu::DeviceAllocRef>(
         buf_raygen_record: &TypedBuffer<SbtRecord<RG>, A>,
     ) -> Self {
-        let raygen_record = buf_raygen_record.device_ptr();
+        let raygen_record = buf_raygen_record.device_ptr().ptr();
         ShaderBindingTable {
             raygen_record,
-            exception_record: cu::DevicePtr::null(),
-            miss_record_base: cu::DevicePtr::null(),
+            exception_record: 0,
+            miss_record_base: 0,
             miss_record_stride_in_bytes: 0,
             miss_record_count: 0,
-            hitgroup_record_base: cu::DevicePtr::null(),
+            hitgroup_record_base: 0,
             hitgroup_record_stride_in_bytes: 0,
             hitgroup_record_count: 0,
-            callables_record_base: cu::DevicePtr::null(),
+            callables_record_base: 0,
             callables_record_stride_in_bytes: 0,
             callables_record_count: 0,
         }
@@ -79,7 +79,7 @@ impl ShaderBindingTable {
                 "SBT not psased single exception record",
             );
         }
-        self.exception_record = buf_exception_record.device_ptr();
+        self.exception_record = buf_exception_record.device_ptr().ptr();
         self
     }
 
@@ -90,7 +90,7 @@ impl ShaderBindingTable {
         if buf_miss_records.len() == 0 {
             panic!("SBT passed empty miss records");
         }
-        self.miss_record_base = buf_miss_records.device_ptr();
+        self.miss_record_base = buf_miss_records.device_ptr().ptr();
         self.miss_record_stride_in_bytes = std::mem::size_of::<SbtRecord<MS>>() as u32;
         self.miss_record_count = buf_miss_records.len() as u32;
         self
@@ -103,7 +103,7 @@ impl ShaderBindingTable {
         if buf_hitgroup_records.len() == 0 {
             panic!("SBT passed empty hitgroup records");
         }
-        self.hitgroup_record_base = buf_hitgroup_records.device_ptr();
+        self.hitgroup_record_base = buf_hitgroup_records.device_ptr().ptr();
         self.hitgroup_record_stride_in_bytes = std::mem::size_of::<SbtRecord<HG>>() as u32;
         self.hitgroup_record_count = buf_hitgroup_records.len() as u32;
         self
@@ -116,7 +116,7 @@ impl ShaderBindingTable {
         if buf_callables_records.len() == 0 {
             panic!("SBT passed empty callables records");
         }
-        self.callables_record_base = buf_callables_records.device_ptr();
+        self.callables_record_base = buf_callables_records.device_ptr().ptr();
         self.callables_record_stride_in_bytes =
             std::mem::size_of::<SbtRecord<CL>>() as u32;
         self.callables_record_count = buf_callables_records.len() as u32;

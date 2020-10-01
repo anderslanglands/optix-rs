@@ -1,4 +1,5 @@
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /*
     cu::init()?;
     let device = cu::Device::get(0)?;
     let _ctx = device.ctx_create(
@@ -38,5 +39,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(out, [6.0f32; 10]);
     println!("{:?}", out);
 
+    */
     Ok(())
 }

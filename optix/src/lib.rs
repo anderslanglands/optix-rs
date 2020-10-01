@@ -75,9 +75,10 @@ pub use shader_binding_table::{SbtRecord, ShaderBindingTable};
 
 pub mod acceleration;
 pub use acceleration::{
-    AccelBuildOptions, AccelEmitDesc, BuildFlags, BuildInput, BuildOperation,
-    GeometryFlags, IndexTriple, IndicesFormat, MotionFlags, TraversableHandle,
-    TriangleArray, Vertex, VertexFormat,
+    AccelBuildOptions, AccelEmitDesc, BuildFlags, BuildInput,
+    BuildInputInstanceArray, BuildOperation, GeometryFlags, IndexTriple,
+    IndicesFormat, InstanceArray, InstanceFlags, MotionFlags,
+    TraversableHandle, TriangleArray, Vertex, VertexFormat, Instance
 };
 
 pub mod buffer;

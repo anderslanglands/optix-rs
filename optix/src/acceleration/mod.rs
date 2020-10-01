@@ -8,6 +8,9 @@ use smallvec::SmallVec;
 pub mod triangle_array;
 pub use triangle_array::*;
 
+pub mod instance_array;
+pub use instance_array::*;
+
 /// Opaque handle to a traversable acceleration structure.
 /// # Safety
 /// You should consider this handle to be a raw pointer, thus you can copy it
@@ -20,14 +23,16 @@ pub struct TraversableHandle {
     pub(crate) inner: u64,
 }
 
+unsafe impl DeviceCopy for TraversableHandle {}
+
 impl DeviceContext {
     /// Computes the device memory required for temporary and output buffers
     /// when building the acceleration structure. Use the returned sizes to
     /// allocate enough memory to pass to `accel_build()`
-    pub fn accel_compute_memory_usage<T: BuildInputTriangleArray>(
+    pub fn accel_compute_memory_usage<T: BuildInputTriangleArray, I: BuildInputInstanceArray>(
         &self,
         accel_options: &[AccelBuildOptions],
-        build_inputs: &[BuildInput<T>],
+        build_inputs: &[BuildInput<T, I>],
     ) -> Result<AccelBufferSizes> {
         let mut buffer_sizes = AccelBufferSizes::default();
         let build_sys: SmallVec<[_; 4]> = build_inputs.iter().map(|b| {
@@ -38,6 +43,14 @@ impl DeviceContext {
                         input: sys::OptixBuildInputUnion{
                             triangle_array: bita.to_sys(),
                         },
+                    }
+                }
+                BuildInput::InstanceArray(biia) => {
+                    sys::OptixBuildInput {
+                        type_: sys::OptixBuildInputType_OPTIX_BUILD_INPUT_TYPE_INSTANCES,
+                        input: sys::OptixBuildInputUnion {
+                            instance_array: biia.to_sys(),
+                        }
                     }
                 }
                 _ => unimplemented!(),
@@ -61,11 +74,11 @@ impl DeviceContext {
     /// Builds the acceleration structure.
     /// `temp_buffer` and `output_buffer` must be at least as large as the sizes
     /// returned by `accel_compute_memory_usage()`
-    pub fn accel_build<T: BuildInputTriangleArray, S1: DeviceStorage, S2: DeviceStorage>(
+    pub fn accel_build<T: BuildInputTriangleArray, I: BuildInputInstanceArray, S1: DeviceStorage, S2: DeviceStorage>(
         &self,
         stream: &cu::Stream,
         accel_options: &[AccelBuildOptions],
-        build_inputs: &[BuildInput<T>],
+        build_inputs: &[BuildInput<T, I>],
         temp_buffer: &S1,
         output_buffer: &S2,
         emitted_properties: &mut [AccelEmitDesc],
@@ -81,6 +94,14 @@ impl DeviceContext {
                         type_: sys::OptixBuildInputType_OPTIX_BUILD_INPUT_TYPE_TRIANGLES,
                         input: sys::OptixBuildInputUnion{
                             triangle_array: bita.to_sys(),
+                        },
+                    }
+                }
+                BuildInput::InstanceArray(biia) => {
+                    sys::OptixBuildInput {
+                        type_: sys::OptixBuildInputType_OPTIX_BUILD_INPUT_TYPE_INSTANCES,
+                        input: sys::OptixBuildInputUnion{
+                            instance_array: biia.to_sys(),
                         },
                     }
                 }
@@ -217,12 +238,31 @@ pub struct AccelBufferSizes {
     pub temp_update_size_in_bytes: usize,
 }
 
-pub enum BuildInput<T: BuildInputTriangleArray = ()> {
+pub struct TriangleArrayDefault;
+impl BuildInputTriangleArray for TriangleArrayDefault {
+    fn to_sys(&self) -> sys::OptixBuildInputTriangleArray {
+        unreachable!()
+    }
+}
+pub struct InstanceArrayDefault;
+impl BuildInputInstanceArray for InstanceArrayDefault {
+    fn to_sys(&self) -> sys::OptixBuildInputInstanceArray {
+        unreachable!()
+    }
+}
+
+pub enum BuildInput<T: BuildInputTriangleArray = TriangleArrayDefault, I: BuildInputInstanceArray = InstanceArrayDefault> {
     TriangleArray(T),
     CurveArray,
     CustomPrimitiveArray,
-    InstanceArray,
+    InstanceArray(I),
 }
+
+// impl<'i, A: DeviceAllocRef> BuildInput<(),InstanceArray<'i, A>> {
+//     pub fn instance_array<'i, A: DeviceAllocRef>(instances: &'i TypedBuffer<Instance, A>) -> BuildInput<(), InstanceArray<'i, A>> {
+//         BuildInput::<(), InstanceArray<'i, A>>::InstanceArray(InstanceArray::new(instances))
+//     }
+// }
 
 pub enum AccelEmitDesc {
     CompactedSize(cu::DevicePtr),

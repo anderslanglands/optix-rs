@@ -55,6 +55,30 @@ impl<A: DeviceAllocRef> Buffer<A> {
         })
     }
 
+    /// Get a block of memory on the device from allocator `alloc` sufficient
+    /// and correctly aligned to hold `slice`, then copy the contents of
+    /// `slice` to it.
+    pub fn from_slice_in_with_tag<T>(slice: &[T], alloc: A, tag: u16) -> Result<Buffer<A>> {
+        let byte_size = slice.len() * std::mem::size_of::<T>();
+        let ptr = alloc
+            .alloc_with_tag(Layout::array::<T>(slice.len()).unwrap(), tag)
+            .map_err(|source| Error::Allocation { source })?;
+        unsafe {
+            sys::cuMemcpyHtoD_v2(
+                ptr.ptr(),
+                slice.as_ptr() as *const _,
+                byte_size as u64,
+            )
+            .to_result()
+            .map_err(|source| Error::Memcpy { source })?;
+        }
+        Ok(Buffer {
+            ptr,
+            byte_size,
+            alloc,
+        })
+    }
+
     /// Get a block of uninitialized memory on the device of size `byte_size`
     /// bytes with alignment `align` from allocator `alloc`.
     pub fn uninitialized_with_align_in(
@@ -64,6 +88,24 @@ impl<A: DeviceAllocRef> Buffer<A> {
     ) -> Result<Buffer<A>> {
         let ptr = alloc
             .alloc(Layout::from_size_align(byte_size, align).unwrap())
+            .map_err(|source| Error::Allocation { source })?;
+        Ok(Buffer {
+            ptr,
+            byte_size,
+            alloc,
+        })
+    }
+
+    /// Get a block of uninitialized memory on the device of size `byte_size`
+    /// bytes with alignment `align` from allocator `alloc`.
+    pub fn uninitialized_with_align_in_with_tag(
+        byte_size: usize,
+        align: usize,
+        alloc: A,
+        tag: u16,
+    ) -> Result<Buffer<A>> {
+        let ptr = alloc
+            .alloc_with_tag(Layout::from_size_align(byte_size, align).unwrap(), tag)
             .map_err(|source| Error::Allocation { source })?;
         Ok(Buffer {
             ptr,
@@ -165,11 +207,63 @@ impl<T: DeviceCopy, A: DeviceAllocRef> TypedBuffer<T, A> {
         })
     }
 
+    pub fn from_slice_with_align_in_with_tag(
+        slice: &[T],
+        align: usize,
+        alloc: A,
+        tag: u16,
+    ) -> Result<TypedBuffer<T, A>> {
+        let byte_size = slice.len() * std::mem::size_of::<T>();
+        let ptr = alloc
+            .alloc_with_tag(Layout::from_size_align(byte_size, align).unwrap(), tag)
+            .map_err(|source| Error::Allocation { source })?;
+        unsafe {
+            sys::cuMemcpyHtoD_v2(
+                ptr.ptr(),
+                slice.as_ptr() as *const _,
+                byte_size as u64,
+            )
+            .to_result()
+            .map_err(|source| Error::Memcpy { source })?;
+        }
+        Ok(TypedBuffer {
+            ptr,
+            len: slice.len(),
+            align,
+            alloc,
+            _phantom: std::marker::PhantomData,
+        })
+    }
+
     pub fn from_slice_in(slice: &[T], alloc: A) -> Result<TypedBuffer<T, A>> {
         let byte_size = slice.len() * std::mem::size_of::<T>();
         let align = T::device_align();
         let ptr = alloc
             .alloc(Layout::from_size_align(byte_size, align).unwrap())
+            .map_err(|source| Error::Allocation { source })?;
+        unsafe {
+            sys::cuMemcpyHtoD_v2(
+                ptr.ptr(),
+                slice.as_ptr() as *const _,
+                byte_size as u64,
+            )
+            .to_result()
+            .map_err(|source| Error::Memcpy { source })?;
+        }
+        Ok(TypedBuffer {
+            ptr,
+            len: slice.len(),
+            align,
+            alloc,
+            _phantom: std::marker::PhantomData,
+        })
+    }
+
+    pub fn from_slice_in_with_tag(slice: &[T], alloc: A, tag: u16) -> Result<TypedBuffer<T, A>> {
+        let byte_size = slice.len() * std::mem::size_of::<T>();
+        let align = T::device_align();
+        let ptr = alloc
+            .alloc_with_tag(Layout::from_size_align(byte_size, align).unwrap(), tag)
             .map_err(|source| Error::Allocation { source })?;
         unsafe {
             sys::cuMemcpyHtoD_v2(
@@ -204,6 +298,21 @@ impl<T: DeviceCopy, A: DeviceAllocRef> TypedBuffer<T, A> {
         })
     }
 
+    pub fn uninitialized_in_with_tag(len: usize, alloc: A, tag: u16) -> Result<TypedBuffer<T, A>> {
+        let align = T::device_align();
+        let size = len * std::mem::size_of::<T>();
+        let ptr = alloc
+            .alloc_with_tag(Layout::from_size_align(size, align).unwrap(), tag)
+            .map_err(|source| Error::Allocation { source })?;
+        Ok(TypedBuffer {
+            ptr,
+            len,
+            align,
+            alloc,
+            _phantom: std::marker::PhantomData,
+        })
+    }
+
     pub fn uninitialized_with_align_in(
         len: usize,
         align: usize,
@@ -212,6 +321,25 @@ impl<T: DeviceCopy, A: DeviceAllocRef> TypedBuffer<T, A> {
         let byte_size = len * std::mem::size_of::<T>();
         let ptr = alloc
             .alloc(Layout::from_size_align(byte_size, align).unwrap())
+            .map_err(|source| Error::Allocation { source })?;
+        Ok(TypedBuffer {
+            ptr,
+            len,
+            align,
+            alloc,
+            _phantom: std::marker::PhantomData,
+        })
+    }
+
+    pub fn uninitialized_with_align_in_with_tag(
+        len: usize,
+        align: usize,
+        alloc: A,
+        tag: u16,
+    ) -> Result<TypedBuffer<T, A>> {
+        let byte_size = len * std::mem::size_of::<T>();
+        let ptr = alloc
+            .alloc_with_tag(Layout::from_size_align(byte_size, align).unwrap(), tag)
             .map_err(|source| Error::Allocation { source })?;
         Ok(TypedBuffer {
             ptr,
@@ -235,6 +363,26 @@ impl<T: DeviceCopy, A: DeviceAllocRef> TypedBuffer<T, A> {
                         self.align,
                     )
                     .unwrap(),
+                )
+                .map_err(|source| Error::Allocation { source })?;
+            self.len = len;
+        }
+        Ok(())
+    }
+
+    pub fn resize_with_tag(&mut self, len: usize, tag: u16) -> Result<()> {
+        if len != self.len {
+            self.alloc
+                .dealloc(self.ptr)
+                .map_err(|source| Error::Deallocation { source })?;
+            self.ptr = self
+                .alloc
+                .alloc_with_tag(
+                    Layout::from_size_align(
+                        len * std::mem::size_of::<T>(),
+                        self.align,
+                    )
+                    .unwrap(), tag
                 )
                 .map_err(|source| Error::Allocation { source })?;
             self.len = len;

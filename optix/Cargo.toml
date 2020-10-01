@@ -16,6 +16,7 @@ ustr = "0.7.0"
 cfg-if = "0.1.10"
 smallvec = "1.4.2"
 # Optional math crate dependencies to allow defining traits
+al-math = { path="../../al-math", optional = true }
 cgmath = { version = "0.17", optional = true }
 nalgebra-glm = {version = "0.8.0", optional = true }
 
