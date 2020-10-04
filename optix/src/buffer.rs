@@ -1,5 +1,5 @@
 use crate::{DeviceCopy, Error};
-use cu::{sys, DefaultDeviceAlloc, DeviceAllocRef, DevicePtr};
+use cu::{sys, Allocation, DefaultDeviceAlloc, DeviceAllocRef, DevicePtr};
 type Result<T, E = Error> = std::result::Result<T, E>;
 
 use std::alloc::Layout;
@@ -16,7 +16,7 @@ pub trait DeviceStorage {
 /// An untyped, opaque chunk of device memory that can be used to copy data to
 /// and from the device.
 pub struct Buffer<A: DeviceAllocRef = DefaultDeviceAlloc> {
-    ptr: DevicePtr,
+    hnd: Allocation,
     byte_size: usize,
     alloc: A,
 }
@@ -41,7 +41,7 @@ impl<A: DeviceAllocRef> Buffer<A> {
             .map_err(|source| Error::Allocation { source })?;
         unsafe {
             sys::cuMemcpyHtoD_v2(
-                ptr.ptr(),
+                ptr.ptr.ptr(),
                 slice.as_ptr() as *const _,
                 byte_size as u64,
             )
@@ -49,7 +49,7 @@ impl<A: DeviceAllocRef> Buffer<A> {
             .map_err(|source| Error::Memcpy { source })?;
         }
         Ok(Buffer {
-            ptr,
+            hnd: ptr,
             byte_size,
             alloc,
         })
@@ -58,14 +58,18 @@ impl<A: DeviceAllocRef> Buffer<A> {
     /// Get a block of memory on the device from allocator `alloc` sufficient
     /// and correctly aligned to hold `slice`, then copy the contents of
     /// `slice` to it.
-    pub fn from_slice_in_with_tag<T>(slice: &[T], alloc: A, tag: u16) -> Result<Buffer<A>> {
+    pub fn from_slice_in_with_tag<T>(
+        slice: &[T],
+        alloc: A,
+        tag: u16,
+    ) -> Result<Buffer<A>> {
         let byte_size = slice.len() * std::mem::size_of::<T>();
         let ptr = alloc
             .alloc_with_tag(Layout::array::<T>(slice.len()).unwrap(), tag)
             .map_err(|source| Error::Allocation { source })?;
         unsafe {
             sys::cuMemcpyHtoD_v2(
-                ptr.ptr(),
+                ptr.ptr.ptr(),
                 slice.as_ptr() as *const _,
                 byte_size as u64,
             )
@@ -73,7 +77,7 @@ impl<A: DeviceAllocRef> Buffer<A> {
             .map_err(|source| Error::Memcpy { source })?;
         }
         Ok(Buffer {
-            ptr,
+            hnd: ptr,
             byte_size,
             alloc,
         })
@@ -90,7 +94,7 @@ impl<A: DeviceAllocRef> Buffer<A> {
             .alloc(Layout::from_size_align(byte_size, align).unwrap())
             .map_err(|source| Error::Allocation { source })?;
         Ok(Buffer {
-            ptr,
+            hnd: ptr,
             byte_size,
             alloc,
         })
@@ -105,10 +109,13 @@ impl<A: DeviceAllocRef> Buffer<A> {
         tag: u16,
     ) -> Result<Buffer<A>> {
         let ptr = alloc
-            .alloc_with_tag(Layout::from_size_align(byte_size, align).unwrap(), tag)
+            .alloc_with_tag(
+                Layout::from_size_align(byte_size, align).unwrap(),
+                tag,
+            )
             .map_err(|source| Error::Allocation { source })?;
         Ok(Buffer {
-            ptr,
+            hnd: ptr,
             byte_size,
             alloc,
         })
@@ -129,18 +136,64 @@ impl<A: DeviceAllocRef> Buffer<A> {
         unsafe {
             sys::cuMemcpyDtoH_v2(
                 slice.as_mut_ptr() as *mut _,
-                self.ptr.ptr(),
+                self.hnd.ptr.ptr(),
                 byte_size as u64,
             )
             .to_result()
             .map_err(|source| Error::Memcpy { source })
         }
     }
+
+    pub fn resize_with_align(
+        &mut self,
+        new_size: usize,
+        align: usize,
+    ) -> Result<()> {
+        if new_size == self.byte_size() {
+            return Ok(());
+        }
+
+        self.alloc
+            .dealloc(self.hnd)
+            .map_err(|source| Error::Deallocation { source })?;
+        let hnd = self
+            .alloc
+            .alloc(Layout::from_size_align(new_size, align).unwrap())
+            .map_err(|source| Error::Allocation { source })?;
+
+        self.hnd = hnd;
+        Ok(())
+    }
+
+    pub fn resize_with_align_and_tag(
+        &mut self,
+        new_size: usize,
+        align: usize,
+        tag: u16,
+    ) -> Result<()> {
+        if new_size == self.byte_size() {
+            return Ok(());
+        }
+
+        self.alloc
+            .dealloc(self.hnd)
+            .map_err(|source| Error::Deallocation { source })?;
+        let hnd = self
+            .alloc
+            .alloc_with_tag(
+                Layout::from_size_align(new_size, align).unwrap(),
+                tag,
+            )
+            .map_err(|source| Error::Allocation { source })?;
+
+        self.hnd = hnd;
+        Ok(())
+    }
 }
 
 impl<A: DeviceAllocRef> DeviceStorage for Buffer<A> {
     fn device_ptr(&self) -> DevicePtr {
-        self.ptr
+        self.hnd.ptr
     }
 
     fn byte_size(&self) -> usize {
@@ -150,13 +203,13 @@ impl<A: DeviceAllocRef> DeviceStorage for Buffer<A> {
 
 impl<A: DeviceAllocRef> Drop for Buffer<A> {
     fn drop(&mut self) {
-        self.alloc.dealloc(self.ptr).expect("dealloc failed");
+        self.alloc.dealloc(self.hnd).expect("dealloc failed");
     }
 }
 
 /// Device storage for a buffer (array) of a particular type.
 pub struct TypedBuffer<T: DeviceCopy, A: DeviceAllocRef = DefaultDeviceAlloc> {
-    ptr: DevicePtr,
+    hnd: Allocation,
     len: usize,
     align: usize,
     alloc: A,
@@ -191,7 +244,7 @@ impl<T: DeviceCopy, A: DeviceAllocRef> TypedBuffer<T, A> {
             .map_err(|source| Error::Allocation { source })?;
         unsafe {
             sys::cuMemcpyHtoD_v2(
-                ptr.ptr(),
+                ptr.ptr.ptr(),
                 slice.as_ptr() as *const _,
                 byte_size as u64,
             )
@@ -199,7 +252,7 @@ impl<T: DeviceCopy, A: DeviceAllocRef> TypedBuffer<T, A> {
             .map_err(|source| Error::Memcpy { source })?;
         }
         Ok(TypedBuffer {
-            ptr,
+            hnd: ptr,
             len: slice.len(),
             align,
             alloc,
@@ -215,11 +268,14 @@ impl<T: DeviceCopy, A: DeviceAllocRef> TypedBuffer<T, A> {
     ) -> Result<TypedBuffer<T, A>> {
         let byte_size = slice.len() * std::mem::size_of::<T>();
         let ptr = alloc
-            .alloc_with_tag(Layout::from_size_align(byte_size, align).unwrap(), tag)
+            .alloc_with_tag(
+                Layout::from_size_align(byte_size, align).unwrap(),
+                tag,
+            )
             .map_err(|source| Error::Allocation { source })?;
         unsafe {
             sys::cuMemcpyHtoD_v2(
-                ptr.ptr(),
+                ptr.ptr.ptr(),
                 slice.as_ptr() as *const _,
                 byte_size as u64,
             )
@@ -227,7 +283,7 @@ impl<T: DeviceCopy, A: DeviceAllocRef> TypedBuffer<T, A> {
             .map_err(|source| Error::Memcpy { source })?;
         }
         Ok(TypedBuffer {
-            ptr,
+            hnd: ptr,
             len: slice.len(),
             align,
             alloc,
@@ -243,7 +299,7 @@ impl<T: DeviceCopy, A: DeviceAllocRef> TypedBuffer<T, A> {
             .map_err(|source| Error::Allocation { source })?;
         unsafe {
             sys::cuMemcpyHtoD_v2(
-                ptr.ptr(),
+                ptr.ptr.ptr(),
                 slice.as_ptr() as *const _,
                 byte_size as u64,
             )
@@ -251,7 +307,7 @@ impl<T: DeviceCopy, A: DeviceAllocRef> TypedBuffer<T, A> {
             .map_err(|source| Error::Memcpy { source })?;
         }
         Ok(TypedBuffer {
-            ptr,
+            hnd: ptr,
             len: slice.len(),
             align,
             alloc,
@@ -259,15 +315,22 @@ impl<T: DeviceCopy, A: DeviceAllocRef> TypedBuffer<T, A> {
         })
     }
 
-    pub fn from_slice_in_with_tag(slice: &[T], alloc: A, tag: u16) -> Result<TypedBuffer<T, A>> {
+    pub fn from_slice_in_with_tag(
+        slice: &[T],
+        alloc: A,
+        tag: u16,
+    ) -> Result<TypedBuffer<T, A>> {
         let byte_size = slice.len() * std::mem::size_of::<T>();
         let align = T::device_align();
         let ptr = alloc
-            .alloc_with_tag(Layout::from_size_align(byte_size, align).unwrap(), tag)
+            .alloc_with_tag(
+                Layout::from_size_align(byte_size, align).unwrap(),
+                tag,
+            )
             .map_err(|source| Error::Allocation { source })?;
         unsafe {
             sys::cuMemcpyHtoD_v2(
-                ptr.ptr(),
+                ptr.ptr.ptr(),
                 slice.as_ptr() as *const _,
                 byte_size as u64,
             )
@@ -275,7 +338,7 @@ impl<T: DeviceCopy, A: DeviceAllocRef> TypedBuffer<T, A> {
             .map_err(|source| Error::Memcpy { source })?;
         }
         Ok(TypedBuffer {
-            ptr,
+            hnd: ptr,
             len: slice.len(),
             align,
             alloc,
@@ -290,7 +353,7 @@ impl<T: DeviceCopy, A: DeviceAllocRef> TypedBuffer<T, A> {
             .alloc(Layout::from_size_align(size, align).unwrap())
             .map_err(|source| Error::Allocation { source })?;
         Ok(TypedBuffer {
-            ptr,
+            hnd: ptr,
             len,
             align,
             alloc,
@@ -298,14 +361,18 @@ impl<T: DeviceCopy, A: DeviceAllocRef> TypedBuffer<T, A> {
         })
     }
 
-    pub fn uninitialized_in_with_tag(len: usize, alloc: A, tag: u16) -> Result<TypedBuffer<T, A>> {
+    pub fn uninitialized_in_with_tag(
+        len: usize,
+        alloc: A,
+        tag: u16,
+    ) -> Result<TypedBuffer<T, A>> {
         let align = T::device_align();
         let size = len * std::mem::size_of::<T>();
         let ptr = alloc
             .alloc_with_tag(Layout::from_size_align(size, align).unwrap(), tag)
             .map_err(|source| Error::Allocation { source })?;
         Ok(TypedBuffer {
-            ptr,
+            hnd: ptr,
             len,
             align,
             alloc,
@@ -323,7 +390,7 @@ impl<T: DeviceCopy, A: DeviceAllocRef> TypedBuffer<T, A> {
             .alloc(Layout::from_size_align(byte_size, align).unwrap())
             .map_err(|source| Error::Allocation { source })?;
         Ok(TypedBuffer {
-            ptr,
+            hnd: ptr,
             len,
             align,
             alloc,
@@ -339,10 +406,13 @@ impl<T: DeviceCopy, A: DeviceAllocRef> TypedBuffer<T, A> {
     ) -> Result<TypedBuffer<T, A>> {
         let byte_size = len * std::mem::size_of::<T>();
         let ptr = alloc
-            .alloc_with_tag(Layout::from_size_align(byte_size, align).unwrap(), tag)
+            .alloc_with_tag(
+                Layout::from_size_align(byte_size, align).unwrap(),
+                tag,
+            )
             .map_err(|source| Error::Allocation { source })?;
         Ok(TypedBuffer {
-            ptr,
+            hnd: ptr,
             len,
             align,
             alloc,
@@ -353,9 +423,9 @@ impl<T: DeviceCopy, A: DeviceAllocRef> TypedBuffer<T, A> {
     pub fn resize(&mut self, len: usize) -> Result<()> {
         if len != self.len {
             self.alloc
-                .dealloc(self.ptr)
+                .dealloc(self.hnd)
                 .map_err(|source| Error::Deallocation { source })?;
-            self.ptr = self
+            self.hnd = self
                 .alloc
                 .alloc(
                     Layout::from_size_align(
@@ -373,16 +443,17 @@ impl<T: DeviceCopy, A: DeviceAllocRef> TypedBuffer<T, A> {
     pub fn resize_with_tag(&mut self, len: usize, tag: u16) -> Result<()> {
         if len != self.len {
             self.alloc
-                .dealloc(self.ptr)
+                .dealloc(self.hnd)
                 .map_err(|source| Error::Deallocation { source })?;
-            self.ptr = self
+            self.hnd = self
                 .alloc
                 .alloc_with_tag(
                     Layout::from_size_align(
                         len * std::mem::size_of::<T>(),
                         self.align,
                     )
-                    .unwrap(), tag
+                    .unwrap(),
+                    tag,
                 )
                 .map_err(|source| Error::Allocation { source })?;
             self.len = len;
@@ -403,7 +474,7 @@ impl<T: DeviceCopy, A: DeviceAllocRef> TypedBuffer<T, A> {
         unsafe {
             sys::cuMemcpyDtoH_v2(
                 slice.as_mut_ptr() as *mut _,
-                self.ptr.ptr(),
+                self.hnd.ptr.ptr(),
                 byte_size as u64,
             )
             .to_result()
@@ -423,7 +494,7 @@ impl<T: DeviceCopy, A: DeviceAllocRef> TypedBuffer<T, A> {
         let byte_size = slice.len() * std::mem::size_of::<T>();
         unsafe {
             sys::cuMemcpyHtoD_v2(
-                self.ptr.ptr(),
+                self.hnd.ptr.ptr(),
                 slice.as_ptr() as *mut _,
                 byte_size as u64,
             )
@@ -440,14 +511,14 @@ impl<T: DeviceCopy, A: DeviceAllocRef> TypedBuffer<T, A> {
 impl<T: DeviceCopy, A: DeviceAllocRef> Drop for TypedBuffer<T, A> {
     fn drop(&mut self) {
         self.alloc
-            .dealloc(self.ptr)
+            .dealloc(self.hnd)
             .expect("TypedBuffer dealloc failed");
     }
 }
 
 impl<T: DeviceCopy, A: DeviceAllocRef> DeviceStorage for TypedBuffer<T, A> {
     fn device_ptr(&self) -> DevicePtr {
-        self.ptr
+        self.hnd.ptr
     }
 
     fn byte_size(&self) -> usize {
@@ -459,7 +530,7 @@ impl<T: DeviceCopy, A: DeviceAllocRef> DeviceStorage for TypedBuffer<T, A> {
 /// and from the device.
 pub struct DeviceVariable<T: DeviceCopy, A: DeviceAllocRef = DefaultDeviceAlloc>
 {
-    ptr: cu::DevicePtr,
+    hnd: Allocation,
     alloc: A,
     inner: T,
 }
@@ -475,21 +546,25 @@ impl<T: DeviceCopy, A: DeviceAllocRef> DeviceVariable<T, A> {
 
         unsafe {
             sys::cuMemcpyHtoD_v2(
-                ptr.ptr(),
+                ptr.ptr.ptr(),
                 &inner as *const _ as *const _,
                 byte_size as u64,
             )
             .to_result()
             .map_err(|source| Error::Memcpy { source })?;
         }
-        Ok(DeviceVariable::<T, A> { ptr, alloc, inner })
+        Ok(DeviceVariable::<T, A> {
+            hnd: ptr,
+            alloc,
+            inner,
+        })
     }
 
     pub fn download(&mut self) -> Result<()> {
         unsafe {
             sys::cuMemcpyDtoH_v2(
                 &mut self.inner as *mut _ as *mut _,
-                self.ptr.ptr(),
+                self.hnd.ptr.ptr(),
                 std::mem::size_of::<T>() as u64,
             )
             .to_result()
@@ -500,7 +575,7 @@ impl<T: DeviceCopy, A: DeviceAllocRef> DeviceVariable<T, A> {
     pub fn upload(&mut self) -> Result<()> {
         unsafe {
             sys::cuMemcpyHtoD_v2(
-                self.ptr.ptr(),
+                self.hnd.ptr.ptr(),
                 &self.inner as *const _ as *const _,
                 std::mem::size_of::<T>() as u64,
             )
@@ -518,7 +593,7 @@ impl<T: DeviceCopy> DeviceVariable<T, DefaultDeviceAlloc> {
 
 impl<T: DeviceCopy, A: DeviceAllocRef> DeviceStorage for DeviceVariable<T, A> {
     fn device_ptr(&self) -> DevicePtr {
-        self.ptr
+        self.hnd.ptr
     }
 
     fn byte_size(&self) -> usize {

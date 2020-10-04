@@ -20,7 +20,7 @@ pub mod execution;
 pub use execution::Dim;
 
 pub mod memory;
-pub use memory::DevicePtr;
+pub use memory::{DevicePtr, Allocation};
 
 pub mod allocator;
 pub use allocator::{DefaultDeviceAlloc, DeviceAllocRef, DeviceAllocImpl};

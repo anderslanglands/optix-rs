@@ -44,21 +44,29 @@ impl DevicePtr {
     }
 }
 
-pub fn mem_alloc(size: usize) -> Result<DevicePtr> {
+#[repr(C)]
+#[derive(Copy, Clone, Debug, PartialOrd, PartialEq)]
+pub struct Allocation {
+    pub ptr: DevicePtr,
+    pub size: usize,
+}
+
+
+pub fn mem_alloc(size: usize) -> Result<Allocation> {
     let mut ptr = 0;
     unsafe {
         sys::cuMemAlloc_v2(&mut ptr, size as u64)
             .to_result()
-            .map(|_| DevicePtr { ptr })
+            .map(|_| Allocation{ptr: DevicePtr { ptr }, size})
     }
 }
 
-pub fn mem_alloc_with_tag(size: usize, tag: u16) -> Result<DevicePtr> {
+pub fn mem_alloc_with_tag(size: usize, tag: u16) -> Result<Allocation> {
     let mut ptr = 0;
     unsafe {
         sys::cuMemAlloc_v2(&mut ptr, size as u64)
             .to_result()
-            .map(|_| DevicePtr::with_tag(ptr, tag))
+            .map(|_| Allocation{ptr: DevicePtr::with_tag(ptr, tag), size})
     }
 }
 
@@ -66,7 +74,7 @@ pub fn mem_alloc_pitch(
     width_in_bytes: usize,
     height_in_rows: usize,
     element_size_in_bytes: usize,
-) -> Result<(DevicePtr, usize)> {
+) -> Result<(Allocation, usize)> {
     let mut ptr = 0;
     let mut pitch: usize = 0;
     unsafe {
@@ -78,7 +86,7 @@ pub fn mem_alloc_pitch(
             element_size_in_bytes as u32,
         )
         .to_result()
-        .map(|_| (DevicePtr { ptr }, pitch))
+        .map(|_| (Allocation{ptr: DevicePtr { ptr }, size: pitch * height_in_rows}, pitch))
     }
 }
 
@@ -87,7 +95,7 @@ pub fn mem_alloc_pitch_with_tag(
     height_in_rows: usize,
     element_size_in_bytes: usize,
     tag: u16,
-) -> Result<(DevicePtr, usize)> {
+) -> Result<(Allocation, usize)> {
     let mut ptr = 0;
     let mut pitch: usize = 0;
     unsafe {
@@ -99,7 +107,7 @@ pub fn mem_alloc_pitch_with_tag(
             element_size_in_bytes as u32,
         )
         .to_result()
-        .map(|_| (DevicePtr::with_tag(ptr, tag), pitch))
+        .map(|_| (Allocation{ptr: DevicePtr::with_tag(ptr, tag), size: pitch * height_in_rows}, pitch))
     }
 }
 
