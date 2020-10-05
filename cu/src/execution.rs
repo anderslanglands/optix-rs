@@ -37,6 +37,24 @@ impl From<(u32, u32, u32)> for Dim {
     }
 }
 
+impl From<usize> for Dim {
+    fn from(x: usize) -> Dim {
+        Dim::new_1d(x as u32)
+    }
+}
+
+impl From<(usize, usize)> for Dim {
+    fn from(t: (usize, usize)) -> Dim {
+        Dim::new_2d(t.0 as u32, t.1 as u32)
+    }
+}
+
+impl From<(usize, usize, usize)> for Dim {
+    fn from(t: (usize, usize, usize)) -> Dim {
+        Dim::new_3d(t.0 as u32, t.1 as u32, t.2 as u32)
+    }
+}
+
 #[macro_export]
 macro_rules! launch {
     ($function:ident, $grid_dim:expr, $block_dim:expr, $shared_mem_bytes:expr, $stream:expr, $( $arg:expr),* ) => {
