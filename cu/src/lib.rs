@@ -16,6 +16,9 @@ pub use module::{Function, Module};
 pub mod stream;
 pub use stream::{Stream, StreamFlags};
 
+pub mod event;
+pub use event::{Event, EventFlags};
+
 pub mod execution;
 pub use execution::Dim;
 
