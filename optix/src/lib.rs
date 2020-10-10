@@ -82,7 +82,7 @@ pub use acceleration::{
 };
 
 pub mod buffer;
-pub use buffer::{Buffer, DeviceStorage, DeviceVariable, TypedBuffer};
+pub use buffer::{Buffer, DeviceStorage, DeviceVariable, TypedBuffer, BufferSlice};
 
 pub mod image;
 pub use self::image::{Image2D, Pixel, PixelFormat};

@@ -17,7 +17,6 @@ pub trait DeviceStorage {
 /// and from the device.
 pub struct Buffer<A: DeviceAllocRef = DefaultDeviceAlloc> {
     hnd: Allocation,
-    byte_size: usize,
     alloc: A,
 }
 
@@ -50,7 +49,6 @@ impl<A: DeviceAllocRef> Buffer<A> {
         }
         Ok(Buffer {
             hnd: ptr,
-            byte_size,
             alloc,
         })
     }
@@ -78,7 +76,6 @@ impl<A: DeviceAllocRef> Buffer<A> {
         }
         Ok(Buffer {
             hnd: ptr,
-            byte_size,
             alloc,
         })
     }
@@ -95,7 +92,6 @@ impl<A: DeviceAllocRef> Buffer<A> {
             .map_err(|source| Error::Allocation { source })?;
         Ok(Buffer {
             hnd: ptr,
-            byte_size,
             alloc,
         })
     }
@@ -116,7 +112,6 @@ impl<A: DeviceAllocRef> Buffer<A> {
             .map_err(|source| Error::Allocation { source })?;
         Ok(Buffer {
             hnd: ptr,
-            byte_size,
             alloc,
         })
     }
@@ -126,10 +121,10 @@ impl<A: DeviceAllocRef> Buffer<A> {
     /// If the size of `slice` and the device buffer do not match
     pub fn download<T>(&self, slice: &mut [T]) -> Result<()> {
         let byte_size = slice.len() * std::mem::size_of::<T>();
-        if byte_size != self.byte_size {
+        if byte_size != self.hnd.size {
             panic!(
                 "Tried to copy {} bytes to Buffer of {} bytes",
-                byte_size, self.byte_size
+                byte_size, self.hnd.size
             );
         }
 
@@ -197,7 +192,7 @@ impl<A: DeviceAllocRef> DeviceStorage for Buffer<A> {
     }
 
     fn byte_size(&self) -> usize {
-        self.byte_size
+        self.hnd.size
     }
 }
 
@@ -506,6 +501,14 @@ impl<T: DeviceCopy, A: DeviceAllocRef> TypedBuffer<T, A> {
     pub fn len(&self) -> usize {
         self.len
     }
+
+    pub fn as_slice(&self) -> BufferSlice<'_, T, A> {
+        BufferSlice::new(self, 0, self.len())
+    }
+
+    pub fn slice(&self, offset: usize, length: usize) -> BufferSlice<'_, T, A> {
+        BufferSlice::new(self, offset, length)
+    }
 }
 
 impl<T: DeviceCopy, A: DeviceAllocRef> Drop for TypedBuffer<T, A> {
@@ -523,6 +526,52 @@ impl<T: DeviceCopy, A: DeviceAllocRef> DeviceStorage for TypedBuffer<T, A> {
 
     fn byte_size(&self) -> usize {
         self.len * std::mem::size_of::<T>()
+    }
+}
+
+pub struct BufferSlice<'b, T: DeviceCopy, A: DeviceAllocRef> {
+    buffer: &'b TypedBuffer<T, A>,
+    offset: usize,
+    length: usize,
+}
+
+impl<'b, T: DeviceCopy, A: DeviceAllocRef> Clone for BufferSlice<'b, T, A> {
+    fn clone(&self) -> Self {
+        BufferSlice{
+            buffer: self.buffer,
+            offset: self.offset,
+            length: self.length,
+        }
+    }
+}
+
+impl<'b, T: DeviceCopy, A: DeviceAllocRef> Copy for BufferSlice<'b, T, A> {}
+
+impl<'b, T: DeviceCopy, A: DeviceAllocRef> BufferSlice<'b, T, A> {
+    pub fn len(&self) -> usize {
+        self.length
+    }
+
+    pub fn offset(&self) -> usize {
+        self.offset
+    }
+
+    pub fn new(buffer: &'b TypedBuffer<T, A>, offset: usize, length: usize) -> BufferSlice<'b, T, A> {
+        BufferSlice {
+            buffer,
+            offset,
+            length
+        }
+    }
+}
+
+impl<'b, T: DeviceCopy, A: DeviceAllocRef> DeviceStorage for BufferSlice<'b, T, A> {
+    fn device_ptr(&self) -> DevicePtr {
+        DevicePtr::new(self.buffer.hnd.ptr.ptr() + (self.offset * std::mem::size_of::<T>()) as u64)
+    }
+
+    fn byte_size(&self) -> usize {
+        self.length * std::mem::size_of::<T>()
     }
 }
 
