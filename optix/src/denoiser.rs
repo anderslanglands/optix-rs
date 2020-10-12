@@ -51,8 +51,8 @@ impl Denoiser {
                 self.inner,
                 stream.inner(),
                 input_image as *const _ as *const _,
-                output_intensity.device_ptr().ptr(),
-                scratch.device_ptr().ptr(),
+                output_intensity.device_ptr().0,
+                scratch.device_ptr().0,
                 scratch.byte_size(),
             )
             .to_result()
@@ -95,14 +95,14 @@ impl Denoiser {
                 self.inner,
                 stream.inner(),
                 params as *const _ as *const _,
-                denoiser_state.device_ptr().ptr(),
+                denoiser_state.device_ptr().0,
                 denoiser_state.byte_size(),
                 input_layers.as_ptr() as *const _,
                 input_layers.len() as u32,
                 input_offset_x,
                 input_offset_y,
                 output_layer as *mut _ as *mut _,
-                scratch.device_ptr().ptr(),
+                scratch.device_ptr().0,
                 scratch.byte_size(),
             )
             .to_result()
@@ -150,9 +150,9 @@ impl Denoiser {
                 stream.inner(),
                 input_width,
                 input_height,
-                denoiser_state.device_ptr().ptr(),
+                denoiser_state.device_ptr().0,
                 denoiser_state.byte_size(),
-                scratch.device_ptr().ptr(),
+                scratch.device_ptr().0,
                 scratch.byte_size(),
             )
             .to_result()

@@ -116,9 +116,9 @@ impl DeviceContext {
                 accel_options.as_ptr() as *const _,
                 build_sys.as_ptr(),
                 build_sys.len() as u32,
-                temp_buffer.device_ptr().ptr(),
+                temp_buffer.device_ptr().0,
                 temp_buffer.byte_size(),
-                output_buffer.device_ptr().ptr(),
+                output_buffer.device_ptr().0,
                 output_buffer.byte_size(),
                 &mut traversable_handle as *mut _ as *mut _,
                 properties.as_ptr() as *const _,
@@ -145,7 +145,7 @@ impl DeviceContext {
                 self.inner,
                 stream.inner(),
                 input_handle.inner,
-                output_buffer.device_ptr().ptr(),
+                output_buffer.device_ptr().0,
                 output_buffer.byte_size(),
                 &mut traversable_handle as *mut _ as *mut _,
             )
@@ -273,11 +273,11 @@ impl From<&AccelEmitDesc> for sys::OptixAccelEmitDesc {
     fn from(aed: &AccelEmitDesc) -> Self {
         match aed {
             AccelEmitDesc::CompactedSize(p) => Self {
-                result: p.ptr(),
+                result: p.0,
                 type_: sys::OptixAccelPropertyType_OPTIX_PROPERTY_TYPE_COMPACTED_SIZE,
             },
             AccelEmitDesc::Aabbs(p) => Self {
-                result: p.ptr(),
+                result: p.0,
                 type_: sys::OptixAccelPropertyType_OPTIX_PROPERTY_TYPE_AABBS,
             }
         }

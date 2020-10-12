@@ -98,7 +98,7 @@ impl BuildInputInstanceArray for () {
 impl<'i, A: DeviceAllocRef> BuildInputInstanceArray for InstanceArray<'i, A> {
     fn to_sys(&self) -> sys::OptixBuildInputInstanceArray {
         sys::OptixBuildInputInstanceArray {
-            instances: self.instances.device_ptr().ptr(),
+            instances: self.instances.device_ptr().0,
             numInstances: self.instances.len() as u32,
             aabbs: 0,
             numAabbs: 0,

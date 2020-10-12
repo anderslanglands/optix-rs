@@ -3,13 +3,11 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 
 #[repr(transparent)]
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Hash)]
-pub struct DevicePtr {
-    ptr: sys::CUdeviceptr,
-}
+pub struct DevicePtr(pub sys::CUdeviceptr);
 
 impl std::fmt::Display for DevicePtr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:p}", self.ptr as *const u64)
+        write!(f, "{:p}", self.0 as *const u64)
     }
 }
 
@@ -19,28 +17,11 @@ impl DevicePtr {
     pub const PTR_MASK: u64 = !DevicePtr::TAG_MASK;
 
     pub fn new(ptr: sys::CUdeviceptr) -> DevicePtr {
-        DevicePtr { ptr }
+        DevicePtr(ptr)
     }
 
     pub fn null() -> DevicePtr {
-        DevicePtr { ptr: 0 }
-    }
-
-    pub fn with_tag<T: Into<u16>>(ptr: sys::CUdeviceptr, tag: T) -> DevicePtr {
-        assert_eq!(ptr & DevicePtr::PTR_MASK, ptr);
-        let tag: u16 = tag.into();
-        let ptr = (ptr & DevicePtr::PTR_MASK)
-            | ((tag as u64) << DevicePtr::TAG_SHIFT);
-        DevicePtr { ptr }
-    }
-
-    pub fn ptr(&self) -> sys::CUdeviceptr {
-        self.ptr & DevicePtr::PTR_MASK
-    }
-
-    pub fn tag<T: From<u16>>(&self) -> T {
-        (((self.ptr & DevicePtr::TAG_MASK) >> DevicePtr::TAG_SHIFT) as u16)
-            .into()
+        DevicePtr(0)
     }
 }
 
@@ -57,16 +38,7 @@ pub fn mem_alloc(size: usize) -> Result<Allocation> {
     unsafe {
         sys::cuMemAlloc_v2(&mut ptr, size as u64)
             .to_result()
-            .map(|_| Allocation{ptr: DevicePtr { ptr }, size})
-    }
-}
-
-pub fn mem_alloc_with_tag(size: usize, tag: u16) -> Result<Allocation> {
-    let mut ptr = 0;
-    unsafe {
-        sys::cuMemAlloc_v2(&mut ptr, size as u64)
-            .to_result()
-            .map(|_| Allocation{ptr: DevicePtr::with_tag(ptr, tag), size})
+            .map(|_| Allocation{ptr: DevicePtr(ptr), size})
     }
 }
 
@@ -86,33 +58,12 @@ pub fn mem_alloc_pitch(
             element_size_in_bytes as u32,
         )
         .to_result()
-        .map(|_| (Allocation{ptr: DevicePtr { ptr }, size: pitch * height_in_rows}, pitch))
-    }
-}
-
-pub fn mem_alloc_pitch_with_tag(
-    width_in_bytes: usize,
-    height_in_rows: usize,
-    element_size_in_bytes: usize,
-    tag: u16,
-) -> Result<(Allocation, usize)> {
-    let mut ptr = 0;
-    let mut pitch: usize = 0;
-    unsafe {
-        sys::cuMemAllocPitch_v2(
-            &mut ptr,
-            &mut pitch as *mut _ as *mut _,
-            width_in_bytes as u64,
-            height_in_rows as u64,
-            element_size_in_bytes as u32,
-        )
-        .to_result()
-        .map(|_| (Allocation{ptr: DevicePtr::with_tag(ptr, tag), size: pitch * height_in_rows}, pitch))
+        .map(|_| (Allocation{ptr: DevicePtr(ptr), size: pitch * height_in_rows}, pitch))
     }
 }
 
 pub fn mem_free(ptr: DevicePtr) -> Result<()> {
-    unsafe { sys::cuMemFree_v2(ptr.ptr()).to_result() }
+    unsafe { sys::cuMemFree_v2(ptr.0).to_result() }
 }
 
 pub unsafe fn memcpy2d_htod(
@@ -137,7 +88,7 @@ pub unsafe fn memcpy2d_htod(
         dstY: 0,
         dstMemoryType: sys::CUmemorytype_enum::CU_MEMORYTYPE_DEVICE,
         dstHost: std::ptr::null_mut(),
-        dstDevice: dst_ptr.ptr(),
+        dstDevice: dst_ptr.0,
         dstArray: std::ptr::null_mut(),
         dstPitch: dst_pitch_in_bytes as u64,
         WidthInBytes: src_width_in_bytes as u64,

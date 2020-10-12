@@ -26,7 +26,8 @@ pub mod memory;
 pub use memory::{DevicePtr, Allocation};
 
 pub mod allocator;
-pub use allocator::{DefaultDeviceAlloc, DeviceAllocRef, DeviceAllocImpl};
+pub use allocator::{DefaultDeviceAlloc, DeviceAllocRef, DeviceAllocImpl, DeviceFrameAllocator};
+pub use std::alloc::Layout;
 
 pub mod texture;
 pub use texture::{AddressMode, ArrayFormat, FilterMode, TexObject, TextureReadFlags};

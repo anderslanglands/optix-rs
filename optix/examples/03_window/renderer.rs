@@ -1,7 +1,4 @@
-use cu::{
-    allocator::{DeviceFrameAllocator, Layout},
-    DevicePtr,
-};
+use cu::*;
 
 pub use optix::{DeviceContext, Error, DeviceStorage};
 type Result<T, E = Error> = std::result::Result<T, E>;
@@ -11,21 +8,28 @@ use crate::vector::*;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use ustr::ustr;
+use smallvec::smallvec;
 
 static FRAME_ALLOC: Lazy<Mutex<DeviceFrameAllocator>> = Lazy::new(|| {
     Mutex::new(
-        DeviceFrameAllocator::new(256 * 1024 * 1024)
+        DeviceFrameAllocator::new(256 * 1024 * 1024, 256 * 1024)
             .expect("Frame allocator failed"),
     )
 });
 
+// We set up a unit struct as a handle to the global alloc so we have an object
+// we can pass to allocating constructors
 pub struct FrameAlloc;
 unsafe impl cu::allocator::DeviceAllocRef for FrameAlloc {
-    fn alloc(&self, layout: Layout) -> Result<DevicePtr, cu::Error> {
+    fn alloc(&self, layout: Layout) -> Result<Allocation, cu::Error> {
         FRAME_ALLOC.lock().alloc(layout)
     }
 
-    fn alloc_with_tag(&self, layout: Layout, tag: u16) -> Result<DevicePtr, cu::Error> {
+    fn alloc_with_tag<T: Into<u16>>(
+        &self,
+        layout: Layout,
+        tag: T,
+    ) -> Result<Allocation, cu::Error> {
         FRAME_ALLOC.lock().alloc_with_tag(layout, tag)
     }
 
@@ -34,7 +38,7 @@ unsafe impl cu::allocator::DeviceAllocRef for FrameAlloc {
         width_in_bytes: usize,
         height_in_rows: usize,
         element_byte_size: usize,
-    ) -> Result<(DevicePtr, usize), cu::Error> {
+    ) -> Result<(Allocation, usize), cu::Error> {
         FRAME_ALLOC.lock().alloc_pitch(
             width_in_bytes,
             height_in_rows,
@@ -42,13 +46,13 @@ unsafe impl cu::allocator::DeviceAllocRef for FrameAlloc {
         )
     }
 
-    fn alloc_pitch_with_tag(
+    fn alloc_pitch_with_tag<T: Into<u16>>(
         &self,
         width_in_bytes: usize,
         height_in_rows: usize,
         element_byte_size: usize,
-        tag: u16,
-    ) -> Result<(DevicePtr, usize), cu::Error> {
+        tag: T,
+    ) -> Result<(Allocation, usize), cu::Error> {
         FRAME_ALLOC.lock().alloc_pitch_with_tag(
             width_in_bytes,
             height_in_rows,
@@ -57,7 +61,7 @@ unsafe impl cu::allocator::DeviceAllocRef for FrameAlloc {
         )
     }
 
-    fn dealloc(&self, ptr: DevicePtr) -> Result<(), cu::Error> {
+    fn dealloc(&self, ptr: Allocation) -> Result<(), cu::Error> {
         FRAME_ALLOC.lock().dealloc(ptr)
     }
 }

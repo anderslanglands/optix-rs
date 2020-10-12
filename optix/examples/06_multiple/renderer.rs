@@ -1,7 +1,4 @@
-use cu::{
-    allocator::{DeviceFrameAllocator, Layout},
-    DevicePtr,
-};
+use cu::*;
 
 pub use optix::{DeviceContext, DeviceStorage, Error};
 
@@ -12,6 +9,7 @@ pub use anyhow::{Context, Result};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use ustr::ustr;
+use smallvec::smallvec;
 
 pub use crate::vector::*;
 
@@ -25,7 +23,7 @@ static FRAME_ALLOC: Lazy<Mutex<DeviceFrameAllocator>> = Lazy::new(|| {
     Mutex::new(
         // We'll use a block size of 256MB. When a block is exhausted, it will
         // just get another from the default allocator
-        DeviceFrameAllocator::new(256 * 1024 * 1024)
+        DeviceFrameAllocator::new(256 * 1024 * 1024, 256 * 1024)
             .expect("Frame allocator failed"),
     )
 });
@@ -34,15 +32,15 @@ static FRAME_ALLOC: Lazy<Mutex<DeviceFrameAllocator>> = Lazy::new(|| {
 // we can pass to allocating constructors
 pub struct FrameAlloc;
 unsafe impl cu::allocator::DeviceAllocRef for FrameAlloc {
-    fn alloc(&self, layout: Layout) -> Result<DevicePtr, cu::Error> {
+    fn alloc(&self, layout: Layout) -> Result<Allocation, cu::Error> {
         FRAME_ALLOC.lock().alloc(layout)
     }
 
-    fn alloc_with_tag(
+    fn alloc_with_tag<T: Into<u16>>(
         &self,
         layout: Layout,
-        tag: u16,
-    ) -> Result<DevicePtr, cu::Error> {
+        tag: T,
+    ) -> Result<Allocation, cu::Error> {
         FRAME_ALLOC.lock().alloc_with_tag(layout, tag)
     }
 
@@ -51,30 +49,25 @@ unsafe impl cu::allocator::DeviceAllocRef for FrameAlloc {
         width_in_bytes: usize,
         height_in_rows: usize,
         element_byte_size: usize,
-    ) -> Result<(DevicePtr, usize), cu::Error> {
-        FRAME_ALLOC.lock().alloc_pitch(
-            width_in_bytes,
-            height_in_rows,
-            element_byte_size,
-        )
+    ) -> Result<(Allocation, usize), cu::Error> {
+        cu::memory::mem_alloc_pitch(width_in_bytes, height_in_rows, element_byte_size)
     }
 
-    fn alloc_pitch_with_tag(
+    fn alloc_pitch_with_tag<T: Into<u16>>(
         &self,
         width_in_bytes: usize,
         height_in_rows: usize,
         element_byte_size: usize,
-        tag: u16,
-    ) -> Result<(DevicePtr, usize), cu::Error> {
-        FRAME_ALLOC.lock().alloc_pitch_with_tag(
+        tag: T,
+    ) -> Result<(Allocation, usize), cu::Error> {
+        cu::memory::mem_alloc_pitch(
             width_in_bytes,
             height_in_rows,
             element_byte_size,
-            tag,
         )
     }
 
-    fn dealloc(&self, ptr: DevicePtr) -> Result<(), cu::Error> {
+    fn dealloc(&self, ptr: Allocation) -> Result<(), cu::Error> {
         FRAME_ALLOC.lock().dealloc(ptr)
     }
 }
@@ -204,12 +197,12 @@ impl Renderer {
                     &optix::TypedBuffer<V3f32, FrameAlloc>,
                     &optix::TypedBuffer<V3i32, FrameAlloc>,
                 )| {
-                    optix::BuildInput::TriangleArray(
+                    optix::BuildInput::<_, ()>::TriangleArray(
                         optix::TriangleArray::new(
-                            std::slice::from_ref(vertex),
+                            smallvec![vertex.as_slice()],
                             std::slice::from_ref(&geometry_flags),
                         )
-                        .index_buffer(index),
+                        .index_buffer(index.as_slice()),
                     )
                 },
             )
@@ -410,6 +403,7 @@ impl Renderer {
         // Finally, we pack all the buffers that need to persist into the
         // Renderer. All the temporary storage that we don't need to keep around
         // will be cleaned up by RAII on the Buffer types
+        drop(triangle_inputs);
         Ok(Renderer {
             ctx,
             stream,

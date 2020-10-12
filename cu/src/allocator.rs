@@ -1,7 +1,7 @@
 use crate::{
     memory::{
-        mem_alloc, mem_alloc_pitch, mem_alloc_pitch_with_tag,
-        mem_alloc_with_tag, mem_free, Allocation
+        mem_alloc, mem_alloc_pitch, 
+        mem_free, Allocation
     },
     sys::CUdeviceptr,
     DevicePtr, Error,
@@ -23,40 +23,47 @@ const GB: usize = MB * 1024;
 
 pub unsafe trait DeviceAllocImpl {
     fn alloc(&mut self, layout: Layout) -> Result<Allocation>;
-    fn alloc_with_tag(&mut self, layout: Layout, tag: u16)
-        -> Result<Allocation>;
+    fn alloc_with_tag<T: Into<u16>>(&mut self, layout: Layout, _tag: T) -> Result<Allocation> {
+        self.alloc(layout)
+    }
     fn alloc_pitch(
         &mut self,
         width_in_bytes: usize,
         height_in_rows: usize,
         element_byte_size: usize,
     ) -> Result<(Allocation, usize)>;
-    fn alloc_pitch_with_tag(
+    fn alloc_pitch_with_tag<T: Into<u16>>(
         &mut self,
         width_in_bytes: usize,
         height_in_rows: usize,
         element_byte_size: usize,
-        tag: u16,
-    ) -> Result<(Allocation, usize)>;
+        _tag: T,
+    ) -> Result<(Allocation, usize)> {
+        self.alloc_pitch(width_in_bytes, height_in_rows, element_byte_size)
+    }
     fn dealloc(&mut self, ptr: Allocation) -> Result<()>;
 }
 
 pub unsafe trait DeviceAllocRef {
     fn alloc(&self, layout: Layout) -> Result<Allocation>;
-    fn alloc_with_tag(&self, layout: Layout, tag: u16) -> Result<Allocation>;
+    fn alloc_with_tag<T: Into<u16>>(&self, layout: Layout, _tag: T) -> Result<Allocation> {
+        self.alloc(layout)
+    }
     fn alloc_pitch(
         &self,
         width_in_bytes: usize,
         height_in_rows: usize,
         element_byte_size: usize,
     ) -> Result<(Allocation, usize)>;
-    fn alloc_pitch_with_tag(
+    fn alloc_pitch_with_tag<T: Into<u16>>(
         &self,
         width_in_bytes: usize,
         height_in_rows: usize,
         element_byte_size: usize,
-        tag: u16,
-    ) -> Result<(Allocation, usize)>;
+        _tag: T,
+    ) -> Result<(Allocation, usize)> {
+        self.alloc_pitch(width_in_bytes, height_in_rows, element_byte_size)
+    }
     fn dealloc(&self, ptr: Allocation) -> Result<()>;
 }
 
@@ -73,15 +80,6 @@ unsafe impl DeviceAllocRef for DefaultDeviceAlloc {
         mem_alloc(layout.size())
     }
 
-    fn alloc_with_tag(&self, layout: Layout, tag: u16) -> Result<Allocation> {
-        if !layout.align().is_power_of_two() || layout.align() > MAX_ALIGNMENT {
-            let msg = format!("Cannot satisfy alignment of {}", layout.align());
-            panic!("{}", msg);
-        }
-
-        mem_alloc_with_tag(layout.size(), tag)
-    }
-
     fn alloc_pitch(
         &self,
         width_in_bytes: usize,
@@ -89,21 +87,6 @@ unsafe impl DeviceAllocRef for DefaultDeviceAlloc {
         element_byte_size: usize,
     ) -> Result<(Allocation, usize)> {
         mem_alloc_pitch(width_in_bytes, height_in_rows, element_byte_size)
-    }
-
-    fn alloc_pitch_with_tag(
-        &self,
-        width_in_bytes: usize,
-        height_in_rows: usize,
-        element_byte_size: usize,
-        tag: u16,
-    ) -> Result<(Allocation, usize)> {
-        mem_alloc_pitch_with_tag(
-            width_in_bytes,
-            height_in_rows,
-            element_byte_size,
-            tag,
-        )
     }
 
     fn dealloc(&self, ptr: Allocation) -> Result<()> {
@@ -141,7 +124,7 @@ impl DeviceFrameAllocator {
     pub fn new(block_size: usize, max_size: usize) -> Result<Self> {
         // make sure the block size matches our alignment
         let block_size = align_up(block_size as u64, MAX_ALIGNMENT) as usize;
-        let block = mem_alloc(block_size)?.ptr.ptr();
+        let block = mem_alloc(block_size)?.ptr.0;
         let current_ptr = block;
         let current_end = current_ptr + block_size as u64;
         Ok(Self {
@@ -175,7 +158,7 @@ impl DeviceFrameAllocator {
                 self.block_size *= 2;
             }
 
-            self.block = mem_alloc(self.block_size)?.ptr.ptr();
+            self.block = mem_alloc(self.block_size)?.ptr.0;
             self.current_end = self.block + self.block_size as u64;
 
             let new_ptr = align_up(self.block, layout.align());
@@ -202,30 +185,14 @@ unsafe impl DeviceAllocImpl for DeviceFrameAllocator {
             Ok(Allocation{ptr: DevicePtr::new(self.alloc_impl(layout)?), size: layout.size()})
         } else {
             let dptr = mem_alloc(layout.size())?;
-            let ptr = dptr.ptr.ptr();
-            Ok(Allocation{ptr: DevicePtr::with_tag(
+            let ptr = dptr.ptr.0;
+            Ok(Allocation{ptr: DevicePtr::new(
                 ptr,
-                0u16 | DeviceFrameAllocator::DEFAULT_ALLOC_BIT,
             ), size: layout.size()})
-        }
-    }
-
-    fn alloc_with_tag(
-        &mut self,
-        layout: Layout,
-        tag: u16,
-    ) -> Result<Allocation> {
-        let masked_tag = tag & DeviceFrameAllocator::EXTERNAL_TAG_MASK;
-        if layout.size() < self.max_size {
-            Ok(Allocation{ptr: DevicePtr::with_tag(self.alloc_impl(layout)?, masked_tag), size: layout.size()})
-        } else {
-            let dptr = mem_alloc(layout.size())?;
-            let ptr = dptr.ptr.ptr();
-            let masked_tag = tag & DeviceFrameAllocator::EXTERNAL_TAG_MASK;
-            Ok(Allocation{ptr: DevicePtr::with_tag(
-                ptr,
-                masked_tag | DeviceFrameAllocator::DEFAULT_ALLOC_BIT,
-            ), size: layout.size()})
+            // Ok(Allocation{ptr: DevicePtr::with_tag(
+            //     ptr,
+            //     0u16 | DeviceFrameAllocator::DEFAULT_ALLOC_BIT,
+            // ), size: layout.size()})
         }
     }
 
@@ -248,43 +215,14 @@ unsafe impl DeviceAllocImpl for DeviceFrameAllocator {
             Ok((Allocation{ptr: DevicePtr::new(ptr), size: layout.size()}, pitch as usize))
         } else {
             let dptr = mem_alloc(layout.size())?;
-            let ptr = dptr.ptr.ptr();
+            let ptr = dptr.ptr.0;
             Ok((
-                Allocation{ptr: DevicePtr::with_tag(
+                // Allocation{ptr: DevicePtr::with_tag(
+                //     ptr,
+                //     0u16 | DeviceFrameAllocator::DEFAULT_ALLOC_BIT,
+                // ), size: layout.size()},
+                Allocation{ptr: DevicePtr::new(
                     ptr,
-                    0u16 | DeviceFrameAllocator::DEFAULT_ALLOC_BIT,
-                ), size: layout.size()},
-                pitch as usize,
-            ))
-        }
-    }
-
-    fn alloc_pitch_with_tag(
-        &mut self,
-        width_in_bytes: usize,
-        height_in_rows: usize,
-        _element_byte_size: usize,
-        tag: u16,
-    ) -> Result<(Allocation, usize)> {
-        // each row must be aligned to PITCH_ALIGNMENT bytes
-        let pitch = align_up(width_in_bytes as u64, PITCH_ALIGNMENT);
-        let layout = Layout::from_size_align(
-            pitch as usize * height_in_rows,
-            MAX_ALIGNMENT,
-        )
-        .expect("bad layout");
-
-        if layout.size() < self.max_size {
-            let ptr = self.alloc_impl(layout)?;
-            Ok((Allocation{ptr:DevicePtr::with_tag(ptr, tag), size: layout.size()}, pitch as usize))
-        } else {
-            let dptr = mem_alloc(layout.size())?;
-            let ptr = dptr.ptr.ptr();
-            let masked_tag = tag & DeviceFrameAllocator::EXTERNAL_TAG_MASK;
-            Ok((
-                Allocation{ptr: DevicePtr::with_tag(
-                    ptr,
-                    masked_tag | DeviceFrameAllocator::DEFAULT_ALLOC_BIT,
                 ), size: layout.size()},
                 pitch as usize,
             ))

@@ -54,14 +54,14 @@ impl BuildInputTriangleArray for () {
     }
 }
 
-pub struct TriangleArray<'v, 'vs, 'g, V: Vertex, A: DeviceAllocRef> {
-    vertex_buffers: &'vs [BufferSlice<'v, V, A>],
-    d_vertex_buffers: SmallVec<[cu::sys::CUdeviceptr; 8]>,
+pub struct TriangleArray<'v, 'g, V: Vertex, A: DeviceAllocRef> {
+    vertex_buffers: SmallVec<[BufferSlice<'v, V, A>; 4]>,
+    d_vertex_buffers: SmallVec<[cu::sys::CUdeviceptr; 4]>,
     geometry_flags: &'g [GeometryFlags],
 }
 
 impl<'v, 'vs, 'g, V: Vertex, A: DeviceAllocRef> BuildInputTriangleArray
-    for TriangleArray<'v, 'vs, 'g, V, A>
+    for TriangleArray<'v, 'g, V, A>
 {
     fn to_sys(&self) -> sys::OptixBuildInputTriangleArray {
         sys::OptixBuildInputTriangleArray {
@@ -86,15 +86,15 @@ impl<'v, 'vs, 'g, V: Vertex, A: DeviceAllocRef> BuildInputTriangleArray
     }
 }
 
-impl<'v, 'vs, 'g, V: Vertex, A: DeviceAllocRef> TriangleArray<'v, 'vs, 'g, V, A> {
+impl<'v, 'g, V: Vertex, A: DeviceAllocRef> TriangleArray<'v, 'g, V, A> {
     pub fn new(
-        vertex_buffers: &'vs [BufferSlice<'v, V, A>],
+        vertex_buffers: SmallVec<[BufferSlice<'v, V, A>; 4]>,
         geometry_flags: &'g [GeometryFlags],
     ) -> Self {
-        let d_vertex_buffers: SmallVec<[cu::sys::CUdeviceptr; 8]> = 
+        let d_vertex_buffers: SmallVec<[cu::sys::CUdeviceptr; 4]> = 
             vertex_buffers
             .iter()
-            .map(|b| b.device_ptr().ptr())
+            .map(|b| b.device_ptr().0)
             .collect();
 
         TriangleArray {
@@ -107,7 +107,7 @@ impl<'v, 'vs, 'g, V: Vertex, A: DeviceAllocRef> TriangleArray<'v, 'vs, 'g, V, A>
     pub fn index_buffer<'i, I: IndexTriple, A2: DeviceAllocRef>(
         self,
         index_buffer: BufferSlice<'i, I, A2>,
-    ) -> IndexedTriangleArray<'v, 'vs, 'g, 'i, V, I, A, A2> {
+    ) -> IndexedTriangleArray<'v, 'g, 'i, V, I, A, A2> {
         IndexedTriangleArray {
             vertex_buffers: self.vertex_buffers,
             d_vertex_buffers: self.d_vertex_buffers,
@@ -120,7 +120,6 @@ impl<'v, 'vs, 'g, V: Vertex, A: DeviceAllocRef> TriangleArray<'v, 'vs, 'g, V, A>
 #[doc(hidden)]
 pub struct IndexedTriangleArray<
     'v,
-    'vs,
     'g,
     'i,
     V: Vertex,
@@ -128,17 +127,14 @@ pub struct IndexedTriangleArray<
     A1: DeviceAllocRef,
     A2: DeviceAllocRef,
 > {
-    // vertex_buffers: &'v [TypedBuffer<V, A1>],
-    vertex_buffers: &'vs [BufferSlice<'v, V, A1>],
-    d_vertex_buffers: SmallVec<[cu::sys::CUdeviceptr; 8]>,
-    // index_buffer: &'i TypedBuffer<I, A2>,
+    vertex_buffers: SmallVec<[BufferSlice<'v, V, A1>; 4]>,
+    d_vertex_buffers: SmallVec<[cu::sys::CUdeviceptr; 4]>,
     index_buffer: BufferSlice<'i, I, A2>,
     geometry_flags: &'g [GeometryFlags],
 }
 
 impl<
         'v,
-        'vs,
         'g,
         'i,
         V: Vertex,
@@ -146,7 +142,7 @@ impl<
         A: DeviceAllocRef,
         A2: DeviceAllocRef,
     > BuildInputTriangleArray
-    for IndexedTriangleArray<'v, 'vs, 'i, 'g, V, I, A, A2>
+    for IndexedTriangleArray<'v, 'i, 'g, V, I, A, A2>
 {
     fn to_sys(&self) -> sys::OptixBuildInputTriangleArray {
         sys::OptixBuildInputTriangleArray {
@@ -154,7 +150,7 @@ impl<
             numVertices: self.vertex_buffers[0].len() as u32,
             vertexFormat: V::FORMAT as u32,
             vertexStrideInBytes: V::STRIDE,
-            indexBuffer: self.index_buffer.device_ptr().ptr(),
+            indexBuffer: self.index_buffer.device_ptr().0,
             numIndexTriplets: self.index_buffer.len() as u32,
             indexFormat: I::FORMAT as u32,
             indexStrideInBytes: I::STRIDE,

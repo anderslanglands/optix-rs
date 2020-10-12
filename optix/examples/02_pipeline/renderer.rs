@@ -4,6 +4,7 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 use ustr::ustr;
 
 pub struct Renderer {
+    ctx: optix::DeviceContext,
     stream: cu::Stream,
     launch_params: LaunchParams,
     buf_launch_params: optix::TypedBuffer<LaunchParams>,
@@ -161,6 +162,7 @@ impl Renderer {
         let buf_launch_params = optix::TypedBuffer::from_slice(&[launch_params])?;
 
         Ok(Renderer {
+            ctx,
             stream,
             launch_params,
             buf_launch_params,
