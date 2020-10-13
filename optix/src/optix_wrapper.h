@@ -1,3 +1,4 @@
+#include <optix.h>
 #include <optix_host.h>
 
 static const size_t OptixSbtRecordHeaderSize = OPTIX_SBT_RECORD_HEADER_SIZE;
@@ -11,6 +12,8 @@ static const size_t OptixGeometryTransformByteAlignment =
     OPTIX_GEOMETRY_TRANSFORM_BYTE_ALIGNMENT;
 static const size_t OptixTransformByteAlignment =
     OPTIX_TRANSFORM_BYTE_ALIGNMENT;
+
+static const size_t OptixVersion = OPTIX_VERSION;
 
 /**
  * <div rustbindgen replaces="OptixGeometryFlags"></div>

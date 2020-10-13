@@ -4,10 +4,31 @@ include!(concat!(env!("OUT_DIR"), "/optix_wrapper.rs"));
 
 pub type size_t = usize;
 
+macro_rules! const_assert {
+    ($x:expr $(,)?) => {
+        #[allow(unknown_lints, eq_op)]
+        const _: [(); 0 - !{
+            const ASSERT: bool = $x;
+            ASSERT
+        } as usize] = [];
+    };
+}
+
+// check that our configuration matches the optix version we're building against
+cfg_if::cfg_if! {
+if #[cfg(feature="optix72")] {
+    const_assert!(OptixVersion == 70200);
+} else {
+    const_assert!(OptixVersion == 70100);
+}
+
+}
+
 extern "C" {
     pub fn optixInit() -> OptixResult;
 }
 
+// The SBT record header is an opaque blob used by optix
 #[repr(C)]
 pub struct SbtRecordHeader {
     header: [u8; OptixSbtRecordHeaderSize as usize],
@@ -27,6 +48,7 @@ impl Default for SbtRecordHeader {
     }
 }
 
+// Manually define the build input union as the bindgen is pretty nasty
 #[repr(C)]
 pub union OptixBuildInputUnion {
     pub triangle_array: OptixBuildInputTriangleArray,
@@ -48,6 +70,8 @@ pub struct OptixBuildInput {
     pub input: OptixBuildInputUnion,
 }
 
+// Sanity check that the size of this union we're defining matches the one in
+// optix header so we don't get any nasty surprises
 fn _size_check() {
     unsafe {
         std::mem::transmute::<OptixBuildInput, [u8; 1024 + 8]>(
@@ -57,38 +81,4 @@ fn _size_check() {
             },
         );
     }
-}
-
-#[repr(C)]
-#[derive(Debug, Hash, PartialEq, Copy, Clone)]
-pub struct OptixModuleCompileOptions {
-    pub max_register_count: i32,
-    pub opt_level: CompileOptimizationLevel,
-    pub debug_level: CompileDebugLevel,
-}
-
-#[repr(C)]
-#[derive(Debug, Hash, PartialEq, Copy, Clone)]
-pub struct OptixPipelineLinkOptions {
-    pub max_trace_depth: u32,
-    pub debug_level: CompileDebugLevel,
-}
-
-#[repr(u32)]
-#[derive(Debug, Hash, PartialEq, Copy, Clone)]
-pub enum CompileOptimizationLevel {
-    Default =
-        OptixCompileOptimizationLevel::OPTIX_COMPILE_OPTIMIZATION_DEFAULT,
-    Level0 = OptixCompileOptimizationLevel::OPTIX_COMPILE_OPTIMIZATION_LEVEL_0,
-    Level1 = OptixCompileOptimizationLevel::OPTIX_COMPILE_OPTIMIZATION_LEVEL_1,
-    Level2 = OptixCompileOptimizationLevel::OPTIX_COMPILE_OPTIMIZATION_LEVEL_2,
-    Level3 = OptixCompileOptimizationLevel::OPTIX_COMPILE_OPTIMIZATION_LEVEL_3,
-}
-
-#[repr(u32)]
-#[derive(Debug, Hash, PartialEq, Copy, Clone)]
-pub enum CompileDebugLevel {
-    None = OptixCompileDebugLevel::OPTIX_COMPILE_DEBUG_LEVEL_NONE,
-    LineInfo = OptixCompileDebugLevel::OPTIX_COMPILE_DEBUG_LEVEL_LINEINFO,
-    Full = OptixCompileDebugLevel::OPTIX_COMPILE_DEBUG_LEVEL_FULL,
 }

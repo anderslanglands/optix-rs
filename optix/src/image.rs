@@ -1,4 +1,4 @@
-use crate::{sys, DeviceStorage, Error, TypedBuffer, DeviceCopy};
+use crate::{sys, DeviceStorage, TypedBuffer, DeviceCopy};
 
 #[repr(u32)]
 pub enum PixelFormat {

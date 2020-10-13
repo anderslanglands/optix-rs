@@ -1,7 +1,7 @@
 use crate::{sys, Error};
 type Result<T, E = Error> = std::result::Result<T, E>;
 
-use std::ffi::{CStr, CString};
+use std::ffi::CStr;
 use std::os::raw::{c_char, c_uint, c_void};
 
 use ustr::Ustr;
@@ -19,14 +19,17 @@ impl DeviceContext {
     pub fn create(cuda_context: &cu::Context) -> Result<DeviceContext> {
         unsafe {
             let mut inner = std::ptr::null_mut();
-            sys::optixDeviceContextCreate(
-                **cuda_context,
-                std::ptr::null_mut(),
-                &mut inner,
-            )
-            .to_result()
-            .map(|_| DeviceContext { inner })
-            .map_err(|source| Error::DeviceContextCreation { source })
+            let opt = sys::OptixDeviceContextOptions {
+                logCallbackFunction: None,
+                logCallbackData: std::ptr::null_mut(),
+                logCallbackLevel: 0,
+                #[cfg(feature = "optix72")]
+                validationMode: 0xFFFFFFFF,
+            };
+            sys::optixDeviceContextCreate(**cuda_context, &opt, &mut inner)
+                .to_result()
+                .map(|_| DeviceContext { inner })
+                .map_err(|source| Error::DeviceContextCreation { source })
         }
     }
 
@@ -209,7 +212,6 @@ impl DeviceContext {
         }
     }
 }
-
 
 impl Drop for DeviceContext {
     fn drop(&mut self) {

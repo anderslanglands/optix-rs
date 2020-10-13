@@ -14,6 +14,7 @@ pub struct ProgramGroupModule<'m> {
 pub enum ProgramGroupDesc<'m> {
     Raygen(ProgramGroupModule<'m>),
     Miss(ProgramGroupModule<'m>),
+    Exception(ProgramGroupModule<'m>),
     Hitgroup {
         ch: Option<ProgramGroupModule<'m>>,
         ah: Option<ProgramGroupModule<'m>>,
@@ -41,6 +42,16 @@ impl<'m> ProgramGroupDesc<'m> {
         entry_function_name: Ustr,
     ) -> ProgramGroupDesc<'m> {
         ProgramGroupDesc::Miss(ProgramGroupModule {
+            module,
+            entry_function_name,
+        })
+    }
+
+    pub fn exception(
+        module: &'m Module,
+        entry_function_name: Ustr,
+    ) -> ProgramGroupDesc<'m> {
+        ProgramGroupDesc::Exception(ProgramGroupModule {
             module,
             entry_function_name,
         })
@@ -234,6 +245,16 @@ impl DeviceContext {
         Ok(self.program_group_create_single(&desc)?.0)
     }
 
+    /// Create an exception [ProgramGroup] from `entry_function_name` in `module`.
+    pub fn program_group_exception(
+        &mut self,
+        module: &Module,
+        entry_function_name: Ustr,
+    ) -> Result<ProgramGroup> {
+        let desc = ProgramGroupDesc::exception(module, entry_function_name);
+        Ok(self.program_group_create_single(&desc)?.0)
+    }
+
     /// Create a hitgroup [ProgramGroup] from any combination of
     /// `(module, entry_function_name)` pairs.
     pub fn program_group_hitgroup(
@@ -287,6 +308,19 @@ impl<'m> From<&ProgramGroupDesc<'m>> for sys::OptixProgramGroupDesc {
                 entry_function_name,
             }) => sys::OptixProgramGroupDesc {
                 kind: sys::OptixProgramGroupKind::OPTIX_PROGRAM_GROUP_KIND_MISS,
+                __bindgen_anon_1: sys::OptixProgramGroupDesc__bindgen_ty_1 {
+                    miss: sys::OptixProgramGroupSingleModule {
+                        module: module.inner,
+                        entryFunctionName: entry_function_name.as_char_ptr(),
+                    },
+                },
+                flags: 0,
+            },
+            ProgramGroupDesc::Exception(ProgramGroupModule {
+                module,
+                entry_function_name,
+            }) => sys::OptixProgramGroupDesc {
+                kind: sys::OptixProgramGroupKind::OPTIX_PROGRAM_GROUP_KIND_EXCEPTION,
                 __bindgen_anon_1: sys::OptixProgramGroupDesc__bindgen_ty_1 {
                     miss: sys::OptixProgramGroupSingleModule {
                         module: module.inner,

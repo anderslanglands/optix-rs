@@ -1,5 +1,5 @@
 use crate::{
-    sys, DeviceCopy, DeviceStorage, TypedBuffer, BufferSlice
+    sys, DeviceCopy, DeviceStorage, BufferSlice
 };
 use super::{GeometryFlags};
 use cu::DeviceAllocRef;

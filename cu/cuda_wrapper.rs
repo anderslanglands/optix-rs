@@ -152,6 +152,7 @@ pub type CUuuid = CUuuid_st;
 pub struct CUipcEventHandle_st {
     pub reserved: [::std::os::raw::c_char; 64usize],
 }
+#[doc = " CUDA IPC event handle"]
 pub type CUipcEventHandle = CUipcEventHandle_st;
 #[doc = " CUDA IPC mem handle"]
 #[repr(C)]
@@ -159,12 +160,14 @@ pub type CUipcEventHandle = CUipcEventHandle_st;
 pub struct CUipcMemHandle_st {
     pub reserved: [::std::os::raw::c_char; 64usize],
 }
+#[doc = " CUDA IPC mem handle"]
 pub type CUipcMemHandle = CUipcMemHandle_st;
 #[doc = "< Automatically enable peer access between remote devices as needed"]
 pub const CUipcMem_flags_enum_CU_IPC_MEM_LAZY_ENABLE_PEER_ACCESS:
     CUipcMem_flags_enum = 1;
 #[doc = " CUDA Ipc Mem Flags"]
 pub type CUipcMem_flags_enum = ::std::os::raw::c_uint;
+#[doc = " CUDA Ipc Mem Flags"]
 pub use self::CUipcMem_flags_enum as CUipcMem_flags;
 #[doc = "< Memory can be accessed by any stream on any device"]
 pub const CUmemAttach_flags_enum_CU_MEM_ATTACH_GLOBAL: CUmemAttach_flags_enum =
@@ -176,6 +179,7 @@ pub const CUmemAttach_flags_enum_CU_MEM_ATTACH_SINGLE: CUmemAttach_flags_enum =
     4;
 #[doc = " CUDA Mem Attach Flags"]
 pub type CUmemAttach_flags_enum = ::std::os::raw::c_uint;
+#[doc = " CUDA Mem Attach Flags"]
 pub use self::CUmemAttach_flags_enum as CUmemAttach_flags;
 pub mod CUctx_flags_enum {
     #[doc = " Context creation flags"]
@@ -199,6 +203,7 @@ pub mod CUctx_flags_enum {
     pub const CU_CTX_LMEM_RESIZE_TO_MAX: Type = 16;
     pub const CU_CTX_FLAGS_MASK: Type = 31;
 }
+#[doc = " Context creation flags"]
 pub use self::CUctx_flags_enum::Type as CUctx_flags;
 #[doc = "< Default stream flag"]
 pub const CUstream_flags_enum_CU_STREAM_DEFAULT: CUstream_flags_enum = 0;
@@ -206,6 +211,7 @@ pub const CUstream_flags_enum_CU_STREAM_DEFAULT: CUstream_flags_enum = 0;
 pub const CUstream_flags_enum_CU_STREAM_NON_BLOCKING: CUstream_flags_enum = 1;
 #[doc = " Stream creation flags"]
 pub type CUstream_flags_enum = ::std::os::raw::c_uint;
+#[doc = " Stream creation flags"]
 pub use self::CUstream_flags_enum as CUstream_flags;
 #[doc = "< Default event flag"]
 pub const CUevent_flags_enum_CU_EVENT_DEFAULT: CUevent_flags_enum = 0;
@@ -217,6 +223,7 @@ pub const CUevent_flags_enum_CU_EVENT_DISABLE_TIMING: CUevent_flags_enum = 2;
 pub const CUevent_flags_enum_CU_EVENT_INTERPROCESS: CUevent_flags_enum = 4;
 #[doc = " Event creation flags"]
 pub type CUevent_flags_enum = ::std::os::raw::c_uint;
+#[doc = " Event creation flags"]
 pub use self::CUevent_flags_enum as CUevent_flags;
 #[doc = "< Wait until (int32_t)(*addr - value) >= 0 (or int64_t for 64 bit"]
 #[doc = "values). Note this is a cyclic comparison which ignores wraparound."]
@@ -247,6 +254,7 @@ pub const CUstreamWaitValue_flags_enum_CU_STREAM_WAIT_VALUE_FLUSH:
     CUstreamWaitValue_flags_enum = 1073741824;
 #[doc = " Flags for ::cuStreamWaitValue32 and ::cuStreamWaitValue64"]
 pub type CUstreamWaitValue_flags_enum = ::std::os::raw::c_uint;
+#[doc = " Flags for ::cuStreamWaitValue32 and ::cuStreamWaitValue64"]
 pub use self::CUstreamWaitValue_flags_enum as CUstreamWaitValue_flags;
 #[doc = "< Default behavior"]
 pub const CUstreamWriteValue_flags_enum_CU_STREAM_WRITE_VALUE_DEFAULT:
@@ -260,6 +268,7 @@ pub const CUstreamWriteValue_flags_enum_CU_STREAM_WRITE_VALUE_DEFAULT:
 pub const CUstreamWriteValue_flags_enum_CU_STREAM_WRITE_VALUE_NO_MEMORY_BARRIER : CUstreamWriteValue_flags_enum = 1 ;
 #[doc = " Flags for ::cuStreamWriteValue32"]
 pub type CUstreamWriteValue_flags_enum = ::std::os::raw::c_uint;
+#[doc = " Flags for ::cuStreamWriteValue32"]
 pub use self::CUstreamWriteValue_flags_enum as CUstreamWriteValue_flags;
 #[doc = "< Represents a ::cuStreamWaitValue32 operation"]
 pub const CUstreamBatchMemOpType_enum_CU_STREAM_MEM_OP_WAIT_VALUE_32:
@@ -279,6 +288,7 @@ pub const CUstreamBatchMemOpType_enum_CU_STREAM_MEM_OP_FLUSH_REMOTE_WRITES:
     CUstreamBatchMemOpType_enum = 3;
 #[doc = " Operations for ::cuStreamBatchMemOp"]
 pub type CUstreamBatchMemOpType_enum = ::std::os::raw::c_uint;
+#[doc = " Operations for ::cuStreamBatchMemOp"]
 pub use self::CUstreamBatchMemOpType_enum as CUstreamBatchMemOpType;
 #[doc = " Per-operation parameters for ::cuStreamBatchMemOp"]
 #[repr(C)]
@@ -321,6 +331,7 @@ pub struct CUstreamBatchMemOpParams_union_CUstreamMemOpFlushRemoteWritesParams_s
     pub operation: CUstreamBatchMemOpType,
     pub flags: ::std::os::raw::c_uint,
 }
+#[doc = " Per-operation parameters for ::cuStreamBatchMemOp"]
 pub type CUstreamBatchMemOpParams = CUstreamBatchMemOpParams_union;
 #[doc = "< Default behavior"]
 pub const CUoccupancy_flags_enum_CU_OCCUPANCY_DEFAULT: CUoccupancy_flags_enum =
@@ -330,6 +341,7 @@ pub const CUoccupancy_flags_enum_CU_OCCUPANCY_DISABLE_CACHING_OVERRIDE:
     CUoccupancy_flags_enum = 1;
 #[doc = " Occupancy calculator flag"]
 pub type CUoccupancy_flags_enum = ::std::os::raw::c_uint;
+#[doc = " Occupancy calculator flag"]
 pub use self::CUoccupancy_flags_enum as CUoccupancy_flags;
 pub mod CUarray_format_enum {
     #[doc = " Array formats"]
@@ -351,6 +363,7 @@ pub mod CUarray_format_enum {
     #[doc = "< 32-bit floating point"]
     pub const CU_AD_FORMAT_FLOAT: Type = 32;
 }
+#[doc = " Array formats"]
 pub use self::CUarray_format_enum::Type as CUarray_format;
 pub mod CUaddress_mode_enum {
     #[doc = " Texture reference addressing modes"]
@@ -364,6 +377,7 @@ pub mod CUaddress_mode_enum {
     #[doc = "< Border address mode"]
     pub const CU_TR_ADDRESS_MODE_BORDER: Type = 3;
 }
+#[doc = " Texture reference addressing modes"]
 pub use self::CUaddress_mode_enum::Type as CUaddress_mode;
 pub mod CUfilter_mode_enum {
     #[doc = " Texture reference filtering modes"]
@@ -373,6 +387,7 @@ pub mod CUfilter_mode_enum {
     #[doc = "< Linear filter mode"]
     pub const CU_TR_FILTER_MODE_LINEAR: Type = 1;
 }
+#[doc = " Texture reference filtering modes"]
 pub use self::CUfilter_mode_enum::Type as CUfilter_mode;
 #[doc = "< Maximum number of threads per block"]
 pub const CUdevice_attribute_enum_CU_DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK:
@@ -646,6 +661,7 @@ pub const CUdevice_attribute_enum_CU_DEVICE_ATTRIBUTE_MAX:
     CUdevice_attribute_enum = 112;
 #[doc = " Device properties"]
 pub type CUdevice_attribute_enum = ::std::os::raw::c_uint;
+#[doc = " Device properties"]
 pub use self::CUdevice_attribute_enum as CUdevice_attribute;
 #[doc = " Legacy device properties"]
 #[repr(C)]
@@ -672,6 +688,7 @@ pub struct CUdevprop_st {
     #[doc = "< Alignment requirement for textures"]
     pub textureAlign: ::std::os::raw::c_int,
 }
+#[doc = " Legacy device properties"]
 pub type CUdevprop = CUdevprop_st;
 #[doc = "< The ::CUcontext on which a pointer was allocated or registered"]
 pub const CUpointer_attribute_enum_CU_POINTER_ATTRIBUTE_CONTEXT:
@@ -718,6 +735,7 @@ pub const CUpointer_attribute_enum_CU_POINTER_ATTRIBUTE_ALLOWED_HANDLE_TYPES:
 pub const CUpointer_attribute_enum_CU_POINTER_ATTRIBUTE_IS_GPU_DIRECT_RDMA_CAPABLE : CUpointer_attribute_enum = 15 ;
 #[doc = " Pointer information"]
 pub type CUpointer_attribute_enum = ::std::os::raw::c_uint;
+#[doc = " Pointer information"]
 pub use self::CUpointer_attribute_enum as CUpointer_attribute;
 #[doc = " The maximum number of threads per block, beyond which a launch of the"]
 #[doc = " function would fail. This number depends on both the function and the"]
@@ -777,6 +795,7 @@ pub const CUfunction_attribute_enum_CU_FUNC_ATTRIBUTE_MAX:
     CUfunction_attribute_enum = 10;
 #[doc = " Function properties"]
 pub type CUfunction_attribute_enum = ::std::os::raw::c_uint;
+#[doc = " Function properties"]
 pub use self::CUfunction_attribute_enum as CUfunction_attribute;
 impl CUfunc_cache_enum {
     #[doc = "< no preference for shared memory or L1 (default)"]
@@ -801,6 +820,7 @@ impl CUfunc_cache_enum {
 #[doc = " Function cache configurations"]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct CUfunc_cache_enum(pub ::std::os::raw::c_uint);
+#[doc = " Function cache configurations"]
 pub use self::CUfunc_cache_enum as CUfunc_cache;
 pub mod CUsharedconfig_enum {
     #[doc = " Shared memory configurations"]
@@ -812,6 +832,7 @@ pub mod CUsharedconfig_enum {
     #[doc = "< set shared memory bank width to eight bytes"]
     pub const CU_SHARED_MEM_CONFIG_EIGHT_BYTE_BANK_SIZE: Type = 2;
 }
+#[doc = " Shared memory configurations"]
 pub use self::CUsharedconfig_enum::Type as CUsharedconfig;
 #[doc = "< No preference for shared memory or L1 (default)"]
 pub const CUshared_carveout_enum_CU_SHAREDMEM_CARVEOUT_DEFAULT:
@@ -824,6 +845,7 @@ pub const CUshared_carveout_enum_CU_SHAREDMEM_CARVEOUT_MAX_L1:
     CUshared_carveout_enum = 0;
 #[doc = " Shared memory carveout configurations. These may be passed to ::cuFuncSetAttribute"]
 pub type CUshared_carveout_enum = ::std::os::raw::c_int;
+#[doc = " Shared memory carveout configurations. These may be passed to ::cuFuncSetAttribute"]
 pub use self::CUshared_carveout_enum as CUshared_carveout;
 pub mod CUmemorytype_enum {
     #[doc = " Memory types"]
@@ -837,6 +859,7 @@ pub mod CUmemorytype_enum {
     #[doc = "< Unified device or host memory"]
     pub const CU_MEMORYTYPE_UNIFIED: Type = 4;
 }
+#[doc = " Memory types"]
 pub use self::CUmemorytype_enum::Type as CUmemorytype;
 #[doc = "< Default compute mode (Multiple contexts allowed per device)"]
 pub const CUcomputemode_enum_CU_COMPUTEMODE_DEFAULT: CUcomputemode_enum = 0;
@@ -847,6 +870,7 @@ pub const CUcomputemode_enum_CU_COMPUTEMODE_EXCLUSIVE_PROCESS:
     CUcomputemode_enum = 3;
 #[doc = " Compute Modes"]
 pub type CUcomputemode_enum = ::std::os::raw::c_uint;
+#[doc = " Compute Modes"]
 pub use self::CUcomputemode_enum as CUcomputemode;
 #[doc = "< Data will mostly be read and only occassionally be written to"]
 pub const CUmem_advise_enum_CU_MEM_ADVISE_SET_READ_MOSTLY: CUmem_advise_enum =
@@ -868,6 +892,7 @@ pub const CUmem_advise_enum_CU_MEM_ADVISE_UNSET_ACCESSED_BY: CUmem_advise_enum =
     6;
 #[doc = " Memory advise values"]
 pub type CUmem_advise_enum = ::std::os::raw::c_uint;
+#[doc = " Memory advise values"]
 pub use self::CUmem_advise_enum as CUmem_advise;
 #[doc = "< Whether the range will mostly be read and only occassionally be written to"]
 pub const CUmem_range_attribute_enum_CU_MEM_RANGE_ATTRIBUTE_READ_MOSTLY:
@@ -1001,6 +1026,7 @@ pub const CUjit_option_enum_CU_JIT_GLOBAL_SYMBOL_COUNT: CUjit_option_enum = 19;
 pub const CUjit_option_enum_CU_JIT_NUM_OPTIONS: CUjit_option_enum = 20;
 #[doc = " Online compiler and linker options"]
 pub type CUjit_option_enum = ::std::os::raw::c_uint;
+#[doc = " Online compiler and linker options"]
 pub use self::CUjit_option_enum as CUjit_option;
 #[doc = "< Compute device class 2.0"]
 pub const CUjit_target_enum_CU_TARGET_COMPUTE_20: CUjit_target_enum = 20;
@@ -1036,6 +1062,7 @@ pub const CUjit_target_enum_CU_TARGET_COMPUTE_75: CUjit_target_enum = 75;
 pub const CUjit_target_enum_CU_TARGET_COMPUTE_80: CUjit_target_enum = 80;
 #[doc = " Online compilation targets"]
 pub type CUjit_target_enum = ::std::os::raw::c_uint;
+#[doc = " Online compilation targets"]
 pub use self::CUjit_target_enum as CUjit_target;
 #[doc = "< Prefer to compile ptx if exact binary match not found"]
 pub const CUjit_fallback_enum_CU_PREFER_PTX: CUjit_fallback_enum = 0;
@@ -1043,6 +1070,7 @@ pub const CUjit_fallback_enum_CU_PREFER_PTX: CUjit_fallback_enum = 0;
 pub const CUjit_fallback_enum_CU_PREFER_BINARY: CUjit_fallback_enum = 1;
 #[doc = " Cubin matching fallback strategies"]
 pub type CUjit_fallback_enum = ::std::os::raw::c_uint;
+#[doc = " Cubin matching fallback strategies"]
 pub use self::CUjit_fallback_enum as CUjit_fallback;
 #[doc = "< Compile with no -dlcm flag specified"]
 pub const CUjit_cacheMode_enum_CU_JIT_CACHE_OPTION_NONE: CUjit_cacheMode_enum =
@@ -1053,6 +1081,7 @@ pub const CUjit_cacheMode_enum_CU_JIT_CACHE_OPTION_CG: CUjit_cacheMode_enum = 1;
 pub const CUjit_cacheMode_enum_CU_JIT_CACHE_OPTION_CA: CUjit_cacheMode_enum = 2;
 #[doc = " Caching modes for dlcm"]
 pub type CUjit_cacheMode_enum = ::std::os::raw::c_uint;
+#[doc = " Caching modes for dlcm"]
 pub use self::CUjit_cacheMode_enum as CUjit_cacheMode;
 #[doc = " Compiled device-class-specific device code\\n"]
 #[doc = " Applicable options: none"]
@@ -1074,6 +1103,7 @@ pub const CUjitInputType_enum_CU_JIT_INPUT_LIBRARY: CUjitInputType_enum = 4;
 pub const CUjitInputType_enum_CU_JIT_NUM_INPUT_TYPES: CUjitInputType_enum = 5;
 #[doc = " Device code formats"]
 pub type CUjitInputType_enum = ::std::os::raw::c_uint;
+#[doc = " Device code formats"]
 pub use self::CUjitInputType_enum as CUjitInputType;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -1090,12 +1120,14 @@ pub const CUgraphicsRegisterFlags_enum_CU_GRAPHICS_REGISTER_FLAGS_SURFACE_LDST :
 pub const CUgraphicsRegisterFlags_enum_CU_GRAPHICS_REGISTER_FLAGS_TEXTURE_GATHER : CUgraphicsRegisterFlags_enum = 8 ;
 #[doc = " Flags to register a graphics resource"]
 pub type CUgraphicsRegisterFlags_enum = ::std::os::raw::c_uint;
+#[doc = " Flags to register a graphics resource"]
 pub use self::CUgraphicsRegisterFlags_enum as CUgraphicsRegisterFlags;
 pub const CUgraphicsMapResourceFlags_enum_CU_GRAPHICS_MAP_RESOURCE_FLAGS_NONE : CUgraphicsMapResourceFlags_enum = 0 ;
 pub const CUgraphicsMapResourceFlags_enum_CU_GRAPHICS_MAP_RESOURCE_FLAGS_READ_ONLY : CUgraphicsMapResourceFlags_enum = 1 ;
 pub const CUgraphicsMapResourceFlags_enum_CU_GRAPHICS_MAP_RESOURCE_FLAGS_WRITE_DISCARD : CUgraphicsMapResourceFlags_enum = 2 ;
 #[doc = " Flags for mapping and unmapping interop resources"]
 pub type CUgraphicsMapResourceFlags_enum = ::std::os::raw::c_uint;
+#[doc = " Flags for mapping and unmapping interop resources"]
 pub use self::CUgraphicsMapResourceFlags_enum as CUgraphicsMapResourceFlags;
 #[doc = "< Positive X face of cubemap"]
 pub const CUarray_cubemap_face_enum_CU_CUBEMAP_FACE_POSITIVE_X:
@@ -1117,6 +1149,7 @@ pub const CUarray_cubemap_face_enum_CU_CUBEMAP_FACE_NEGATIVE_Z:
     CUarray_cubemap_face_enum = 5;
 #[doc = " Array indices for cube faces"]
 pub type CUarray_cubemap_face_enum = ::std::os::raw::c_uint;
+#[doc = " Array indices for cube faces"]
 pub use self::CUarray_cubemap_face_enum as CUarray_cubemap_face;
 impl CUlimit_enum {
     #[doc = "< GPU thread stack size"]
@@ -1154,6 +1187,7 @@ impl CUlimit_enum {
 #[doc = " Limits"]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct CUlimit_enum(pub ::std::os::raw::c_uint);
+#[doc = " Limits"]
 pub use self::CUlimit_enum as CUlimit;
 #[doc = "< Array resoure"]
 pub const CUresourcetype_enum_CU_RESOURCE_TYPE_ARRAY: CUresourcetype_enum = 0;
@@ -1166,6 +1200,7 @@ pub const CUresourcetype_enum_CU_RESOURCE_TYPE_LINEAR: CUresourcetype_enum = 2;
 pub const CUresourcetype_enum_CU_RESOURCE_TYPE_PITCH2D: CUresourcetype_enum = 3;
 #[doc = " Resource types"]
 pub type CUresourcetype_enum = ::std::os::raw::c_uint;
+#[doc = " Resource types"]
 pub use self::CUresourcetype_enum as CUresourcetype;
 #[doc = " CUDA host function"]
 #[doc = " \\param userData Argument value passed to the function"]
@@ -1183,6 +1218,7 @@ pub const CUaccessProperty_enum_CU_ACCESS_PROPERTY_PERSISTING:
     CUaccessProperty_enum = 2;
 #[doc = " Specifies performance hint with ::CUaccessPolicyWindow for hitProp and missProp members"]
 pub type CUaccessProperty_enum = ::std::os::raw::c_uint;
+#[doc = " Specifies performance hint with ::CUaccessPolicyWindow for hitProp and missProp members"]
 pub use self::CUaccessProperty_enum as CUaccessProperty;
 #[doc = " Specifies an access policy for a window, a contiguous extent of memory"]
 #[doc = " beginning at base_ptr and ending at base_ptr + num_bytes."]
@@ -1208,6 +1244,16 @@ pub struct CUaccessPolicyWindow_st {
     #[doc = "< ::CUaccessProperty set for miss. Must be either NORMAL or STREAMING"]
     pub missProp: CUaccessProperty,
 }
+#[doc = " Specifies an access policy for a window, a contiguous extent of memory"]
+#[doc = " beginning at base_ptr and ending at base_ptr + num_bytes."]
+#[doc = " num_bytes is limited by CU_DEVICE_ATTRIBUTE_MAX_ACCESS_POLICY_WINDOW_SIZE."]
+#[doc = " Partition into many segments and assign segments such that:"]
+#[doc = " sum of \"hit segments\" / window == approx. ratio."]
+#[doc = " sum of \"miss segments\" / window == approx 1-ratio."]
+#[doc = " Segments and ratio specifications are fitted to the capabilities of"]
+#[doc = " the architecture."]
+#[doc = " Accesses in a hit segment apply the hitProp access policy."]
+#[doc = " Accesses in a miss segment apply the missProp access policy."]
 pub type CUaccessPolicyWindow = CUaccessPolicyWindow_st;
 #[doc = " GPU kernel node parameters"]
 #[repr(C)]
@@ -1234,6 +1280,7 @@ pub struct CUDA_KERNEL_NODE_PARAMS_st {
     #[doc = "< Extra options"]
     pub extra: *mut *mut ::std::os::raw::c_void,
 }
+#[doc = " GPU kernel node parameters"]
 pub type CUDA_KERNEL_NODE_PARAMS = CUDA_KERNEL_NODE_PARAMS_st;
 #[doc = " Memset node parameters"]
 #[repr(C)]
@@ -1252,6 +1299,7 @@ pub struct CUDA_MEMSET_NODE_PARAMS_st {
     #[doc = "< Number of rows"]
     pub height: size_t,
 }
+#[doc = " Memset node parameters"]
 pub type CUDA_MEMSET_NODE_PARAMS = CUDA_MEMSET_NODE_PARAMS_st;
 #[doc = " Host node parameters"]
 #[repr(C)]
@@ -1262,6 +1310,7 @@ pub struct CUDA_HOST_NODE_PARAMS_st {
     #[doc = "< Argument to pass to the function"]
     pub userData: *mut ::std::os::raw::c_void,
 }
+#[doc = " Host node parameters"]
 pub type CUDA_HOST_NODE_PARAMS = CUDA_HOST_NODE_PARAMS_st;
 #[doc = "< GPU kernel node"]
 pub const CUgraphNodeType_enum_CU_GRAPH_NODE_TYPE_KERNEL: CUgraphNodeType_enum =
@@ -1283,6 +1332,7 @@ pub const CUgraphNodeType_enum_CU_GRAPH_NODE_TYPE_EMPTY: CUgraphNodeType_enum =
     5;
 #[doc = " Graph node types"]
 pub type CUgraphNodeType_enum = ::std::os::raw::c_uint;
+#[doc = " Graph node types"]
 pub use self::CUgraphNodeType_enum as CUgraphNodeType;
 pub const CUsynchronizationPolicy_enum_CU_SYNC_POLICY_AUTO:
     CUsynchronizationPolicy_enum = 1;
@@ -1301,6 +1351,7 @@ pub const CUkernelNodeAttrID_enum_CU_KERNEL_NODE_ATTRIBUTE_COOPERATIVE:
     CUkernelNodeAttrID_enum = 2;
 #[doc = " Graph kernel node Attributes"]
 pub type CUkernelNodeAttrID_enum = ::std::os::raw::c_uint;
+#[doc = " Graph kernel node Attributes"]
 pub use self::CUkernelNodeAttrID_enum as CUkernelNodeAttrID;
 #[doc = " Graph attributes union, used with ::cuKernelNodeSetAttribute/::cuKernelNodeGetAttribute"]
 #[repr(C)]
@@ -1312,6 +1363,7 @@ pub union CUkernelNodeAttrValue_union {
     pub cooperative: ::std::os::raw::c_int,
     _bindgen_union_align: [u64; 4usize],
 }
+#[doc = " Graph attributes union, used with ::cuKernelNodeSetAttribute/::cuKernelNodeGetAttribute"]
 pub type CUkernelNodeAttrValue = CUkernelNodeAttrValue_union;
 #[doc = "< Stream is not capturing"]
 pub const CUstreamCaptureStatus_enum_CU_STREAM_CAPTURE_STATUS_NONE:
@@ -1325,6 +1377,7 @@ pub const CUstreamCaptureStatus_enum_CU_STREAM_CAPTURE_STATUS_INVALIDATED:
     CUstreamCaptureStatus_enum = 2;
 #[doc = " Possible stream capture statuses returned by ::cuStreamIsCapturing"]
 pub type CUstreamCaptureStatus_enum = ::std::os::raw::c_uint;
+#[doc = " Possible stream capture statuses returned by ::cuStreamIsCapturing"]
 pub use self::CUstreamCaptureStatus_enum as CUstreamCaptureStatus;
 pub const CUstreamCaptureMode_enum_CU_STREAM_CAPTURE_MODE_GLOBAL:
     CUstreamCaptureMode_enum = 0;
@@ -1335,6 +1388,8 @@ pub const CUstreamCaptureMode_enum_CU_STREAM_CAPTURE_MODE_RELAXED:
 #[doc = " Possible modes for stream capture thread interactions. For more details see"]
 #[doc = " ::cuStreamBeginCapture and ::cuThreadExchangeStreamCaptureMode"]
 pub type CUstreamCaptureMode_enum = ::std::os::raw::c_uint;
+#[doc = " Possible modes for stream capture thread interactions. For more details see"]
+#[doc = " ::cuStreamBeginCapture and ::cuThreadExchangeStreamCaptureMode"]
 pub use self::CUstreamCaptureMode_enum as CUstreamCaptureMode;
 #[doc = "< Identifier for ::CUstreamAttrValue::accessPolicyWindow."]
 pub const CUstreamAttrID_enum_CU_STREAM_ATTRIBUTE_ACCESS_POLICY_WINDOW:
@@ -1344,6 +1399,7 @@ pub const CUstreamAttrID_enum_CU_STREAM_ATTRIBUTE_SYNCHRONIZATION_POLICY:
     CUstreamAttrID_enum = 3;
 #[doc = " Stream Attributes"]
 pub type CUstreamAttrID_enum = ::std::os::raw::c_uint;
+#[doc = " Stream Attributes"]
 pub use self::CUstreamAttrID_enum as CUstreamAttrID;
 #[doc = " Stream attributes union, used with ::cuStreamSetAttribute/::cuStreamGetAttribute"]
 #[repr(C)]
@@ -1355,6 +1411,7 @@ pub union CUstreamAttrValue_union {
     pub syncPolicy: CUsynchronizationPolicy,
     _bindgen_union_align: [u64; 4usize],
 }
+#[doc = " Stream attributes union, used with ::cuStreamSetAttribute/::cuStreamGetAttribute"]
 pub type CUstreamAttrValue = CUstreamAttrValue_union;
 impl cudaError_enum {
     #[doc = " The API call returned with no errors. In the case of query calls, this"]
@@ -1830,6 +1887,7 @@ impl cudaError_enum {
 #[doc = " Error codes"]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct cudaError_enum(pub ::std::os::raw::c_uint);
+#[doc = " Error codes"]
 pub use self::cudaError_enum as CUresult;
 #[doc = "< A relative value indicating the performance of the link between two devices"]
 pub const CUdevice_P2PAttribute_enum_CU_DEVICE_P2P_ATTRIBUTE_PERFORMANCE_RANK : CUdevice_P2PAttribute_enum = 1 ;
@@ -1843,6 +1901,7 @@ pub const CUdevice_P2PAttribute_enum_CU_DEVICE_P2P_ATTRIBUTE_ACCESS_ACCESS_SUPPO
 pub const CUdevice_P2PAttribute_enum_CU_DEVICE_P2P_ATTRIBUTE_CUDA_ARRAY_ACCESS_SUPPORTED : CUdevice_P2PAttribute_enum = 4 ;
 #[doc = " P2P Attributes"]
 pub type CUdevice_P2PAttribute_enum = ::std::os::raw::c_uint;
+#[doc = " P2P Attributes"]
 pub use self::CUdevice_P2PAttribute_enum as CUdevice_P2PAttribute;
 #[doc = " CUDA stream callback"]
 #[doc = " \\param hStream The stream the callback was added to, as passed to ::cuStreamAddCallback.  May be NULL."]
@@ -1899,6 +1958,7 @@ pub struct CUDA_MEMCPY2D_st {
     #[doc = "< Height of 2D memory copy"]
     pub Height: size_t,
 }
+#[doc = " 2D memory copy parameters"]
 pub type CUDA_MEMCPY2D = CUDA_MEMCPY2D_st;
 #[doc = " 3D memory copy parameters"]
 #[repr(C)]
@@ -1955,6 +2015,7 @@ pub struct CUDA_MEMCPY3D_st {
     #[doc = "< Depth of 3D memory copy"]
     pub Depth: size_t,
 }
+#[doc = " 3D memory copy parameters"]
 pub type CUDA_MEMCPY3D = CUDA_MEMCPY3D_st;
 #[doc = " 3D memory cross-context copy parameters"]
 #[repr(C)]
@@ -2011,6 +2072,7 @@ pub struct CUDA_MEMCPY3D_PEER_st {
     #[doc = "< Depth of 3D memory copy"]
     pub Depth: size_t,
 }
+#[doc = " 3D memory cross-context copy parameters"]
 pub type CUDA_MEMCPY3D_PEER = CUDA_MEMCPY3D_PEER_st;
 #[doc = " Array descriptor"]
 #[repr(C)]
@@ -2025,6 +2087,7 @@ pub struct CUDA_ARRAY_DESCRIPTOR_st {
     #[doc = "< Channels per array element"]
     pub NumChannels: ::std::os::raw::c_uint,
 }
+#[doc = " Array descriptor"]
 pub type CUDA_ARRAY_DESCRIPTOR = CUDA_ARRAY_DESCRIPTOR_st;
 #[doc = " 3D array descriptor"]
 #[repr(C)]
@@ -2043,6 +2106,7 @@ pub struct CUDA_ARRAY3D_DESCRIPTOR_st {
     #[doc = "< Flags"]
     pub Flags: ::std::os::raw::c_uint,
 }
+#[doc = " 3D array descriptor"]
 pub type CUDA_ARRAY3D_DESCRIPTOR = CUDA_ARRAY3D_DESCRIPTOR_st;
 #[doc = " CUDA Resource descriptor"]
 #[repr(C)]
@@ -2109,6 +2173,7 @@ pub struct CUDA_RESOURCE_DESC_st__bindgen_ty_1__bindgen_ty_4 {
 pub struct CUDA_RESOURCE_DESC_st__bindgen_ty_1__bindgen_ty_5 {
     pub reserved: [::std::os::raw::c_int; 32usize],
 }
+#[doc = " CUDA Resource descriptor"]
 pub type CUDA_RESOURCE_DESC = CUDA_RESOURCE_DESC_st;
 #[doc = " Texture descriptor"]
 #[repr(C)]
@@ -2134,6 +2199,7 @@ pub struct CUDA_TEXTURE_DESC_st {
     pub borderColor: [f32; 4usize],
     pub reserved: [::std::os::raw::c_int; 12usize],
 }
+#[doc = " Texture descriptor"]
 pub type CUDA_TEXTURE_DESC = CUDA_TEXTURE_DESC_st;
 #[doc = "< No resource view format (use underlying resource format)"]
 pub const CUresourceViewFormat_enum_CU_RES_VIEW_FORMAT_NONE:
@@ -2242,6 +2308,7 @@ pub const CUresourceViewFormat_enum_CU_RES_VIEW_FORMAT_UNSIGNED_BC7:
     CUresourceViewFormat_enum = 34;
 #[doc = " Resource view format"]
 pub type CUresourceViewFormat_enum = ::std::os::raw::c_uint;
+#[doc = " Resource view format"]
 pub use self::CUresourceViewFormat_enum as CUresourceViewFormat;
 #[doc = " Resource view descriptor"]
 #[repr(C)]
@@ -2265,6 +2332,7 @@ pub struct CUDA_RESOURCE_VIEW_DESC_st {
     pub lastLayer: ::std::os::raw::c_uint,
     pub reserved: [::std::os::raw::c_uint; 16usize],
 }
+#[doc = " Resource view descriptor"]
 pub type CUDA_RESOURCE_VIEW_DESC = CUDA_RESOURCE_VIEW_DESC_st;
 #[doc = " GPU Direct v3 tokens"]
 #[repr(C)]
@@ -2273,6 +2341,7 @@ pub struct CUDA_POINTER_ATTRIBUTE_P2P_TOKENS_st {
     pub p2pToken: ::std::os::raw::c_ulonglong,
     pub vaSpaceToken: ::std::os::raw::c_uint,
 }
+#[doc = " GPU Direct v3 tokens"]
 pub type CUDA_POINTER_ATTRIBUTE_P2P_TOKENS =
     CUDA_POINTER_ATTRIBUTE_P2P_TOKENS_st;
 #[doc = " Kernel launch parameters"]
@@ -2300,6 +2369,7 @@ pub struct CUDA_LAUNCH_PARAMS_st {
     #[doc = "< Array of pointers to kernel parameters"]
     pub kernelParams: *mut *mut ::std::os::raw::c_void,
 }
+#[doc = " Kernel launch parameters"]
 pub type CUDA_LAUNCH_PARAMS = CUDA_LAUNCH_PARAMS_st;
 #[doc = " Handle is an opaque file descriptor"]
 pub const CUexternalMemoryHandleType_enum_CU_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD : CUexternalMemoryHandleType_enum = 1 ;
@@ -2319,6 +2389,7 @@ pub const CUexternalMemoryHandleType_enum_CU_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_R
 pub const CUexternalMemoryHandleType_enum_CU_EXTERNAL_MEMORY_HANDLE_TYPE_NVSCIBUF : CUexternalMemoryHandleType_enum = 8 ;
 #[doc = " External memory handle types"]
 pub type CUexternalMemoryHandleType_enum = ::std::os::raw::c_uint;
+#[doc = " External memory handle types"]
 pub use self::CUexternalMemoryHandleType_enum as CUexternalMemoryHandleType;
 #[doc = " External memory handle descriptor"]
 #[repr(C)]
@@ -2368,6 +2439,7 @@ pub struct CUDA_EXTERNAL_MEMORY_HANDLE_DESC_st__bindgen_ty_1__bindgen_ty_1 {
     #[doc = " Must be NULL if 'handle' is non-NULL."]
     pub name: *const ::std::os::raw::c_void,
 }
+#[doc = " External memory handle descriptor"]
 pub type CUDA_EXTERNAL_MEMORY_HANDLE_DESC = CUDA_EXTERNAL_MEMORY_HANDLE_DESC_st;
 #[doc = " External memory buffer descriptor"]
 #[repr(C)]
@@ -2381,6 +2453,7 @@ pub struct CUDA_EXTERNAL_MEMORY_BUFFER_DESC_st {
     pub flags: ::std::os::raw::c_uint,
     pub reserved: [::std::os::raw::c_uint; 16usize],
 }
+#[doc = " External memory buffer descriptor"]
 pub type CUDA_EXTERNAL_MEMORY_BUFFER_DESC = CUDA_EXTERNAL_MEMORY_BUFFER_DESC_st;
 #[doc = " External memory mipmap descriptor"]
 #[repr(C)]
@@ -2395,6 +2468,7 @@ pub struct CUDA_EXTERNAL_MEMORY_MIPMAPPED_ARRAY_DESC_st {
     pub numLevels: ::std::os::raw::c_uint,
     pub reserved: [::std::os::raw::c_uint; 16usize],
 }
+#[doc = " External memory mipmap descriptor"]
 pub type CUDA_EXTERNAL_MEMORY_MIPMAPPED_ARRAY_DESC =
     CUDA_EXTERNAL_MEMORY_MIPMAPPED_ARRAY_DESC_st;
 #[doc = " Handle is an opaque file descriptor"]
@@ -2415,6 +2489,7 @@ pub const CUexternalSemaphoreHandleType_enum_CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D
 pub const CUexternalSemaphoreHandleType_enum_CU_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D11_KEYED_MUTEX_KMT : CUexternalSemaphoreHandleType_enum = 8 ;
 #[doc = " External semaphore handle types"]
 pub type CUexternalSemaphoreHandleType_enum = ::std::os::raw::c_uint;
+#[doc = " External semaphore handle types"]
 pub use self::CUexternalSemaphoreHandleType_enum as CUexternalSemaphoreHandleType;
 #[doc = " External semaphore handle descriptor"]
 #[repr(C)]
@@ -2461,6 +2536,7 @@ pub struct CUDA_EXTERNAL_SEMAPHORE_HANDLE_DESC_st__bindgen_ty_1__bindgen_ty_1 {
     #[doc = " Must be NULL if 'handle' is non-NULL."]
     pub name: *const ::std::os::raw::c_void,
 }
+#[doc = " External semaphore handle descriptor"]
 pub type CUDA_EXTERNAL_SEMAPHORE_HANDLE_DESC =
     CUDA_EXTERNAL_SEMAPHORE_HANDLE_DESC_st;
 #[doc = " External semaphore signal parameters"]
@@ -2515,6 +2591,7 @@ pub struct CUDA_EXTERNAL_SEMAPHORE_SIGNAL_PARAMS_st__bindgen_ty_1__bindgen_ty_3
     #[doc = " Value of key to release the mutex with"]
     pub key: ::std::os::raw::c_ulonglong,
 }
+#[doc = " External semaphore signal parameters"]
 pub type CUDA_EXTERNAL_SEMAPHORE_SIGNAL_PARAMS =
     CUDA_EXTERNAL_SEMAPHORE_SIGNAL_PARAMS_st;
 #[doc = " External semaphore wait parameters"]
@@ -2568,6 +2645,7 @@ pub struct CUDA_EXTERNAL_SEMAPHORE_WAIT_PARAMS_st__bindgen_ty_1__bindgen_ty_3 {
     #[doc = " Timeout in milliseconds to wait to acquire the mutex"]
     pub timeoutMs: ::std::os::raw::c_uint,
 }
+#[doc = " External semaphore wait parameters"]
 pub type CUDA_EXTERNAL_SEMAPHORE_WAIT_PARAMS =
     CUDA_EXTERNAL_SEMAPHORE_WAIT_PARAMS_st;
 pub type CUmemGenericAllocationHandle = ::std::os::raw::c_ulonglong;
@@ -2583,6 +2661,7 @@ pub const CUmemAllocationHandleType_enum_CU_MEM_HANDLE_TYPE_MAX:
     CUmemAllocationHandleType_enum = 4294967295;
 #[doc = " Flags for specifying particular handle types"]
 pub type CUmemAllocationHandleType_enum = ::std::os::raw::c_uint;
+#[doc = " Flags for specifying particular handle types"]
 pub use self::CUmemAllocationHandleType_enum as CUmemAllocationHandleType;
 #[doc = "< Default, make the address range not accessible"]
 pub const CUmemAccess_flags_enum_CU_MEM_ACCESS_FLAGS_PROT_NONE:
@@ -2597,6 +2676,7 @@ pub const CUmemAccess_flags_enum_CU_MEM_ACCESS_FLAGS_PROT_MAX:
     CUmemAccess_flags_enum = 4294967295;
 #[doc = " Specifies the memory protection flags for mapping."]
 pub type CUmemAccess_flags_enum = ::std::os::raw::c_uint;
+#[doc = " Specifies the memory protection flags for mapping."]
 pub use self::CUmemAccess_flags_enum as CUmemAccess_flags;
 pub const CUmemLocationType_enum_CU_MEM_LOCATION_TYPE_INVALID:
     CUmemLocationType_enum = 0;
@@ -2607,6 +2687,7 @@ pub const CUmemLocationType_enum_CU_MEM_LOCATION_TYPE_MAX:
     CUmemLocationType_enum = 4294967295;
 #[doc = " Specifies the type of location"]
 pub type CUmemLocationType_enum = ::std::os::raw::c_uint;
+#[doc = " Specifies the type of location"]
 pub use self::CUmemLocationType_enum as CUmemLocationType;
 pub const CUmemAllocationType_enum_CU_MEM_ALLOCATION_TYPE_INVALID:
     CUmemAllocationType_enum = 0;
@@ -2620,6 +2701,7 @@ pub const CUmemAllocationType_enum_CU_MEM_ALLOCATION_TYPE_MAX:
     CUmemAllocationType_enum = 4294967295;
 #[doc = " Defines the allocation types available"]
 pub type CUmemAllocationType_enum = ::std::os::raw::c_uint;
+#[doc = " Defines the allocation types available"]
 pub use self::CUmemAllocationType_enum as CUmemAllocationType;
 #[doc = "< Minimum required granularity for allocation"]
 pub const CUmemAllocationGranularity_flags_enum_CU_MEM_ALLOC_GRANULARITY_MINIMUM : CUmemAllocationGranularity_flags_enum = 0 ;
@@ -2627,6 +2709,7 @@ pub const CUmemAllocationGranularity_flags_enum_CU_MEM_ALLOC_GRANULARITY_MINIMUM
 pub const CUmemAllocationGranularity_flags_enum_CU_MEM_ALLOC_GRANULARITY_RECOMMENDED : CUmemAllocationGranularity_flags_enum = 1 ;
 #[doc = " Flag for requesting different optimal and required granularities for an allocation."]
 pub type CUmemAllocationGranularity_flags_enum = ::std::os::raw::c_uint;
+#[doc = " Flag for requesting different optimal and required granularities for an allocation."]
 pub use self::CUmemAllocationGranularity_flags_enum as CUmemAllocationGranularity_flags;
 #[doc = " Specifies a location for an allocation."]
 #[repr(C)]
@@ -2637,6 +2720,7 @@ pub struct CUmemLocation_st {
     #[doc = "< identifier for a given this location's ::CUmemLocationType."]
     pub id: ::std::os::raw::c_int,
 }
+#[doc = " Specifies a location for an allocation."]
 pub type CUmemLocation = CUmemLocation_st;
 #[doc = "< Allocating non-compressible memory"]
 pub const CUmemAllocationCompType_enum_CU_MEM_ALLOCATION_COMP_NONE:
@@ -2646,6 +2730,7 @@ pub const CUmemAllocationCompType_enum_CU_MEM_ALLOCATION_COMP_GENERIC:
     CUmemAllocationCompType_enum = 1;
 #[doc = " Specifies compression attribute for an allocation."]
 pub type CUmemAllocationCompType_enum = ::std::os::raw::c_uint;
+#[doc = " Specifies compression attribute for an allocation."]
 pub use self::CUmemAllocationCompType_enum as CUmemAllocationCompType;
 #[doc = " Specifies the allocation properties for a allocation."]
 #[repr(C)]
@@ -2675,6 +2760,7 @@ pub struct CUmemAllocationProp_st__bindgen_ty_1 {
     pub gpuDirectRDMACapable: ::std::os::raw::c_uchar,
     pub reserved: [::std::os::raw::c_uchar; 6usize],
 }
+#[doc = " Specifies the allocation properties for a allocation."]
 pub type CUmemAllocationProp = CUmemAllocationProp_st;
 #[doc = " Memory access descriptor"]
 #[repr(C)]
@@ -2685,6 +2771,7 @@ pub struct CUmemAccessDesc_st {
     #[doc = "< ::CUmemProt accessibility flags to set on the request"]
     pub flags: CUmemAccess_flags,
 }
+#[doc = " Memory access descriptor"]
 pub type CUmemAccessDesc = CUmemAccessDesc_st;
 #[doc = "< The update succeeded"]
 pub const CUgraphExecUpdateResult_enum_CU_GRAPH_EXEC_UPDATE_SUCCESS:

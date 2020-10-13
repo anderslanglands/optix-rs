@@ -1,5 +1,6 @@
 pub use optix::{DeviceContext, Error, DeviceStorage};
-type Result<T, E = Error> = std::result::Result<T, E>;
+// type Result<T, E = Error> = std::result::Result<T, E>;
+use anyhow::{Result, Context};
 
 use ustr::ustr;
 
@@ -66,7 +67,7 @@ impl Renderer {
             &module_compile_options,
             &pipeline_compile_options,
             ptx,
-        )?;
+        ).context("Create module")?;
 
         // create raygen program
         let pgdesc_raygen = optix::ProgramGroupDesc::raygen(

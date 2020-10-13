@@ -1,7 +1,4 @@
-use crate::{
-    sys, DeviceContext, DeviceCopy, DeviceStorage, Error, TypedBuffer,
-};
-use cu::DeviceAllocRef;
+use crate::{sys, DeviceContext, DeviceCopy, DeviceStorage, Error};
 type Result<T, E = Error> = std::result::Result<T, E>;
 use smallvec::SmallVec;
 
@@ -29,7 +26,10 @@ impl DeviceContext {
     /// Computes the device memory required for temporary and output buffers
     /// when building the acceleration structure. Use the returned sizes to
     /// allocate enough memory to pass to `accel_build()`
-    pub fn accel_compute_memory_usage<T: BuildInputTriangleArray, I: BuildInputInstanceArray>(
+    pub fn accel_compute_memory_usage<
+        T: BuildInputTriangleArray,
+        I: BuildInputInstanceArray,
+    >(
         &self,
         accel_options: &[AccelBuildOptions],
         build_inputs: &[BuildInput<T, I>],
@@ -74,7 +74,12 @@ impl DeviceContext {
     /// Builds the acceleration structure.
     /// `temp_buffer` and `output_buffer` must be at least as large as the sizes
     /// returned by `accel_compute_memory_usage()`
-    pub fn accel_build<T: BuildInputTriangleArray, I: BuildInputInstanceArray, S1: DeviceStorage, S2: DeviceStorage>(
+    pub fn accel_build<
+        T: BuildInputTriangleArray,
+        I: BuildInputInstanceArray,
+        S1: DeviceStorage,
+        S2: DeviceStorage,
+    >(
         &self,
         stream: &cu::Stream,
         accel_options: &[AccelBuildOptions],
@@ -251,7 +256,10 @@ impl BuildInputInstanceArray for InstanceArrayDefault {
     }
 }
 
-pub enum BuildInput<T: BuildInputTriangleArray = TriangleArrayDefault, I: BuildInputInstanceArray = InstanceArrayDefault> {
+pub enum BuildInput<
+    T: BuildInputTriangleArray = TriangleArrayDefault,
+    I: BuildInputInstanceArray = InstanceArrayDefault,
+> {
     TriangleArray(T),
     CurveArray,
     CustomPrimitiveArray,
@@ -259,9 +267,10 @@ pub enum BuildInput<T: BuildInputTriangleArray = TriangleArrayDefault, I: BuildI
 }
 
 // impl<'i, A: DeviceAllocRef> BuildInput<(),InstanceArray<'i, A>> {
-//     pub fn instance_array<'i, A: DeviceAllocRef>(instances: &'i TypedBuffer<Instance, A>) -> BuildInput<(), InstanceArray<'i, A>> {
-//         BuildInput::<(), InstanceArray<'i, A>>::InstanceArray(InstanceArray::new(instances))
-//     }
+//     pub fn instance_array<'i, A: DeviceAllocRef>(instances: &'i
+// TypedBuffer<Instance, A>) -> BuildInput<(), InstanceArray<'i, A>> {
+//         BuildInput::<(), InstanceArray<'i,
+// A>>::InstanceArray(InstanceArray::new(instances))     }
 // }
 
 pub enum AccelEmitDesc {

@@ -17,9 +17,9 @@ const MAX_ALIGNMENT: usize = 512;
 // upon creation
 const PITCH_ALIGNMENT: usize = 32;
 
-const KB: usize = 1024;
-const MB: usize = KB * KB;
-const GB: usize = MB * 1024;
+pub const KB: usize = 1024;
+pub const MB: usize = KB * KB;
+pub const GB: usize = MB * 1024;
 
 pub unsafe trait DeviceAllocImpl {
     fn alloc(&mut self, layout: Layout) -> Result<Allocation>;
@@ -90,6 +90,30 @@ unsafe impl DeviceAllocRef for DefaultDeviceAlloc {
     }
 
     fn dealloc(&self, ptr: Allocation) -> Result<()> {
+        mem_free(ptr.ptr)
+    }
+}
+
+unsafe impl DeviceAllocImpl for DefaultDeviceAlloc {
+    fn alloc(&mut self, layout: Layout) -> Result<Allocation> {
+        if !layout.align().is_power_of_two() || layout.align() > MAX_ALIGNMENT {
+            let msg = format!("Cannot satisfy alignment of {}", layout.align());
+            panic!("{}", msg);
+        }
+
+        mem_alloc(layout.size())
+    }
+
+    fn alloc_pitch(
+        &mut self,
+        width_in_bytes: usize,
+        height_in_rows: usize,
+        element_byte_size: usize,
+    ) -> Result<(Allocation, usize)> {
+        mem_alloc_pitch(width_in_bytes, height_in_rows, element_byte_size)
+    }
+
+    fn dealloc(&mut self, ptr: Allocation) -> Result<()> {
         mem_free(ptr.ptr)
     }
 }

@@ -1,15 +1,77 @@
 use crate::{sys, DeviceContext, Error};
 type Result<T, E = Error> = std::result::Result<T, E>;
 
-pub use sys::{CompileDebugLevel, CompileOptimizationLevel};
-pub type ModuleCompileOptions = sys::OptixModuleCompileOptions;
-
 use std::ffi::{CStr, CString};
 
 #[derive(Clone)]
 #[repr(transparent)]
 pub struct Module {
     pub(crate) inner: sys::OptixModule,
+}
+
+#[repr(u32)]
+#[derive(Debug, Hash, PartialEq, Copy, Clone)]
+pub enum CompileOptimizationLevel {
+    Default =
+        sys::OptixCompileOptimizationLevel::OPTIX_COMPILE_OPTIMIZATION_DEFAULT,
+    Level0 =
+        sys::OptixCompileOptimizationLevel::OPTIX_COMPILE_OPTIMIZATION_LEVEL_0,
+    Level1 =
+        sys::OptixCompileOptimizationLevel::OPTIX_COMPILE_OPTIMIZATION_LEVEL_1,
+    Level2 =
+        sys::OptixCompileOptimizationLevel::OPTIX_COMPILE_OPTIMIZATION_LEVEL_2,
+    Level3 =
+        sys::OptixCompileOptimizationLevel::OPTIX_COMPILE_OPTIMIZATION_LEVEL_3,
+}
+
+#[repr(u32)]
+#[derive(Debug, Hash, PartialEq, Copy, Clone)]
+pub enum CompileDebugLevel {
+    None = sys::OptixCompileDebugLevel::OPTIX_COMPILE_DEBUG_LEVEL_NONE,
+    LineInfo = sys::OptixCompileDebugLevel::OPTIX_COMPILE_DEBUG_LEVEL_LINEINFO,
+    Full = sys::OptixCompileDebugLevel::OPTIX_COMPILE_DEBUG_LEVEL_FULL,
+}
+
+cfg_if::cfg_if! {
+    if #[cfg(feature="optix72")] {
+        #[repr(C)]
+        #[derive(Debug, Hash, PartialEq, Copy, Clone)]
+        pub struct ModuleCompileOptions {
+            pub max_register_count: i32,
+            pub opt_level: CompileOptimizationLevel,
+            pub debug_level: CompileDebugLevel,
+        }
+
+        impl From<&ModuleCompileOptions> for sys::OptixModuleCompileOptions {
+            fn from(o: &ModuleCompileOptions) -> sys::OptixModuleCompileOptions {
+                sys::OptixModuleCompileOptions {
+                    maxRegisterCount: o.max_register_count,
+                    optLevel: o.opt_level as u32,
+                    debugLevel: o.debug_level as u32,
+                    boundValues: std::ptr::null(),
+                    numBoundValues: 0,
+                }
+            }
+        }
+    } else {
+        #[repr(C)]
+        #[derive(Debug, Hash, PartialEq, Copy, Clone)]
+        pub struct ModuleCompileOptions {
+            pub max_register_count: i32,
+            pub opt_level: CompileOptimizationLevel,
+            pub debug_level: CompileDebugLevel,
+        }
+
+        impl From<&ModuleCompileOptions> for sys::OptixModuleCompileOptions {
+            fn from(o: &ModuleCompileOptions) -> sys::OptixModuleCompileOptions {
+                sys::OptixModuleCompileOptions {
+                    maxRegisterCount: o.max_register_count,
+                    optLevel: o.opt_level as u32,
+                    debugLevel: o.debug_level as u32,
+                }
+            }
+        }
+    }
 }
 
 bitflags::bitflags! {
@@ -138,13 +200,14 @@ impl DeviceContext {
         let mut log = [0u8; 4096];
         let mut log_len = log.len();
 
+        let mopt = module_compile_options.into();
         let popt = pipeline_compile_options.build()?;
 
         let mut inner = std::ptr::null_mut();
         let res = unsafe {
             sys::optixModuleCreateFromPTX(
                 self.inner,
-                module_compile_options,
+                &mopt as *const _,
                 &popt,
                 cptx.as_ptr(),
                 cptx.as_bytes().len(),

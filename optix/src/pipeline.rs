@@ -1,5 +1,4 @@
-use crate::{sys, DeviceContext, Error, PipelineCompileOptions, ProgramGroup};
-pub use sys::OptixPipelineLinkOptions as PipelineLinkOptions;
+use crate::{sys, DeviceContext, Error, PipelineCompileOptions, ProgramGroup, CompileDebugLevel};
 type Result<T, E = Error> = std::result::Result<T, E>;
 
 use std::ffi::CStr;
@@ -7,6 +6,22 @@ use std::ffi::CStr;
 #[repr(transparent)]
 pub struct Pipeline {
     pub(crate) inner: sys::OptixPipeline,
+}
+
+#[repr(C)]
+#[derive(Debug, Hash, PartialEq, Copy, Clone)]
+pub struct PipelineLinkOptions {
+    pub max_trace_depth: u32,
+    pub debug_level: CompileDebugLevel,
+}
+
+impl From<PipelineLinkOptions> for sys::OptixPipelineLinkOptions {
+    fn from(o: PipelineLinkOptions) -> Self {
+        sys::OptixPipelineLinkOptions {
+            maxTraceDepth: o.max_trace_depth,
+            debugLevel: o.debug_level as u32,
+        }
+    }
 }
 
 /// # Creating and destroying `Pipeline`s

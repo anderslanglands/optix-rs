@@ -1,11 +1,11 @@
 use crate::{
     sys, DeviceCopy, DeviceStorage, TypedBuffer,
 };
-use super::{GeometryFlags, TraversableHandle};
+use super::TraversableHandle;
 use cu::DeviceAllocRef;
-use smallvec::SmallVec;
 
 #[repr(C, align(16))]
+#[derive(Debug)]
 pub struct Instance {
     transform: [f32; 12],
     instance_id: u32,
@@ -74,7 +74,6 @@ impl Instance {
 
 pub struct InstanceArray<'i, A: DeviceAllocRef> {
     instances: &'i TypedBuffer<Instance, A>,
-    // FIXME: add AABBs here for moblur etc.
 }
 
 impl<'i, A: DeviceAllocRef> InstanceArray<'i, A> {
@@ -97,11 +96,20 @@ impl BuildInputInstanceArray for () {
 
 impl<'i, A: DeviceAllocRef> BuildInputInstanceArray for InstanceArray<'i, A> {
     fn to_sys(&self) -> sys::OptixBuildInputInstanceArray {
-        sys::OptixBuildInputInstanceArray {
-            instances: self.instances.device_ptr().0,
-            numInstances: self.instances.len() as u32,
-            aabbs: 0,
-            numAabbs: 0,
+        cfg_if::cfg_if! {
+            if #[cfg(feature="optix72")] {
+                sys::OptixBuildInputInstanceArray {
+                    instances: self.instances.device_ptr().0,
+                    numInstances: self.instances.len() as u32,
+                }
+            } else {
+                sys::OptixBuildInputInstanceArray {
+                    instances: self.instances.device_ptr().0,
+                    numInstances: self.instances.len() as u32,
+                    aabbs: 0,
+                    numAabbs: 0,
+                }
+            }
         }
     }
 }

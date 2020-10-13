@@ -120,6 +120,9 @@ impl OptixResult {
     pub const OPTIX_ERROR_CUDA_NOT_INITIALIZED: OptixResult = OptixResult(7052);
 }
 impl OptixResult {
+    pub const OPTIX_ERROR_VALIDATION_FAILURE: OptixResult = OptixResult(7053);
+}
+impl OptixResult {
     pub const OPTIX_ERROR_INVALID_PTX: OptixResult = OptixResult(7200);
 }
 impl OptixResult {
@@ -186,6 +189,10 @@ impl OptixResult {
         OptixResult(7805);
 }
 impl OptixResult {
+    pub const OPTIX_ERROR_LIBRARY_UNLOAD_FAILURE: OptixResult =
+        OptixResult(7806);
+}
+impl OptixResult {
     pub const OPTIX_ERROR_CUDA_ERROR: OptixResult = OptixResult(7900);
 }
 impl OptixResult {
@@ -219,12 +226,16 @@ pub type OptixLogCallback = ::std::option::Option<
         cbdata: *mut ::std::os::raw::c_void,
     ),
 >;
+pub const OptixDeviceContextValidationMode_OPTIX_DEVICE_CONTEXT_VALIDATION_MODE_OFF : OptixDeviceContextValidationMode = 0 ;
+pub const OptixDeviceContextValidationMode_OPTIX_DEVICE_CONTEXT_VALIDATION_MODE_ALL : OptixDeviceContextValidationMode = 4294967295 ;
+pub type OptixDeviceContextValidationMode = ::std::os::raw::c_uint;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct OptixDeviceContextOptions {
     pub logCallbackFunction: OptixLogCallback,
     pub logCallbackData: *mut ::std::os::raw::c_void,
     pub logCallbackLevel: ::std::os::raw::c_int,
+    pub validationMode: OptixDeviceContextValidationMode,
 }
 pub const OptixHitKind_OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE: OptixHitKind = 254;
 pub const OptixHitKind_OPTIX_HIT_KIND_TRIANGLE_BACK_FACE: OptixHitKind = 255;
@@ -333,8 +344,6 @@ pub struct OptixBuildInputCustomPrimitiveArray {
 pub struct OptixBuildInputInstanceArray {
     pub instances: CUdeviceptr,
     pub numInstances: ::std::os::raw::c_uint,
-    pub aabbs: CUdeviceptr,
-    pub numAabbs: ::std::os::raw::c_uint,
 }
 pub const OptixBuildInputType_OPTIX_BUILD_INPUT_TYPE_TRIANGLES:
     OptixBuildInputType = 8513;
@@ -514,6 +523,8 @@ pub const OptixDenoiserModelKind_OPTIX_DENOISER_MODEL_KIND_LDR:
     OptixDenoiserModelKind = 8994;
 pub const OptixDenoiserModelKind_OPTIX_DENOISER_MODEL_KIND_HDR:
     OptixDenoiserModelKind = 8995;
+pub const OptixDenoiserModelKind_OPTIX_DENOISER_MODEL_KIND_AOV:
+    OptixDenoiserModelKind = 8996;
 pub type OptixDenoiserModelKind = ::std::os::raw::c_uint;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -525,6 +536,7 @@ pub struct OptixDenoiserParams {
     pub denoiseAlpha: ::std::os::raw::c_uint,
     pub hdrIntensity: CUdeviceptr,
     pub blendFactor: f32,
+    pub hdrAverageColor: CUdeviceptr,
 }
 #[repr(C)]
 pub struct OptixDenoiserSizes {
@@ -578,6 +590,22 @@ pub mod OptixCompileDebugLevel {
     pub const OPTIX_COMPILE_DEBUG_LEVEL_NONE: Type = 9040;
     pub const OPTIX_COMPILE_DEBUG_LEVEL_LINEINFO: Type = 9041;
     pub const OPTIX_COMPILE_DEBUG_LEVEL_FULL: Type = 9042;
+}
+#[repr(C)]
+pub struct OptixModuleCompileBoundValueEntry {
+    pub pipelineParamOffsetInBytes: size_t,
+    pub sizeInBytes: size_t,
+    pub boundValuePtr: *const ::std::os::raw::c_void,
+    pub annotation: *const ::std::os::raw::c_char,
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct OptixModuleCompileOptions {
+    pub maxRegisterCount: ::std::os::raw::c_int,
+    pub optLevel: OptixCompileOptimizationLevel::Type,
+    pub debugLevel: OptixCompileDebugLevel::Type,
+    pub boundValues: *const OptixModuleCompileBoundValueEntry,
+    pub numBoundValues: ::std::os::raw::c_uint,
 }
 pub mod OptixProgramGroupKind {
     pub type Type = ::std::os::raw::c_uint;
@@ -652,6 +680,12 @@ pub const OptixExceptionCodes_OPTIX_EXCEPTION_CODE_INVALID_RAY:
 pub const OptixExceptionCodes_OPTIX_EXCEPTION_CODE_CALLABLE_PARAMETER_MISMATCH : OptixExceptionCodes = - 10 ;
 pub const OptixExceptionCodes_OPTIX_EXCEPTION_CODE_BUILTIN_IS_MISMATCH:
     OptixExceptionCodes = -11;
+pub const OptixExceptionCodes_OPTIX_EXCEPTION_CODE_CALLABLE_INVALID_SBT:
+    OptixExceptionCodes = -12;
+pub const OptixExceptionCodes_OPTIX_EXCEPTION_CODE_CALLABLE_NO_DC_SBT_RECORD:
+    OptixExceptionCodes = -13;
+pub const OptixExceptionCodes_OPTIX_EXCEPTION_CODE_CALLABLE_NO_CC_SBT_RECORD:
+    OptixExceptionCodes = -14;
 pub const OptixExceptionCodes_OPTIX_EXCEPTION_CODE_UNSUPPORTED_SINGLE_LEVEL_GAS : OptixExceptionCodes = - 15 ;
 pub type OptixExceptionCodes = ::std::os::raw::c_int;
 pub mod OptixExceptionFlags {
@@ -672,6 +706,12 @@ pub struct OptixPipelineCompileOptions {
     pub exceptionFlags: ::std::os::raw::c_uint,
     pub pipelineLaunchParamsVariableName: *const ::std::os::raw::c_char,
     pub usesPrimitiveTypeFlags: ::std::os::raw::c_uint,
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct OptixPipelineLinkOptions {
+    pub maxTraceDepth: ::std::os::raw::c_uint,
+    pub debugLevel: OptixCompileDebugLevel::Type,
 }
 #[repr(C)]
 pub struct OptixShaderBindingTable {
@@ -1014,6 +1054,16 @@ extern "C" {
         scratchSizeInBytes: size_t,
     ) -> OptixResult;
 }
+extern "C" {
+    pub fn optixDenoiserComputeAverageColor(
+        denoiser: OptixDenoiser,
+        stream: CUstream,
+        inputImage: *const OptixImage2D,
+        outputAverageColor: CUdeviceptr,
+        scratch: CUdeviceptr,
+        scratchSizeInBytes: size_t,
+    ) -> OptixResult;
+}
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct OptixFunctionTable {
@@ -1311,6 +1361,16 @@ pub struct OptixFunctionTable {
             scratchSizeInBytes: size_t,
         ) -> OptixResult,
     >,
+    pub optixDenoiserComputeAverageColor: ::std::option::Option<
+        unsafe extern "C" fn(
+            handle: OptixDenoiser,
+            stream: CUstream,
+            inputImage: *const OptixImage2D,
+            outputAverageColor: CUdeviceptr,
+            scratch: CUdeviceptr,
+            scratchSizeInBytes: size_t,
+        ) -> OptixResult,
+    >,
 }
 pub const OptixSbtRecordHeaderSize: size_t = 32;
 pub const OptixSbtRecordAlignment: size_t = 16;
@@ -1319,6 +1379,7 @@ pub const OptixInstanceByteAlignment: size_t = 16;
 pub const OptixAabbBufferByteAlignment: size_t = 8;
 pub const OptixGeometryTransformByteAlignment: size_t = 16;
 pub const OptixTransformByteAlignment: size_t = 64;
+pub const OptixVersion: size_t = 70200;
 #[repr(u32)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum OptixGeometryFlags {
