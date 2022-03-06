@@ -9,14 +9,33 @@ use optix_derive::device_shared;
 
 use std::rc::Rc;
 use std::sync::Arc;
+use optix::cuda::Allocator;
+
+enum_from_primitive! {
+#[repr(u64)]
+#[derive(Debug, PartialEq)]
+pub enum MemTags {
+    OutputBuffer = 1001,
+    SBT = 2001,
+    MissRecords = 2002,
+    HgRecords = 2003,
+    LaunchParams = 3001,
+    VertexBuffer = 4001,
+    IndexBuffer = 4002,
+    NormalBuffer = 4003,
+    TexcoordBuffer = 4004,
+    Accel = 5001,
+}
+}
 
 #[device_shared]
-struct TriangleMeshSBTData {
+struct TriangleMeshSBTData<'a, AllocT>
+    where AllocT: 'a + Allocator {
     color: V3f32,
-    vertex: Rc<optix::Buffer<V3f32>>,
-    normal: Rc<optix::Buffer<V3f32>>,
-    texcoord: Rc<optix::Buffer<V2f32>>,
-    index: Rc<optix::Buffer<V3i32>>,
+    vertex: Rc<optix::Buffer<'a, AllocT, V3f32>>,
+    normal: Rc<optix::Buffer<'a, AllocT, V3f32>>,
+    texcoord: Rc<optix::Buffer<'a, AllocT, V2f32>>,
+    index: Rc<optix::Buffer<'a, AllocT, V3i32>>,
     has_texture: bool,
     texture: Option<Rc<cuda::TextureObject>>,
 }
@@ -41,7 +60,9 @@ pub struct Model {
     pub bounds: Box3f32,
 }
 
-pub struct SampleRenderer {
+pub struct SampleRenderer<'a, AllocT>
+    where AllocT: 'a + Allocator {
+    alloc: &'a AllocT,
     cuda_context: cuda::ContextRef,
     stream: cuda::Stream,
     device_prop: cuda::DeviceProp,
@@ -51,9 +72,9 @@ pub struct SampleRenderer {
     module: optix::ModuleRef,
 
     program_groups: Vec<optix::ProgramGroupRef>,
-    sbt: optix::ShaderBindingTable,
+    sbt: optix::ShaderBindingTable<'a, 'a, AllocT>,
 
-    launch_params: SharedVariable<LaunchParams>,
+    launch_params: SharedVariable<'a, AllocT, LaunchParams<'a, AllocT>>,
 
     last_set_camera: Camera,
 
@@ -62,12 +83,15 @@ pub struct SampleRenderer {
     ctx: optix::DeviceContext,
 }
 
-impl SampleRenderer {
+impl<'a, AllocT> SampleRenderer<'a, AllocT>
+    where AllocT: 'a + Allocator
+{
     pub fn new(
         fb_size: V2i32,
         camera: Camera,
         model: Model,
-    ) -> Result<SampleRenderer> {
+        alloc: &'a AllocT,
+    ) -> Result<SampleRenderer<'a, AllocT>> {
         // Make sure CUDA context is initialized
         cuda::init();
         // Check that we've got available devices
@@ -125,11 +149,11 @@ impl SampleRenderer {
             name: "launch_params.h".into(),
             contents: format!(
                 "{} {} {} {} {}",
-                optix::Buffer::<i32>::cuda_decl(),
-                Frame::cuda_decl(),
+                optix::Buffer::<'a, AllocT, i32>::cuda_decl(),
+                Frame::<'a, AllocT>::cuda_decl(),
                 RenderCamera::cuda_decl(),
-                LaunchParams::cuda_decl(),
-                TriangleMeshSBTData::cuda_decl(),
+                LaunchParams::<'a, AllocT>::cuda_decl(),
+                TriangleMeshSBTData::<'a, AllocT>::cuda_decl(),
             ),
         };
 
@@ -282,13 +306,17 @@ impl SampleRenderer {
 
         for mesh in &model.meshes {
             let vertex_buffer =
-                Rc::new(optix::Buffer::new(&mesh.vertex).unwrap());
+                Rc::new(optix::Buffer::new(&mesh.vertex,MemTags::VertexBuffer as u64,
+                                           alloc,).unwrap());
             let index_buffer =
-                Rc::new(optix::Buffer::new(&mesh.index).unwrap());
+                Rc::new(optix::Buffer::new(&mesh.index, MemTags::IndexBuffer as u64,
+                                           alloc,).unwrap());
             let normal_buffer =
-                Rc::new(optix::Buffer::new(&mesh.normal).unwrap());
+                Rc::new(optix::Buffer::new(&mesh.normal,MemTags::NormalBuffer as u64,
+                                           alloc,).unwrap());
             let texcoord_buffer =
-                Rc::new(optix::Buffer::new(&mesh.texcoord).unwrap());
+                Rc::new(optix::Buffer::new(&mesh.texcoord,MemTags::TexcoordBuffer as u64,
+                                           alloc,).unwrap());
 
             for pg in &hitgroup_pgs {
                 let (has_texture, texture) =
@@ -343,7 +371,10 @@ impl SampleRenderer {
             .accel_compute_memory_usage(&accel_build_options, &build_inputs)?;
 
         let compacted_size_buffer =
-            cuda::Buffer::new(std::mem::size_of::<usize>())?;
+            cuda::Buffer::new(std::mem::size_of::<usize>(),
+                              std::mem::align_of::<usize>(),
+                              MemTags::Accel as u64,
+                              alloc,)?;
 
         let compacted_size_desc = optix::AccelEmitDesc::new(
             &compacted_size_buffer,
@@ -352,9 +383,15 @@ impl SampleRenderer {
 
         // allocate and execute build
         let temp_buffer =
-            cuda::Buffer::new(blas_buffer_sizes[0].temp_size_in_bytes)?;
+            cuda::Buffer::new(blas_buffer_sizes[0].temp_size_in_bytes,
+                              optix_sys::OptixAccelBufferByteAlignment,
+                              MemTags::Accel as u64,
+                              alloc,)?;
         let output_buffer =
-            cuda::Buffer::new(blas_buffer_sizes[0].output_size_in_bytes)?;
+            cuda::Buffer::new(blas_buffer_sizes[0].output_size_in_bytes,
+                              optix_sys::OptixAccelBufferByteAlignment,
+                              MemTags::Accel as u64,
+                              alloc,)?;
 
         let as_handle = ctx.accel_build(
             &cuda::Stream::default(),
@@ -379,9 +416,15 @@ impl SampleRenderer {
         let compacted_size =
             compacted_size_buffer.download_primitive::<usize>()?;
 
-        let as_buffer = cuda::Buffer::new(compacted_size)?;
+         let mut as_buffer = cuda::Buffer::new(
+            compacted_size,
+            optix_sys::OptixAccelBufferByteAlignment,
+            MemTags::Accel as u64,
+            alloc,
+        )?;
         let as_handle =
             ctx.accel_compact(&cuda::Stream::default(), as_handle, as_buffer)?;
+
 
         // sync again
         match cuda::device_synchronize() {
@@ -392,8 +435,10 @@ impl SampleRenderer {
             }
         };
 
-        let color_buffer = optix::Buffer::<V4f32>::uninitialized(
+        let color_buffer = optix::Buffer::<'a, AllocT, V4f32>::uninitialized(
             (fb_size.x * fb_size.y) as usize,
+            MemTags::OutputBuffer as u64,
+            alloc,
         )?;
 
         let cos_fovy = 0.66f32;
@@ -416,14 +461,20 @@ impl SampleRenderer {
             traversable: as_handle,
         };
 
-        let sbt = optix::ShaderBindingTableBuilder::new(rg_rec)
-            .miss_records(miss_recs)
-            .hitgroup_records(hg_recs)
+        let sbt = optix::ShaderBindingTableBuilder::new(rg_rec,
+                                                        MemTags::SBT as u64,
+                                                        alloc,)
+            .miss_records(miss_recs, MemTags::SBT as u64, alloc)
+            .hitgroup_records(hg_recs, MemTags::SBT as u64, alloc)
             .build();
 
-        let launch_params = SharedVariable::<LaunchParams>::new(launch_params)?;
+        let launch_params =
+            SharedVariable::<'a, AllocT, LaunchParams<'a, AllocT>>::new(launch_params,
+                                                                            MemTags::LaunchParams as u64,
+                                                                            alloc,)?;
 
         Ok(SampleRenderer {
+            alloc,
             cuda_context,
             stream,
             device_prop,
@@ -461,7 +512,9 @@ impl SampleRenderer {
     pub fn resize(&mut self, size: V2i32) {
         self.launch_params.frame.size = size.into();
         self.launch_params.frame.color_buffer =
-            optix::Buffer::<V4f32>::uninitialized((size.x * size.y) as usize)
+            optix::Buffer::<'a, AllocT, V4f32>::uninitialized((size.x * size.y) as usize,
+                                                              MemTags::OutputBuffer as u64,
+                                                              self.alloc,)
                 .unwrap();
     }
 
@@ -595,14 +648,16 @@ struct RenderCamera {
 }
 
 #[device_shared]
-struct Frame {
-    color_buffer: optix::Buffer<V4f32>,
+struct Frame<'a, AllocT>
+    where AllocT: 'a + Allocator, {
+    color_buffer: optix::Buffer<'a, AllocT, V4f32>,
     size: V2i32,
 }
 
 #[device_shared]
-pub struct LaunchParams {
-    frame: Frame,
+pub struct LaunchParams<'a, AllocT>
+    where AllocT: 'a + Allocator {
+    frame: Frame<'a, AllocT>,
     camera: RenderCamera,
-    traversable: optix::TraversableHandle,
+    traversable: optix::TraversableHandle<'a, AllocT>,
 }

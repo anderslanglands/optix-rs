@@ -115,7 +115,7 @@ fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent) {
 
 fn load_texture(path: &std::path::Path) -> Option<Rc<Texture>> {
     let im = match image::open(path) {
-        Ok(im) => im.to_rgba(),
+        Ok(im) => im.to_rgba8(),
         Err(e) => {
             println!("{}", e);
             return None;
@@ -131,11 +131,13 @@ fn load_texture(path: &std::path::Path) -> Option<Rc<Texture>> {
 }
 
 fn load_model(path: &std::path::Path) -> Model {
-    let (models, materials) = tobj::load_obj(path).unwrap();
+    let (models, materials) = tobj::load_obj(path,
+                                             &tobj::LoadOptions::default()).unwrap();
 
     let mut bounds = Box3f32::make_empty();
     let mut loaded_texture_ids = std::collections::HashMap::new();
     let mut textures = Vec::new();
+    let materials = materials.expect("Failed to load MTL file");
     let meshes = models
         .into_iter()
         .map(|model| {

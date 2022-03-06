@@ -13,9 +13,11 @@ use optix::cuda::TaggedMallocator;
 use optix::math::*;
 
 fn load_model(path: &std::path::Path) -> Model {
-    let (models, materials) = tobj::load_obj(path).unwrap();
+    let (models, materials) = tobj::load_obj(path,
+                                             &tobj::LoadOptions::default()).unwrap();
 
     let mut bounds = Box3f32::make_empty();
+    let materials = materials.expect("Failed to load MTL file");
     let meshes = models
         .into_iter()
         .map(|model| {

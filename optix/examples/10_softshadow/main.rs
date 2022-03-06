@@ -8,6 +8,7 @@ use crate::gl_util::*;
 use optix::math::*;
 
 use std::rc::Rc;
+use optix::cuda::TaggedMallocator;
 
 fn main() {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
@@ -39,11 +40,13 @@ fn main() {
         power: v3f32(3000000.0, 3000000.0, 3000000.0),
     };
 
+    let alloc = TaggedMallocator::new();
     let mut sample = SampleRenderer::new(
         v2i32(width as i32, height as i32),
         camera,
         model,
         light,
+        &alloc
     )
     .unwrap();
 
@@ -86,6 +89,7 @@ fn main() {
         let w = w as u32;
         let h = h as u32;
         if w != width || h != height {
+            println!("Resize");
             fsq.resize(w, h);
             sample.resize(v2i32(w as i32, h as i32));
             width = w;
@@ -119,7 +123,7 @@ fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent) {
 
 fn load_texture(path: &std::path::Path) -> Option<Rc<Texture>> {
     let im = match image::open(path) {
-        Ok(im) => im.to_rgba(),
+        Ok(im) => im.to_rgba8(),
         Err(e) => {
             println!("{}", e);
             return None;
@@ -135,11 +139,13 @@ fn load_texture(path: &std::path::Path) -> Option<Rc<Texture>> {
 }
 
 fn load_model(path: &std::path::Path) -> Model {
-    let (models, materials) = tobj::load_obj(path).unwrap();
+    let (models, materials) = tobj::load_obj(path,
+                                             &tobj::LoadOptions::default()).unwrap();
 
     let mut bounds = Box3f32::make_empty();
     let mut loaded_texture_ids = std::collections::HashMap::new();
     let mut textures = Vec::new();
+    let materials = materials.expect("Failed to load MTL file");
     let meshes = models
         .into_iter()
         .map(|model| {
