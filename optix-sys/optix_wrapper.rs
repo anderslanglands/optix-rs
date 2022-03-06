@@ -517,8 +517,8 @@ pub const OptixExceptionCodes_OPTIX_EXCEPTION_CODE_TRACE_DEPTH_EXCEEDED:
     OptixExceptionCodes = -2;
 pub const OptixExceptionCodes_OPTIX_EXCEPTION_CODE_TRAVERSAL_DEPTH_EXCEEDED:
     OptixExceptionCodes = -3;
-pub const OptixExceptionCodes_OPTIX_EXCEPTION_CODE_TRAVERSAL_INVALID_TRAVERSABLE : OptixExceptionCodes = -5 ;
-pub const OptixExceptionCodes_OPTIX_EXCEPTION_CODE_TRAVERSAL_INVALID_MISS_SBT : OptixExceptionCodes = -6 ;
+pub const OptixExceptionCodes_OPTIX_EXCEPTION_CODE_TRAVERSAL_INVALID_TRAVERSABLE : OptixExceptionCodes = - 5 ;
+pub const OptixExceptionCodes_OPTIX_EXCEPTION_CODE_TRAVERSAL_INVALID_MISS_SBT : OptixExceptionCodes = - 6 ;
 pub const OptixExceptionCodes_OPTIX_EXCEPTION_CODE_TRAVERSAL_INVALID_HIT_SBT:
     OptixExceptionCodes = -7;
 pub type OptixExceptionCodes = i32;

@@ -114,7 +114,8 @@ cfg_if::cfg_if! {
             zero,
         };
 
-        pub use nalgebra_glm::{Dimension, Scalar, Number, RealField};
+        pub use nalgebra_glm::{Scalar, Number};
+        pub use nalgebra::{RealField};
 
         pub fn cast_slice_v4u8(s: &[u8]) -> &[V4u8] {
             if s.len() % 4 != 0 {
@@ -193,14 +194,14 @@ cfg_if::cfg_if! {
             pub max: TVec3<T>,
         }
 
-        impl<T> Box3<T> where T: RealField {
+        impl<T> Box3<T> where T: RealField+Number {
             pub fn new(min: TVec3<T>, max: TVec3<T>) -> Box3<T> {
                 Box3{min, max}
             }
 
             pub fn make_empty() -> Box3<T> {
-                let max = T::min_value();
-                let min = T::max_value();
+                let max = <T as RealField>::min_value().unwrap();
+                let min = <T as RealField>::max_value().unwrap();
                 Box3 {
                     min: vec3(min, min, min),
                     max: vec3(max, max, max),

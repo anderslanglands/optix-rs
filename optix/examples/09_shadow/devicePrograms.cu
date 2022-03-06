@@ -72,7 +72,7 @@ extern "C" __global__ void __closesthit__radiance() {
     // gather some basic hit information
     // ------------------------------------------------------------------
     const int primID = optixGetPrimitiveIndex();
-    const V3i32 index = sbtData.index[primID];
+    const i32x3 index = sbtData.index[primID];
     const f32 u = optixGetTriangleBarycentrics().x;
     const f32 v = optixGetTriangleBarycentrics().y;
 
@@ -80,11 +80,11 @@ extern "C" __global__ void __closesthit__radiance() {
     // compute normal, using either shading normal (if avail), or
     // geometry normal (fallback)
     // ------------------------------------------------------------------
-    const V3f32& A = sbtData.vertex[index.x];
-    const V3f32& B = sbtData.vertex[index.y];
-    const V3f32& C = sbtData.vertex[index.z];
-    V3f32 Ng = cross(B - A, C - A);
-    V3f32 Ns = (!sbtData.normal.is_null())
+    const f32x3& A = sbtData.vertex[index.x];
+    const f32x3& B = sbtData.vertex[index.y];
+    const f32x3& C = sbtData.vertex[index.z];
+    f32x3 Ng = cross(B - A, C - A);
+    f32x3 Ns = (!sbtData.normal.is_null())
                    ? ((1.f - u - v) * sbtData.normal[index.x] +
                       u * sbtData.normal[index.y] + v * sbtData.normal[index.z])
                    : Ng;
@@ -92,7 +92,7 @@ extern "C" __global__ void __closesthit__radiance() {
     // ------------------------------------------------------------------
     // face-forward and normalize normals
     // ------------------------------------------------------------------
-    const V3f32 rayDir = optixGetWorldRayDirection();
+    const f32x3 rayDir = optixGetWorldRayDirection();
 
     if (dot(rayDir, Ng) > 0.f)
         Ng = -Ng;
@@ -106,27 +106,28 @@ extern "C" __global__ void __closesthit__radiance() {
     // compute diffuse material color, including diffuse texture, if
     // available
     // ------------------------------------------------------------------
-    V3f32 diffuseColor = sbtData.color;
+    f32x3 diffuseColor = sbtData.color;
     if (sbtData.has_texture && !sbtData.texcoord.is_null()) {
-        const V2f32 tc = (1.f - u - v) * sbtData.texcoord[index.x] +
+        const f32x2 tc = (1.f - u - v) * sbtData.texcoord[index.x] +
                          u * sbtData.texcoord[index.y] +
                          v * sbtData.texcoord[index.z];
 
-        V4f32 fromTexture = tex2D<float4>(sbtData.texture, tc.x, tc.y);
-        diffuseColor = diffuseColor * fromTexture.xyz();
+        f32x4 fromTexture = tex2D<float4>(sbtData.texture, tc.x, tc.y);
+        //diffuseColor = diffuseColor * fromTexture.xyz();
+        diffuseColor = diffuseColor * make_f32x3(fromTexture);
     }
 
     // ------------------------------------------------------------------
     // compute shadow
     // ------------------------------------------------------------------
-    const V3f32 surfPos = (1.f - u - v) * sbtData.vertex[index.x] +
+    const f32x3 surfPos = (1.f - u - v) * sbtData.vertex[index.x] +
                           u * sbtData.vertex[index.y] +
                           v * sbtData.vertex[index.z];
-    const V3f32 lightPos(-907.108f, 2205.875f, -400.0267f);
-    const V3f32 lightDir = lightPos - surfPos;
+    const f32x3 lightPos = make_f32x3(-907.108f, 2205.875f, -400.0267f);
+    const f32x3 lightDir = lightPos - surfPos;
 
     // trace shadow ray:
-    V3f32 lightVisibility(1.f);
+    f32x3 lightVisibility=make_f32x3(1.f,1.f,1.f);
     // the values we store the PRD pointer in:
     u32 u0, u1;
     packPointer(&lightVisibility, u0, u1);
@@ -148,7 +149,7 @@ extern "C" __global__ void __closesthit__radiance() {
     // ------------------------------------------------------------------
     const float cosDN = 0.1f + .8f * fabsf(dot(rayDir, Ns));
 
-    V3f32& prd = *(V3f32*)getPRD<V3f32>();
+    f32x3& prd = *(f32x3*)getPRD<f32x3>();
     prd = (.1f + (.2f + .8f * lightVisibility) * cosDN) * diffuseColor;
 }
 
@@ -158,8 +159,8 @@ __anyhit__radiance() { /*! for this simple example, this will remain empty */
 
 extern "C" __global__ void __anyhit__shadow() {
     // in this simple example, we terminate on ANY hit
-    V3f32& prd = *(V3f32*)getPRD<V3f32>();
-    prd = V3f32(0.f);
+    f32x3& prd = *(f32x3*)getPRD<f32x3>();
+    prd = make_f32x3(0.f,0.f,0.f);
     optixTerminateRay();
 }
 
@@ -172,9 +173,9 @@ extern "C" __global__ void __anyhit__shadow() {
 // ------------------------------------------------------------------------------
 
 extern "C" __global__ void __miss__radiance() {
-    V3f32& prd = *(V3f32*)getPRD<V3f32>();
+    f32x3& prd = *(f32x3*)getPRD<f32x3>();
     // set to constant white as background color
-    prd = V3f32(1.f);
+    prd = make_f32x3(1.f,1.f,1.f);
 }
 
 extern "C" __global__ void __miss__shadow() {
@@ -194,19 +195,19 @@ extern "C" __global__ void __raygen__renderFrame() {
     // our per-ray data for this example. what we initialize it to
     // won't matter, since this value will be overwritten by either
     // the miss or hit program, anyway
-    V3f32 pixelColorPRD = V3f32(0.f, 0.0f, 0.0f);
+    f32x3 pixelColorPRD = make_f32x3(0.f, 0.0f, 0.0f);
 
     // the values we store the PRD pointer in:
     u32 u0, u1;
     packPointer(&pixelColorPRD, u0, u1);
 
     // normalized screen plane position, in [0,1]^2
-    const V2f32 screen =
-        V2f32(f32(ix) + .5f, f32(iy) + .5f) /
-        V2f32(optixLaunchParams.frame.size.x, optixLaunchParams.frame.size.y);
+    const f32x2 screen =
+        make_f32x2(f32(ix) + .5f, f32(iy) + .5f) /
+        make_f32x2(optixLaunchParams.frame.size.x, optixLaunchParams.frame.size.y);
 
     // generate ray direction
-    V3f32 rayDir =
+    f32x3 rayDir =
         normalize(camera.direction + (screen.x - 0.5f) * camera.horizontal +
                   (screen.y - 0.5f) * camera.vertical);
 

@@ -24,7 +24,7 @@ typedef unsigned int uint32_t;
 struct LaunchParams {
     int frameID{0};
     uint32_t* colorBuffer;
-    V2i32 fbSize;
+    i32x2 fbSize;
 };
 
 } // namespace osc
